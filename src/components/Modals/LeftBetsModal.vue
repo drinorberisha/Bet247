@@ -1,287 +1,106 @@
 <template>
-  <div class="modal event__modal " id="eventsp" tabIndex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header mt-2">
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+  <div class="left-bets-modal">
+    <div class="sports-list">
+      <button 
+        v-for="sport in sports" 
+        :key="sport.id"
+        class="sport-button"
+        :class="{ active: currentTab === sport.tab }"
+        @click="switchTab(sport.tab)"
+      >
+        <div class="sport-icon">
+          <i :class="sport.icon"></i>
         </div>
-        <div class="left__site__section">
-          <div class="tab-content" id="myTabContentmainevent">
-            <div
-              class="tab-pane text-white fade show active"
-              id="mainTabevent"
-              role="tabpanel"
-              tabIndex="0"
-            >
-              <div class="popular__events__body">
-                <div class="container-fluid p-0">
-                  <div class="row g-0">
-                    <div class="col-xxl-2 col-xl-3 col-lg-3">
-                      <div class="popular__events__left">
-                        <div class="popular__events__head">
-                          <h5>Popular events</h5>
-                          <ul>
-                            <li>
-                              <span>
-                                <img :src="cup" alt="img" />
-                              </span>
-                              <span>Eorld Cup 2022</span>
-                            </li>
-                            <li>
-                              <span>
-                                <img :src="europ" alt="img" />
-                              </span>
-                              <span>Euroleague. Season 22/23</span>
-                            </li>
-                          </ul>
-                        </div>
-                        <div class="star__wrap">
-                          <span>
-                            <img :src="start" alt="img" />
-                          </span>
-                          <span>Favorites</span>
-                        </div>
-                        <div class="prematch__wrap">
-                          <div class="nav" id="nav-tabpreevent" role="tablist">
-                            <button
-                              class="nav-link active"
-                              id="nav-home-tabpreevent"
-                              data-bs-toggle="tab"
-                              data-bs-target="#nav-homepreevent"
-                              type="button"
-                              role="tab"
-                              aria-selected="true"
-                            >
-                              Live
-                            </button>
-                            <button
-                              class="nav-link"
-                              id="nav-profile-tabpreevent"
-                              data-bs-toggle="tab"
-                              data-bs-target="#nav-profilepreevent"
-                              type="button"
-                              role="tab"
-                              aria-selected="false"
-                            >
-                              Prematch
-                            </button>
-                          </div>
-                          <div class="tab-content" id="nav-tabContentpreevent">
-                            <div
-                              class="tab-pane fade text-white show active"
-                              id="nav-homepreevent"
-                              role="tabpanel"
-                              aria-labelledby="nav-home-tabpreevent"
-                              tabIndex="0"
-                            >
-                              <div class="prematch__scopre">
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-football"></i>
-                                    </span>
-                                    <span class="score">Soccer</span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>2</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-tennis"></i>
-                                    </span>
-                                    <span class="score">Tennis</span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>4</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-basketball"></i>
-                                    </span>
-                                    <span class="score">Basketball</span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>4</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-ttennis"></i>
-                                    </span>
-                                    <span class="score"> Table Tennis </span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>8</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-volly"></i>
-                                    </span>
-                                    <span class="score">Volleyball</span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>2</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                                <RouterLink to="#" class="prescore__items">
-                                  <div class="prescore__left">
-                                    <span>
-                                      <i class="icon-handball"></i>
-                                    </span>
-                                    <span class="score">Handball</span>
-                                  </div>
-                                  <div class="prescore__right">
-                                    <span>1</span>
-                                    <span>
-                                      <i class="fa-solid fa-angle-down"></i>
-                                    </span>
-                                  </div>
-                                </RouterLink>
-                              </div>
-                            </div>
-                            <div
-                              class="tab-pane fade text-white"
-                              id="nav-profilepreevent"
-                              role="tabpanel"
-                              aria-labelledby="nav-profile-tabpreevent"
-                              tabIndex="0"
-                            >
-                              <div class="multiple__components">
-                                <div class="prematch__scopre">
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-football"></i>
-                                      </span>
-                                      <span class="score">Soccer</span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>2</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-tennis"></i>
-                                      </span>
-                                      <span class="score">Tennis</span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>4</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-basketball"></i>
-                                      </span>
-                                      <span class="score"> Basketball </span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>4</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-ttennis"></i>
-                                      </span>
-                                      <span class="score"> Table Tennis </span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>8</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-volly"></i>
-                                      </span>
-                                      <span class="score"> Volleyball </span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>2</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                  <RouterLink to="#" class="prescore__items">
-                                    <div class="prescore__left">
-                                      <span>
-                                        <i class="icon-handball"></i>
-                                      </span>
-                                      <span class="score">Handball</span>
-                                    </div>
-                                    <div class="prescore__right">
-                                      <span>1</span>
-                                      <span>
-                                        <i class="fa-solid fa-angle-down"></i>
-                                      </span>
-                                    </div>
-                                  </RouterLink>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="sport-info">
+          <span class="sport-name">{{ sport.name }}</span>
+          <span class="sport-count">{{ sport.count }}</span>
         </div>
-      </div>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from "vue-router";
-import cup from "../../assets/img/leftmenu/cup.png";
-import europ from "../../assets/img/leftmenu/europ.png";
-import start from "../../assets/img/leftmenu/start.png";
+import { ref, computed } from 'vue';
+import { useTabStore } from '../../stores/tab';
+
+const tabStore = useTabStore();
+
+const sports = [
+  { id: 1, name: 'Home', tab: 'home', icon: 'icon-home', count: 0 },
+  { id: 2, name: 'Live', tab: 'live', icon: 'icon-live', count: 12 },
+  { id: 3, name: 'Today', tab: 'today', icon: 'icon-calendar', count: 24 },
+  { id: 4, name: 'Football', tab: 'football', icon: 'icon-football', count: 8 },
+  { id: 5, name: 'Tennis', tab: 'tennis', icon: 'icon-tennis', count: 4 },
+  { id: 6, name: 'Basketball', tab: 'basketball', icon: 'icon-basketball', count: 6 },
+  { id: 7, name: 'Ice Hockey', tab: 'icehockey', icon: 'icon-hockey', count: 3 },
+  { id: 8, name: 'Handball', tab: 'handball', icon: 'icon-handball', count: 2 },
+  { id: 9, name: 'American Football', tab: 'american', icon: 'icon-football-american', count: 4 },
+  { id: 10, name: 'Baseball', tab: 'baseball', icon: 'icon-baseball', count: 5 },
+  { id: 11, name: 'Horse Racing', tab: 'horseracing', icon: 'icon-horse', count: 7 },
+  { id: 12, name: 'Virtual', tab: 'virtual', icon: 'icon-virtual', count: 0 },
+  { id: 13, name: 'Favourites', tab: 'favourites', icon: 'icon-star', count: 0 },
+];
+
+const currentTab = computed(() => tabStore.currentTab);
+
+const switchTab = (tab: string) => {
+  tabStore.setCurrentTab(tab);
+};
 </script>
 
-<style scoped></style>
+<style scoped>
+.left-bets-modal {
+  padding: 0.5rem;
+}
+
+.sports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sport-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.sport-button:hover {
+  background: var(--pointbox);
+}
+
+.sport-button.active {
+  background: var(--preactive);
+  color: var(--active-color);
+}
+
+.sport-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sport-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
+
+.sport-count {
+  color: var(--textcolor);
+  font-size: 0.9rem;
+}
+</style>

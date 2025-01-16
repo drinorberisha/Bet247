@@ -18,6 +18,8 @@ import Notification from "./Pages/Dashboard/Notification.vue";
 import Bonuses from "./Pages/Dashboard/Bonuses.vue";
 import SportsBetting from "./Pages/SportsBetting.vue";
 import NotFound from "./Pages/NotFound.vue";
+import AdminLayout from "./Layouts/AdminLayout.vue";
+import { useAuthStore } from "./stores/auth";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -144,6 +146,42 @@ export const router = createRouter({
       },
     },
 
+    // Admin routes
+    {
+      path: "/admin",
+      component: AdminLayout,
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: "",
+          redirect: "/admin/dashboard"
+        },
+        {
+          path: "dashboard",
+          component: () => import("./Pages/Admin/AdminDashboard.vue"),
+          meta: { title: "Admin Dashboard - BET 24/7" }
+        },
+        {
+          path: "users",
+          component: () => import("./Pages/Admin/UsersManagement.vue"),
+          meta: { title: "User Management - BET 24/7" }
+        },
+        {
+          path: "transactions",
+          component: () => import("./Pages/Admin/TransactionsManagement.vue"),
+          meta: { title: "Transactions - BET 24/7" }
+        },
+        {
+          path: "coins",
+          component: () => import("./Pages/Admin/CoinsManagement.vue"),
+          meta: { 
+            title: "Coins Management - BET 24/7",
+
+          }
+        }
+      ]
+    },
+
     {
       path: "/:pathMatch(.*)*",
       component: NotFound,
@@ -153,3 +191,43 @@ export const router = createRouter({
     },
   ],
 });
+
+// Navigation guard
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  
+  console.log('Route navigation:', {
+    to: to.path,
+    userRole: authStore.user?.role,
+    isAuthenticated: authStore.isAuthenticated
+  });
+
+  // Set page title
+  if (to.meta.title) {
+    document.title = to.meta.title as string;
+  }
+
+  // Check if user is superuser/admin and trying to access regular dashboard
+  if (to.path === '/dashboard' && ['admin', 'superuser'].includes(authStore.user?.role || '')) {
+    console.log('Admin/Superuser accessing dashboard, redirecting to admin dashboard');
+    next('/admin/dashboard');
+    return;
+  }
+
+  // Rest of your existing guards with debug logs
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    console.log('Auth required but not authenticated');
+    next('/login');
+  } else if (to.meta.requiresAdmin && !['admin', 'superuser'].includes(authStore.user?.role || '')) {
+    console.log('Admin required but user is not admin/superuser');
+    next('/');
+  } else if (to.meta.requiresSuperuser && authStore.user?.role !== 'superuser') {
+    console.log('Superuser required but user is not superuser');
+    next('/admin/dashboard');
+  } else {
+    console.log('Navigation allowed');
+    next();
+  }
+});
+
+export default router;

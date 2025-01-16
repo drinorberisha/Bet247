@@ -1,36 +1,46 @@
 <template>
-  <div class="popular__events__body">
-    <div class="container-fluid p-0">
-      <div class="row g-0">
-        <div class="col-xxl-2 col-xl-3 col-lg-3">
-          <PopularEvents />
+  <div class="global-main">
+    <div class="content-wrapper">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="loader"></div>
+        <span>Loading...</span>
+      </div>
+
+      <!-- Content -->
+      <div v-else class="tab-content">
+        <!-- Home Tab -->
+        <div v-if="currentTab === 'home'" class="tab-section">
+          <SportMatches 
+            v-for="sport in availableSports"
+            :key="sport.key"
+            :sportKey="sport.key"
+            :sportTitle="sport.title"
+            :tabId="sport.tabId"
+            :iconClass="sport.iconClass"
+            :tableClass="sport.tableClass"
+          />
         </div>
-        <div class="col-xxl-10 col-xl-9 col-lg-9">
-          <HomeTab />
 
-          <LiveTab />
+        <!-- Live Tab -->
+        <div v-else-if="currentTab === 'live'" class="tab-section">
+          <LiveMatches />
+        </div>
 
-          <TodayTab />
+        <!-- Today Tab -->
+        <div v-else-if="currentTab === 'today'" class="tab-section">
+          <TodayMatches />
+        </div>
 
-          <FootballTab />
-
-          <TennisTab />
-
-          <BasketballTab />
-
-          <IceHockeyTab />
-
-          <HandballTab />
-
-          <AmericanTab />
-
-          <BaseballTab />
-
-          <HorseRacingTab />
-
-          <VirtualTab />
-
-          <FavouritesTab />
+        <!-- Sport Specific Tabs -->
+        <div v-else class="tab-section">
+          <SportMatches 
+            :sportKey="getCurrentSportKey"
+            :sportTitle="getCurrentSportTitle"
+            :tabId="currentTab"
+            :iconClass="getCurrentSportIcon"
+            :tableClass="`${currentTab}-table`"
+          />
         </div>
       </div>
     </div>
@@ -38,20 +48,129 @@
 </template>
 
 <script setup lang="ts">
-import PopularEvents from "../Common/PopularEvents.vue";
-import AmericanTab from "./AmericanTab.vue";
-import BaseballTab from "./BaseballTab.vue";
-import BasketballTab from "./BasketballTab.vue";
-import FavouritesTab from "./FavouritesTab.vue";
-import FootballTab from "./FootballTab.vue";
-import HandballTab from "./HandballTab.vue";
-import HomeTab from "./HomeTab.vue";
-import HorseRacingTab from "./HorseRacingTab.vue";
-import IceHockeyTab from "./IceHockeyTab.vue";
-import LiveTab from "./LiveTab.vue";
-import TennisTab from "./TennisTab.vue";
-import TodayTab from "./TodayTab.vue";
-import VirtualTab from "./VirtualTab.vue";
+import { ref, computed, watch } from 'vue';
+import { useTabStore } from '../../stores/tab';
+import SportMatches from '../Sports/SportMatches.vue';
+import LiveMatches from '../Sports/LiveMatches.vue';
+import TodayMatches from '../Sports/TodayMatches.vue';
+
+const tabStore = useTabStore();
+const currentTab = computed(() => tabStore.currentTab);
+const isLoading = ref(false);
+
+const availableSports = [
+  { key: 'soccer', title: 'Football', tabId: 'football', iconClass: 'icon-football', tableClass: 'football-table' },
+  { key: 'tennis', title: 'Tennis', tabId: 'tennis', iconClass: 'icon-tennis', tableClass: 'tennis-table' },
+  { key: 'basketball', title: 'Basketball', tabId: 'basketball', iconClass: 'icon-basketball', tableClass: 'basketball-table' },
+  { key: 'icehockey', title: 'Ice Hockey', tabId: 'icehockey', iconClass: 'icon-hockey', tableClass: 'hockey-table' },
+  { key: 'handball', title: 'Handball', tabId: 'handball', iconClass: 'icon-handball', tableClass: 'handball-table' },
+  { key: 'american-football', title: 'American Football', tabId: 'american', iconClass: 'icon-football-american', tableClass: 'american-table' },
+  { key: 'baseball', title: 'Baseball', tabId: 'baseball', iconClass: 'icon-baseball', tableClass: 'baseball-table' },
+  { key: 'horse-racing', title: 'Horse Racing', tabId: 'horseracing', iconClass: 'icon-horse', tableClass: 'horse-table' },
+];
+
+// Computed properties for current sport
+const getCurrentSportKey = computed(() => {
+  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
+  return sport?.key || '';
+});
+
+const getCurrentSportTitle = computed(() => {
+  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
+  return sport?.title || '';
+});
+
+const getCurrentSportIcon = computed(() => {
+  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
+  return sport?.iconClass || '';
+});
+
+// Handle tab changes
+watch(currentTab, async (newTab) => {
+  isLoading.value = true;
+  try {
+    // Simulate data loading - replace with actual API calls
+    await new Promise(resolve => setTimeout(resolve, 300));
+  } catch (error) {
+    console.error('Error loading tab data:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}, { immediate: true });
 </script>
 
-<style scoped></style>
+<style scoped>
+.global-main {
+  height: 100%;
+  min-height: calc(100vh - var(--header-height) - 3rem);
+  background: var(--subheader);
+  border-radius: 8px;
+  border: 1px solid var(--leftpreborder);
+}
+
+.content-wrapper {
+  height: 100%;
+  min-height: inherit;
+  position: relative;
+}
+
+.loading-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--textcolor);
+  background: var(--subheader);
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--pointbox);
+  border-top-color: var(--active-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.tab-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.tab-section {
+  min-height: 100%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Scrollbar styling */
+.tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+  background: var(--pointbox);
+  border-radius: 3px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+  background: var(--body-color);
+}
+
+@media (max-width: 768px) {
+  .tab-content {
+    padding: 1rem;
+  }
+}
+</style>

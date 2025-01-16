@@ -7,7 +7,7 @@
           <span>
             <img :src="cup" alt="img" />
           </span>
-          <span>Eorld Cup 2022</span>
+          <span>World Cup 2022</span>
         </li>
         <li>
           <span>
