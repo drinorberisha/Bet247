@@ -20,6 +20,7 @@ import SportsBetting from "./Pages/SportsBetting.vue";
 import NotFound from "./Pages/NotFound.vue";
 import AdminLayout from "./Layouts/AdminLayout.vue";
 import { useAuthStore } from "./stores/auth";
+import MyBets from "./views/MyBets.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -27,7 +28,7 @@ export const router = createRouter({
     {
       path: "/",
       component: Index,
-      meta: { title: "BET 24/7" },
+      meta: { title: "BET 24/7", },
     },
     {
       path: "/sportsbetting",
@@ -145,6 +146,14 @@ export const router = createRouter({
         title: "BET 24/7",
       },
     },
+    {
+      path: "/my-bets",
+      component: MyBets,
+      meta: { 
+        title: "My Bets - BET 24/7",
+        requiresAuth: true  
+      },
+    },
 
     // Admin routes
     {
@@ -207,6 +216,19 @@ router.beforeEach((to, from, next) => {
     document.title = to.meta.title as string;
   }
 
+  // Check authentication for protected routes
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    console.log('Auth required but not authenticated, staying on home page with login modal');
+    if (to.path !== '/') {
+      next('/'); // Redirect to home page first
+      // Wait for the next tick to ensure route change is complete
+      setTimeout(() => {
+        authStore.toggleLoginModal(); // Then open the login modal
+      }, 0);
+      return;
+    }
+  }
+
   // Check if user is superuser/admin and trying to access regular dashboard
   if (to.path === '/dashboard' && ['admin', 'superuser'].includes(authStore.user?.role || '')) {
     console.log('Admin/Superuser accessing dashboard, redirecting to admin dashboard');
@@ -214,11 +236,8 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // Rest of your existing guards with debug logs
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('Auth required but not authenticated');
-    next('/login');
-  } else if (to.meta.requiresAdmin && !['admin', 'superuser'].includes(authStore.user?.role || '')) {
+  // Rest of your existing guards
+  if (to.meta.requiresAdmin && !['admin', 'superuser'].includes(authStore.user?.role || '')) {
     console.log('Admin required but user is not admin/superuser');
     next('/');
   } else if (to.meta.requiresSuperuser && authStore.user?.role !== 'superuser') {

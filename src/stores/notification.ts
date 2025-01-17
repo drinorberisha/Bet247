@@ -9,36 +9,33 @@ interface NotificationOptions {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
 
-export const useNotificationStore = defineStore('notification', () => {
-  const notifications = ref<NotificationOptions[]>([]);
+export const useNotificationStore = defineStore('notification', {
+  state: () => ({
+    notifications: [] as Notification[]
+  }),
 
-  const show = (options: NotificationOptions) => {
-    const notification = {
-      type: 'info',
-      duration: 5000,
-      position: 'top-right',
-      ...options
-    };
-    
-    notifications.value.push(notification);
-    
-    if (notification.duration > 0) {
-      setTimeout(() => {
-        remove(notification);
-      }, notification.duration);
+  actions: {
+    show(notification: NotificationOptions) {
+      const id = Date.now().toString();
+      const newNotification = {
+        id,
+        ...notification
+      };
+      
+      this.notifications.push(newNotification);
+
+      if (notification.duration !== 0) {
+        setTimeout(() => {
+          this.removeNotification(id);
+        }, notification.duration || 4000);
+      }
+    },
+
+    removeNotification(id: string) {
+      const index = this.notifications.findIndex(n => n.id === id);
+      if (index > -1) {
+        this.notifications.splice(index, 1);
+      }
     }
-  };
-
-  const remove = (notification: NotificationOptions) => {
-    const index = notifications.value.indexOf(notification);
-    if (index > -1) {
-      notifications.value.splice(index, 1);
-    }
-  };
-
-  return {
-    notifications,
-    show,
-    remove
-  };
+  }
 }); 

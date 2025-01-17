@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useNotificationStore } from './notification'
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -26,6 +27,8 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  showLoginModal: boolean;
+  showSignupModal: boolean;
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -34,16 +37,36 @@ export const useAuthStore = defineStore('auth', {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
     
-    console.log('Restored token from localStorage:', savedToken); // Debug log
-    
     return {
       user: savedUser ? JSON.parse(savedUser) : null,
       token: savedToken || null,
-      isAuthenticated: !!savedToken
+      isAuthenticated: !!savedToken,
+      showLoginModal: false,
+      showSignupModal: false
     };
   },
 
   actions: {
+    // Modal management
+    toggleLoginModal() {
+      this.showLoginModal = !this.showLoginModal;
+      if (!this.showLoginModal) {
+        document.body.classList.remove('modal-open');
+      } else {
+        document.body.classList.add('modal-open');
+      }
+    },
+
+    toggleSignupModal() {
+      this.showSignupModal = !this.showSignupModal;
+      if (!this.showSignupModal) {
+        document.body.classList.remove('modal-open');
+      } else {
+        document.body.classList.add('modal-open');
+      }
+    },
+
+    // Authentication actions
     async login(credentials: LoginCredentials) {
       try {
         const response = await fetch(`${API_URL}/auth/login`, {
@@ -69,7 +92,9 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        console.log('Saved token:', data.token); // Debug log
+        // Close login modal after successful login
+        this.showLoginModal = false;
+        document.body.classList.remove('modal-open');
 
         return data;
       } catch (error: any) {
@@ -99,6 +124,11 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true;
 
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Close signup modal after successful registration
+        this.showSignupModal = false;
+        document.body.classList.remove('modal-open');
 
         return data;
       } catch (error: any) {
@@ -107,6 +137,8 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
+      const notificationStore = useNotificationStore()
+      
       try {
         if (this.token) {
           await fetch(`${API_URL}/auth/logout`, {
@@ -124,12 +156,21 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = false;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        
+        // Show success notification
+        notificationStore.show({
+          type: 'success',
+          title: 'Logged Out',
+          message: 'You have been successfully logged out',
+          duration: 4000,
+          position: 'top-right'
+        })
       }
     },
 
     async checkAuth() {
       try {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const token = localStorage.getItem('token');
         
         if (!token) {
           this.logout();
@@ -176,6 +217,7 @@ export const useAuthStore = defineStore('auth', {
 
         const data = await response.json();
         this.user = { ...this.user, ...data.user };
+        localStorage.setItem('user', JSON.stringify(this.user));
 
         return data;
       } catch (error: any) {
@@ -208,12 +250,10 @@ export const useAuthStore = defineStore('auth', {
     updateBalance(newBalance: number) {
       if (this.user) {
         this.user.balance = newBalance;
-        // Update localStorage to persist the change
         localStorage.setItem('user', JSON.stringify(this.user));
       }
     },
 
-    // Helper method to safely get user balance
     getUserBalance(): number {
       return this.user?.balance ?? 0;
     }

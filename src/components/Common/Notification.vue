@@ -11,10 +11,15 @@
             <h4 v-if="title" class="notification-title">{{ title }}</h4>
             <p class="notification-message">{{ message }}</p>
           </div>
-          <button class="notification-close" @click="close" aria-label="Close notification">
-            <i class="fas fa-times"></i>
-          </button>
         </div>
+        <button
+          type="button"
+          class="btn-close"
+          @click="close"
+          aria-label="Close notification"
+        >
+          <i class="fa fa-times"></i>
+        </button>
         <div class="notification-progress" :style="progressStyle"></div>
       </div>
     </Transition>
@@ -116,18 +121,19 @@
     z-index: 9999;
     min-width: 300px;
     max-width: 450px;
-    padding: 1rem 2.5rem 1rem 1rem;
+    padding: 1rem 3rem 1rem 1rem;
     background: var(--signbet);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-left: 4px solid;
+    position: relative;
   }
   
   .notification-content {
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    padding-right: 2rem;
+    padding-right: 2.5rem;
   }
   
   .notification i {
@@ -152,29 +158,33 @@
     font-size: 0.9rem;
   }
   
-  .notification-close {
+  .btn-close {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 0.75rem;
+    right: 0.75rem;
     background: none;
     border: none;
     color: var(--textcolor);
+    font-size: 1.5rem;
     cursor: pointer;
     padding: 0.5rem;
-    font-size: 1rem;
-    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    z-index: 2;
   }
   
-  .notification-close:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--white);
+  .btn-close:hover {
+    background: var(--pointbox);
+    color: var(--active-color);
+  }
+  
+  .btn-close i {
+    font-size: 1.2rem;
   }
   
   .notification-progress {

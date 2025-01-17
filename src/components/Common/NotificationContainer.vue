@@ -8,15 +8,17 @@
       >
         <div class="notification-content">
           <i :class="getIconClass(notification.type)"></i>
-          <span class="notification-message">{{ notification.message }}</span>
+          <div class="notification-text">
+            <h4 v-if="notification.title" class="notification-title">{{ notification.title }}</h4>
+            <p class="notification-message">{{ notification.message }}</p>
+          </div>
         </div>
-        <button 
-          class="close-button"
+        <button
+          type="button"
+          class="btn-close"
           @click="removeNotification(notification.id)"
-          aria-label="Close notification"
-        >
-          <i class="icon-close"></i>
-        </button>
+          aria-label="Close"
+        ></button>
       </div>
     </TransitionGroup>
   </div>
@@ -55,92 +57,106 @@ const getIconClass = (type: string) => {
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.8rem;
   max-width: 400px;
   pointer-events: none;
 }
 
 .notification {
-  background: var(--subheader);
-  border: 1px solid var(--leftpreborder);
+  background: var(--signbet);
+  border-left: 4px solid;
   border-radius: 8px;
   padding: 1rem;
   color: var(--white);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
-  cursor: pointer;
-  transition: all 0.2s ease;
   position: relative;
-  padding-right: 2.5rem;
-}
-
-.notification:hover {
-  transform: translateY(-1px);
-  border-color: var(--active-color);
+  min-width: 300px;
 }
 
 .notification-content {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  padding-right: 2.5rem;
 }
 
-.notification i {
-  font-size: 1.2rem;
+.notification-text {
+  flex-grow: 1;
 }
 
-.notification.success {
-  border-left: 4px solid var(--active-color);
+.notification-title {
+  margin: 0;
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 600;
 }
 
-.notification.success i {
+.notification-message {
+  margin: 0.25rem 0 0;
+  color: var(--white);
+  font-size: 0.9rem;
+}
+
+.btn-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 42px;
+  height: 42px;
+  background: none;
+  border: none;
+  color: var(--textcolor);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 1;
+}
+
+.btn-close::before {
+  content: "×";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+}
+
+.btn-close:hover {
+  background: var(--pointbox);
   color: var(--active-color);
 }
 
-.notification.error {
-  border-left: 4px solid var(--button-one);
+.success {
+  border-left-color: var(--active-color);
 }
 
-.notification.error i {
+.success i:first-child {
+  color: var(--active-color);
+}
+
+.error {
+  border-left-color: var(--button-one);
+}
+
+.error i:first-child {
   color: var(--button-one);
 }
 
-.notification.warning {
-  border-left: 4px solid var(--active-two);
+.warning {
+  border-left-color: #f59e0b;
 }
 
-.notification.warning i {
-  color: var(--active-two);
+.warning i:first-child {
+  color: #f59e0b;
 }
 
-.close-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: transparent;
-  border: none;
-  color: var(--textcolor);
-  padding: 0.4rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.close-button:hover {
-  color: var(--white);
-  background: var(--pointbox);
-}
-
-/* Notification animations */
 .notification-enter-active,
 .notification-leave-active {
   transition: all 0.3s ease;
@@ -156,15 +172,6 @@ const getIconClass = (type: string) => {
   transform: translateX(30px);
 }
 
-/* Safe area support */
-@supports (padding: max(0px)) {
-  .notification-container {
-    padding-top: max(20px, env(safe-area-inset-top));
-    padding-right: max(20px, env(safe-area-inset-right));
-  }
-}
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .notification-container {
     top: auto;
@@ -174,24 +181,18 @@ const getIconClass = (type: string) => {
   }
 
   .notification {
-    padding: 0.8rem;
-    font-size: 0.9rem;
-  }
-
-  .notification i {
-    font-size: 1.1rem;
-  }
-
-  .close-button {
-    top: 6px;
-    right: 6px;
-    width: 20px;
-    height: 20px;
+    width: 100%;
+    min-width: auto;
+    margin: 0;
   }
 }
 
-/* Additional mobile safe area support */
 @supports (padding: max(0px)) {
+  .notification-container {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
   @media (max-width: 768px) {
     .notification-container {
       padding-bottom: max(20px, env(safe-area-inset-bottom));
