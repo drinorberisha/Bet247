@@ -2,10 +2,10 @@
   <div class="matches-container">
     <!-- Live Matches Header -->
     <div class="live-header">
-        <h2>Live Matches</h2>
+      <h2>Live Matches</h2>
       <div class="live-filters">
-        <button 
-          v-for="sport in liveSports" 
+        <button
+          v-for="sport in liveSports"
           :key="sport.id"
           :class="{ active: selectedSport === sport.id }"
           @click="selectedSport = sport.id"
@@ -25,18 +25,19 @@
     </div>
 
     <!-- Group matches by league -->
-    <div v-else v-for="(leagueMatches, league) in groupedLiveMatches" :key="league" class="league-section">
-        <div class="league-header">
-        <h3>{{ formatLeagueName(league) }}</h3>
+    <div
+      v-else
+      v-for="(leagueMatches, league) in groupedLiveMatches"
+      :key="league"
+      class="league-section"
+    >
+      <div class="league-header">
+        <h3>{{ formatLeagueName(String(league)) }}</h3>
         <span class="live-indicator">LIVE</span>
       </div>
 
       <div class="match-list">
-        <div 
-          v-for="match in leagueMatches" 
-          :key="match._id" 
-          class="match-row"
-        >
+        <div v-for="match in leagueMatches" :key="match._id" class="match-row">
           <div class="match-info">
             <div class="match-status">
               <span class="live-time">{{ match.liveTime }}'</span>
@@ -49,13 +50,13 @@
           </div>
 
           <div class="odds-container">
-            <button 
+            <button
               v-for="(odd, type) in match.odds"
               :key="type"
               class="odd-box"
               @click="handleOddSelection(match, type, odd)"
-              :class="{ 
-                'selected': isOddSelected(match._id, type)
+              :class="{
+                selected: isOddSelected(match._id, String(type)),
               }"
             >
               <span class="odd-label">{{ type }}</span>
@@ -69,41 +70,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useBettingStore } from '../../stores/betting';
+import { ref, computed } from "vue";
+import { useBettingStore } from "../../stores/betting";
 const hasMatches = computed(() => liveMatches.value.length > 0);
 
 const bettingStore = useBettingStore();
-const selectedSport = ref('all');
+const selectedSport = ref("all");
 
 const liveSports = [
-  { id: 'all', name: 'All', icon: 'icon-all', count: 12 },
-  { id: 'football', name: 'Football', icon: 'icon-football', count: 8 },
-  { id: 'tennis', name: 'Tennis', icon: 'icon-tennis', count: 4 },
-  { id: 'basketball', name: 'Basketball', icon: 'icon-basketball', count: 6 },
+  { id: "all", name: "All", icon: "icon-all", count: 12 },
+  { id: "football", name: "Football", icon: "icon-football", count: 8 },
+  { id: "tennis", name: "Tennis", icon: "icon-tennis", count: 4 },
+  { id: "basketball", name: "Basketball", icon: "icon-basketball", count: 6 },
 ];
 
 // Mock data - replace with real API data
 const liveMatches = ref([
   {
-    _id: 'live1',
-    league: 'Premier League',
-    homeTeam: 'Arsenal',
-    awayTeam: 'Chelsea',
-    liveTime: '32',
-    score: '1-0',
+    _id: "live1",
+    league: "Premier League",
+    homeTeam: "Arsenal",
+    awayTeam: "Chelsea",
+    liveTime: "32",
+    score: "1-0",
     odds: {
-      '1': 2.10,
-      'X': 3.40,
-      '2': 4.20
-    }
+      "1": 2.1,
+      X: 3.4,
+      "2": 4.2,
+    },
   },
   // Add more mock matches
 ]);
 
 const groupedLiveMatches = computed(() => {
   // Group matches by league logic
-  return liveMatches.value.reduce((acc, match) => {
+  return liveMatches.value.reduce((acc: { [key: string]: any[] }, match) => {
     if (!acc[match.league]) {
       acc[match.league] = [];
     }
@@ -116,18 +117,22 @@ const formatLeagueName = (league: string) => {
   return league;
 };
 
-const formatOdd = (odd: number) => {
-  return odd.toFixed(2);
+const formatOdd = (odd: number | string) => {
+  return Number(odd).toFixed(2);
 };
 
-const handleOddSelection = (match: any, type: string, odd: number) => {
+const handleOddSelection = (
+  match: any,
+  type: string | number,
+  odd: string | number
+) => {
   bettingStore.addBet({
     matchId: match._id,
-    type,
-    odd,
+    type: String(type),
+    odd: Number(odd),
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
-    league: match.league
+    league: match.league,
   });
 };
 
@@ -141,7 +146,9 @@ const isOddSelected = (matchId: string, type: string) => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  min-height: calc(100vh - var(--header-height) - 6rem); /* Ensure minimum height */
+  min-height: calc(
+    100vh - var(--header-height) - 6rem
+  ); /* Ensure minimum height */
 }
 
 .live-header {
@@ -209,4 +216,4 @@ const isOddSelected = (matchId: string, type: string) => {
 }
 
 /* Rest of the styles from SportMatches.vue */
-</style> 
+</style>

@@ -4,8 +4,8 @@
     <div class="today-header">
       <h2>Today's Matches</h2>
       <div class="time-filters">
-        <button 
-          v-for="timeSlot in timeSlots" 
+        <button
+          v-for="timeSlot in timeSlots"
           :key="timeSlot.id"
           :class="{ active: selectedTimeSlot === timeSlot.id }"
           @click="selectedTimeSlot = timeSlot.id"
@@ -25,20 +25,23 @@
     </div>
 
     <!-- Group matches by league -->
-    <div v-else v-for="(leagueMatches, league) in groupedTodayMatches" :key="league" class="league-section">
+    <div
+      v-else
+      v-for="(leagueMatches, league) in groupedTodayMatches"
+      :key="league"
+      class="league-section"
+    >
       <div class="league-header">
         <h3>{{ formatLeagueName(league) }}</h3>
       </div>
 
       <div class="match-list">
-        <div 
-          v-for="match in leagueMatches" 
-          :key="match._id" 
-          class="match-row"
-        >
+        <div v-for="match in leagueMatches" :key="match._id" class="match-row">
           <div class="match-info">
             <div class="match-datetime">
-              <div class="match-time">{{ formatMatchTime(match.startTime) }}</div>
+              <div class="match-time">
+                {{ formatMatchTime(match.startTime) }}
+              </div>
             </div>
             <div class="match-teams">
               <div class="team home">{{ match.homeTeam }}</div>
@@ -47,13 +50,13 @@
           </div>
 
           <div class="odds-container">
-            <button 
+            <button
               v-for="(odd, type) in match.odds"
               :key="type"
               class="odd-box"
               @click="handleOddSelection(match, type, odd)"
-              :class="{ 
-                'selected': isOddSelected(match._id, type)
+              :class="{
+                selected: isOddSelected(match._id, String(type)),
               }"
             >
               <span class="odd-label">{{ type }}</span>
@@ -67,39 +70,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useBettingStore } from '../../stores/betting';
+import { ref, computed } from "vue";
+import { useBettingStore } from "../../stores/betting";
 
 const bettingStore = useBettingStore();
-const selectedTimeSlot = ref('all');
+const selectedTimeSlot = ref("all");
 
 const timeSlots = [
-  { id: 'all', label: 'All Day', count: 24 },
-  { id: 'morning', label: 'Morning', count: 8 },
-  { id: 'afternoon', label: 'Afternoon', count: 10 },
-  { id: 'evening', label: 'Evening', count: 6 },
+  { id: "all", label: "All Day", count: 24 },
+  { id: "morning", label: "Morning", count: 8 },
+  { id: "afternoon", label: "Afternoon", count: 10 },
+  { id: "evening", label: "Evening", count: 6 },
 ];
 
-// Mock data - replace with real API data
-const todayMatches = ref([
+interface Match {
+  _id: string;
+  league: string;
+  homeTeam: string;
+  awayTeam: string;
+  startTime: string;
+  odds: Record<string, number>;
+}
+
+const todayMatches = ref<Match[]>([
   {
-    _id: 'today1',
-    league: 'Premier League',
-    homeTeam: 'Liverpool',
-    awayTeam: 'Man City',
-    startTime: '20:45',
+    _id: "today1",
+    league: "Premier League",
+    homeTeam: "Liverpool",
+    awayTeam: "Man City",
+    startTime: "20:45",
     odds: {
-      '1': 2.50,
-      'X': 3.20,
-      '2': 3.80
-    }
+      "1": 2.5,
+      X: 3.2,
+      "2": 3.8,
+    },
   },
   // Add more mock matches
 ]);
 
 const groupedTodayMatches = computed(() => {
-  // Group matches by league logic
-  return todayMatches.value.reduce((acc, match) => {
+  return todayMatches.value.reduce((acc: Record<string, Match[]>, match) => {
     if (!acc[match.league]) {
       acc[match.league] = [];
     }
@@ -120,14 +130,14 @@ const formatOdd = (odd: number) => {
   return odd.toFixed(2);
 };
 
-const handleOddSelection = (match: any, type: string, odd: number) => {
+const handleOddSelection = (match: Match, type: string, odd: number) => {
   bettingStore.addBet({
     matchId: match._id,
-    type,
+    type: String(type),
     odd,
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
-    league: match.league
+    league: match.league,
   });
 };
 
@@ -210,4 +220,4 @@ const hasMatches = computed(() => todayMatches.value.length > 0);
   font-size: 0.9rem;
   opacity: 0.7;
 }
-</style> 
+</style>

@@ -1,11 +1,15 @@
 <template>
-  <div 
-    class="betslip-container" 
-    :class="{ 'expanded': isExpanded, 'closed': isClosed }"
+  <div
+    class="betslip-container"
+    :class="{ expanded: isExpanded, closed: isClosed }"
     ref="betslipContainer"
   >
     <!-- Move swipe handle outside main content -->
-    <div class="swipe-handle" @touchstart="handleTouchStart" @touchmove="handleTouchMove">
+    <div
+      class="swipe-handle"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+    >
       <div class="handle-indicator"></div>
     </div>
 
@@ -13,10 +17,13 @@
       <!-- Rest of the content -->
       <div class="betslip-header">
         <div class="header-tabs">
-          <button 
-            v-for="mode in ['single', 'multi']" 
+          <button
+            v-for="mode in ['single', 'multi']"
             :key="mode"
-            :class="['tab-button', { active: bettingStore.activeMode === mode }]"
+            :class="[
+              'tab-button',
+              { active: bettingStore.activeMode === mode },
+            ]"
             @click="bettingStore.setMode(mode)"
           >
             {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
@@ -25,7 +32,11 @@
             </span>
           </button>
         </div>
-        <button class="clear-all" @click="bettingStore.clearAllBets" v-if="bets.length">
+        <button
+          class="clear-all"
+          @click="bettingStore.clearAllBets"
+          v-if="bets.length"
+        >
           <i class="icon-trash"></i>
         </button>
       </div>
@@ -47,17 +58,24 @@
                   <span class="vs">vs</span>
                   <span class="team away">{{ bet.awayTeam }}</span>
                 </div>
-                <button class="remove-bet" @click="bettingStore.removeBet(bet.id)">
-                  <i class="icon-close"></i>
+                <button
+                  class="remove-bet"
+                  @click="bettingStore.removeBet(bet.id)"
+                >
+                  &times;
                 </button>
               </div>
 
               <div class="selections-list">
-                <div v-for="(selection, index) in bet.selections" 
-                     :key="index" 
-                     class="selection-item">
+                <div
+                  v-for="(selection, index) in bet.selections"
+                  :key="index"
+                  class="selection-item"
+                >
                   <span class="selection-type">{{ selection.type }}</span>
-                  <span class="selection-odds">{{ formatOdds(selection.odds) }}</span>
+                  <span class="selection-odds">{{
+                    formatOdds(selection.odds)
+                  }}</span>
                 </div>
               </div>
 
@@ -69,12 +87,12 @@
                   </button>
                 </div>
                 <div class="stake-input">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     v-model="bet.stake"
                     placeholder="Enter stake"
                     @input="updateSingleStake($event, bet.id)"
-                  >
+                  />
                   <span class="currency">$</span>
                 </div>
               </div>
@@ -84,15 +102,19 @@
               </div>
             </div>
             <div class="single-summary" v-if="bets.length">
-    <div class="summary-row">
-      <span class="summary-label">Total Stake</span>
-      <span class="summary-value">${{ formatOdds(getTotalSingleStake) }}</span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">Total Potential Win</span>
-      <span class="summary-value">${{ formatOdds(getTotalSinglePotentialWin) }}</span>
-    </div>
-  </div>
+              <div class="summary-row">
+                <span class="summary-label">Total Stake</span>
+                <span class="summary-value"
+                  >${{ formatOdds(getTotalSingleStake) }}</span
+                >
+              </div>
+              <div class="summary-row">
+                <span class="summary-label">Total Potential Win</span>
+                <span class="summary-value"
+                  >${{ formatOdds(getTotalSinglePotentialWin) }}</span
+                >
+              </div>
+            </div>
           </div>
 
           <!-- Multi Mode -->
@@ -100,18 +122,32 @@
             <div class="bet-list">
               <div v-for="bet in bets" :key="bet.id" class="bet-card">
                 <div class="bet-header">
-                  <div class="bet-teams">
+                  <div
+                    class="bet-teams"
+                    :class="{
+                      conflicting: bettingStore.conflictingMatchIds.includes(
+                        bet.matchId
+                      ),
+                    }"
+                  >
                     <span class="team home">{{ bet.homeTeam }}</span>
                     <span class="vs">vs</span>
                     <span class="team away">{{ bet.awayTeam }}</span>
                   </div>
-                  <button class="remove-bet" @click="bettingStore.removeBet(bet.id)">
-                    <i class="icon-close"></i>
+                  <button
+                    class="remove-bet"
+                    @click="bettingStore.removeBet(bet.id)"
+                  >
+                    &times;
                   </button>
                 </div>
                 <div class="selection-item">
-                  <span class="selection-type">{{ bet.selections[0]?.type }}</span>
-                  <span class="selection-odds">{{ formatOdds(bet.selections[0]?.odds) }}</span>
+                  <span class="selection-type">{{
+                    bet.selections[0]?.type
+                  }}</span>
+                  <span class="selection-odds">{{
+                    formatOdds(bet.selections[0]?.odds)
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -124,12 +160,12 @@
                 </button>
               </div>
               <div class="stake-input">
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   v-model="bettingStore.multiStake"
                   placeholder="Enter stake"
                   @input="updateMultiStake"
-                >
+                />
                 <span class="currency">$</span>
               </div>
             </div>
@@ -137,12 +173,24 @@
             <div class="multi-summary">
               <div class="summary-row">
                 <span class="summary-label">Total Odds</span>
-                <span class="summary-value">{{ formatOdds(bettingStore.multiOdds) }}</span>
+                <span class="summary-value">{{
+                  formatOdds(bettingStore.multiOdds)
+                }}</span>
               </div>
               <div class="summary-row">
                 <span class="summary-label">Potential Win</span>
-                <span class="summary-value">${{ formatOdds(bettingStore.potentialMultiWin) }}</span>
+                <span class="summary-value"
+                  >${{ formatOdds(bettingStore.potentialMultiWin) }}</span
+                >
               </div>
+            </div>
+
+            <!-- Warning message only for multi mode -->
+            <div
+              v-if="bettingStore.conflictingMatchIds.length > 0"
+              class="conflict-warning"
+            >
+              Only one selection per match is allowed in multi mode
             </div>
           </div>
         </template>
@@ -153,14 +201,15 @@
         <div v-if="betError" class="bet-error">
           {{ betError }}
         </div>
-        <button 
+        <button
           class="place-bet-button"
           :disabled="!canPlaceBet || isPlacingBet"
           @click="placeBet"
         >
           <span v-if="isPlacingBet">Placing Bet...</span>
           <span v-else>
-            Place {{ bettingStore.activeMode === 'multi' ? 'Multi' : 'Single' }} Bet
+            Place
+            {{ bettingStore.activeMode === "multi" ? "Multi" : "Single" }} Bet
           </span>
         </button>
       </div>
@@ -169,9 +218,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useBettingStore } from '../../stores/betting';
-import { useNotificationStore } from '../../stores/notification';
+import { computed, ref } from "vue";
+import { useBettingStore } from "../../stores/betting";
+import { useNotificationStore } from "../../stores/notification";
 
 const bettingStore = useBettingStore();
 const notificationStore = useNotificationStore();
@@ -179,16 +228,19 @@ const notificationStore = useNotificationStore();
 const bets = computed(() => bettingStore.bets);
 
 const getBetCount = (mode: string) => {
-  if (mode === 'multi' && bets.value.length > 1) {
+  if (mode === "multi" && bets.value.length > 1) {
     return 1;
   }
-  return mode === 'single' ? bets.value.length : 0;
+  return mode === "single" ? bets.value.length : 0;
 };
 
 const formatOdds = (odds: number) => (odds || 0).toFixed(2);
 
 const calculateSingleWin = (bet: any) => {
-  return (bet.stake * bet.selections.reduce((total: number, s: any) => total * s.odds, 1)).toFixed(2);
+  return (
+    bet.stake *
+    bet.selections.reduce((total: number, s: any) => total * s.odds, 1)
+  ).toFixed(2);
 };
 
 const updateSingleStake = (event: Event, betId: string) => {
@@ -202,15 +254,15 @@ const updateMultiStake = (event: Event) => {
 };
 
 const canPlaceBet = computed(() => {
-  if (bettingStore.activeMode === 'single') {
-    return bets.value.some(bet => bet.stake > 0);
+  if (bettingStore.activeMode === "single") {
+    return bets.value.some((bet) => bet.stake > 0);
   } else {
     return bets.value.length > 1 && bettingStore.multiStake > 0;
   }
 });
 
 const isPlacingBet = ref(false);
-const betError = ref('');
+const betError = ref("");
 
 const placeBet = async () => {
   if (!canPlaceBet.value) return;
@@ -218,37 +270,39 @@ const placeBet = async () => {
   // Validate bet before making API call
   const validation = bettingStore.validateBet();
   if (!validation.valid) {
-    betError.value = validation.message || 'Invalid bet';
+    betError.value = validation.message || "Invalid bet";
     return;
   }
 
   try {
     isPlacingBet.value = true;
-    betError.value = '';
-    
+    betError.value = "";
+
     await bettingStore.placeBet();
-    
+
     // Show success notification
     notificationStore.show({
-      type: 'success',
-      title: 'Bet Placed Successfully',
-      message: bettingStore.activeMode === 'multi' 
-        ? 'Your multi bet has been placed successfully!'
-        : 'Your single bet has been placed successfully!',
+      type: "success",
+      title: "Bet Placed Successfully",
+      message:
+        bettingStore.activeMode === "multi"
+          ? "Your multi bet has been placed successfully!"
+          : "Your single bet has been placed successfully!",
       duration: 5000,
-      position: 'top-right'
+      position: "top-right",
     });
-    
   } catch (error: any) {
-    betError.value = error.response?.data?.message || 'Failed to place bet';
-    
+    betError.value = error.response?.data?.message || "Failed to place bet";
+
     // Show error notification
     notificationStore.show({
-      type: 'error',
-      title: 'Bet Placement Failed',
-      message: error.response?.data?.message || 'Failed to place bet. Please try again.',
+      type: "error",
+      title: "Bet Placement Failed",
+      message:
+        error.response?.data?.message ||
+        "Failed to place bet. Please try again.",
       duration: 5000,
-      position: 'top-right'
+      position: "top-right",
     });
   } finally {
     isPlacingBet.value = false;
@@ -274,7 +328,7 @@ const handleTouchStart = (e: TouchEvent) => {
 
 const handleTouchMove = (e: TouchEvent) => {
   if (!betslipContainer.value) return;
-  
+
   const touchMove = e.touches[0].clientY;
   const delta = touchStart.value - touchMove;
 
@@ -297,20 +351,40 @@ const handleTouchMove = (e: TouchEvent) => {
   }
 };
 
-
 const getTotalSingleStake = computed(() => {
   return bets.value.reduce((total, bet) => total + (bet.stake || 0), 0);
 });
 
 const getTotalSinglePotentialWin = computed(() => {
   return bets.value.reduce((total, bet) => {
-    const betWin = bet.stake * bet.selections.reduce((odds, s) => odds * s.odds, 1);
+    const betWin =
+      bet.stake * bet.selections.reduce((odds, s) => odds * s.odds, 1);
     return total + (betWin || 0);
   }, 0);
 });
+
+const isSingleMode = computed(() => bettingStore.activeMode === "single");
 </script>
 
 <style scoped>
+.remove-bet {
+  color: #00ff00;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  font-size: 20px;
+}
+
+.remove-bet i,
+.remove-bet span {
+  font-weight: bold;
+  line-height: 1;
+}
 
 .single-summary {
   background: var(--signbet);
@@ -456,29 +530,19 @@ const getTotalSinglePotentialWin = computed(() => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  transition: color 0.3s ease;
 }
 
 .team {
   color: var(--white);
+  font-size: 12px;
+  transition: color 0.3s ease;
 }
 
 .vs {
   color: var(--textcolor);
   font-size: 0.8rem;
   margin: 0 0.3rem;
-}
-
-.remove-bet {
-  background: none;
-  border: none;
-  color: var(--textcolor);
-  padding: 0.3rem;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.remove-bet:hover {
-  color: var(--button-one);
 }
 
 .selection-item {
@@ -688,8 +752,6 @@ const getTotalSinglePotentialWin = computed(() => {
 .stake-container {
   background: var(--signbet);
   border-radius: 6px;
-  padding: 1rem;
-  margin: 1rem 0;
 }
 
 /* Updated mobile styles */
@@ -896,12 +958,52 @@ const getTotalSinglePotentialWin = computed(() => {
     margin-top: 1rem;
   }
 }
+.betslip-content .bet-list {
+  max-height: 650px; /* Set a fixed height for the bet-list */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+  padding-right: 10px; /* Add padding to prevent scrollbar overlap */
+  scrollbar-width: thin; /* Makes the scrollbar thinner (for Firefox) */
+  scrollbar-color: #6c757d #6c657d; /* Customize scrollbar width (for modern browsers) */
+}
 
+.betslip-content .bet-list::-webkit-scrollbar {
+  width: 8px; /* Set width of scrollbar for WebKit browsers */
+}
+
+.betslip-content .bet-list::-webkit-scrollbar-thumb {
+  background-color: #ccc; /* Style the scrollbar thumb */
+  border-radius: 4px;
+}
+
+.betslip-content .bet-list::-webkit-scrollbar-thumb:hover {
+  background-color: #aaa; /* Add hover effect on scrollbar thumb */
+}
 .bet-error {
   color: var(--button-one);
   text-align: center;
   padding: 0.5rem;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
+}
+
+.bet-teams.conflicting {
+  color: var(--button-one);
+}
+
+.bet-teams.conflicting .team,
+.bet-teams.conflicting .vs {
+  color: var(--button-one);
+  font-weight: 600;
+}
+
+.conflict-warning {
+  background: var(--signbet);
+  color: var(--button-one);
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  text-align: center;
+  font-weight: 500;
 }
 </style>
