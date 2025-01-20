@@ -31,13 +31,13 @@ export const SPORTS_CONFIG = {
     'basketball_nba',
     'basketball_euroleague',
     'basketball_spain_acb',
-    'basketball_italy_lega_a',
-    'basketball_greece_basket_league'
+    // 'basketball_italy_lega_a',
+    // 'basketball_greece_basket_league'
   ],
   baseball: [
     'baseball_mlb',
-    'baseball_npb', // Japanese League
-    'baseball_kbo'  // Korean League
+    // 'baseball_npb', // Japanese League
+    // 'baseball_kbo'  // Korean League
   ],
   tennis: [
     'tennis_atp_singles',
