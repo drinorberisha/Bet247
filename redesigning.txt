@@ -1,0 +1,28 @@
+- [x] SportMatches.vue (Completed)
+- [ ] BetSlip.vue (Next up)
+- [ ] OddsDisplay.vue
+- [ ] MatchFilters.vue
+- [ ] LiveScores.vue
+
+2. Navigation Components:
+- [ ] MainHeader.vue
+- [ ] SideNav.vue
+- [ ] SportsTabs.vue
+- [ ] BettingMenu.vue
+
+3. User Interface Components:
+- [ ] UserProfile.vue
+- [ ] LoginForm.vue
+- [ ] RegisterForm.vue
+- [ ] NotificationPanel.vue
+
+4. Utility Components:
+- [ ] LoadingSpinner.vue
+- [ ] ErrorMessage.vue
+- [ ] ConfirmationModal.vue
+- [ ] ToastNotifications.vue
+
+5. Page Layouts:
+- [ ] HomeLayout.vue
+- [ ] BettingLayout.vue
+- [ ] AccountLayout.vue
