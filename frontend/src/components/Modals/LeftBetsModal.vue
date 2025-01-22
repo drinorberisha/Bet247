@@ -1,8 +1,8 @@
 <template>
   <div class="left-bets-modal">
     <div class="sports-list">
-      <button 
-        v-for="sport in sports" 
+      <button
+        v-for="sport in sports"
         :key="sport.id"
         class="sport-button"
         :class="{ active: currentTab === sport.tab }"
@@ -21,25 +21,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useTabStore } from '../../stores/tab';
+import { ref, computed } from "vue";
+import { useTabStore } from "../../stores/tab";
 
 const tabStore = useTabStore();
 
 const sports = [
-  { id: 1, name: 'Home', tab: 'home', icon: 'icon-home', count: 0 },
-  { id: 2, name: 'Live', tab: 'live', icon: 'icon-live', count: 12 },
-  { id: 3, name: 'Today', tab: 'today', icon: 'icon-calendar', count: 24 },
-  { id: 4, name: 'Football', tab: 'football', icon: 'icon-football', count: 8 },
-  { id: 5, name: 'Tennis', tab: 'tennis', icon: 'icon-tennis', count: 4 },
-  { id: 6, name: 'Basketball', tab: 'basketball', icon: 'icon-basketball', count: 6 },
-  { id: 7, name: 'Ice Hockey', tab: 'icehockey', icon: 'icon-hockey', count: 3 },
-  { id: 8, name: 'Handball', tab: 'handball', icon: 'icon-handball', count: 2 },
-  { id: 9, name: 'American Football', tab: 'american', icon: 'icon-football-american', count: 4 },
-  { id: 10, name: 'Baseball', tab: 'baseball', icon: 'icon-baseball', count: 5 },
-  { id: 11, name: 'Horse Racing', tab: 'horseracing', icon: 'icon-horse', count: 7 },
-  { id: 12, name: 'Virtual', tab: 'virtual', icon: 'icon-virtual', count: 0 },
-  { id: 13, name: 'Favourites', tab: 'favourites', icon: 'icon-star', count: 0 },
+  { id: 1, name: "Home", tab: "home", icon: "icon-home", count: 0 },
+  { id: 2, name: "Live", tab: "live", icon: "icon-live", count: 12 },
+  { id: 3, name: "Today", tab: "today", icon: "icon-calendar", count: 23 },
+  { id: 4, name: "Football", tab: "football", icon: "icon-football", count: 8 },
+  { id: 5, name: "Tennis", tab: "tennis", icon: "icon-tennis", count: 4 },
+  {
+    id: 6,
+    name: "Basketball",
+    tab: "basketball",
+    icon: "icon-basketball",
+    count: 6,
+  },
+  {
+    id: 7,
+    name: "Ice Hockey",
+    tab: "icehockey",
+    icon: "icon-hockey",
+    count: 3,
+  },
+  { id: 8, name: "Handball", tab: "handball", icon: "icon-handball", count: 2 },
+  {
+    id: 9,
+    name: "American Football",
+    tab: "american",
+    icon: "icon-football-american",
+    count: 4,
+  },
+  {
+    id: 10,
+    name: "Baseball",
+    tab: "baseball",
+    icon: "icon-baseball",
+    count: 5,
+  },
+  {
+    id: 11,
+    name: "Horse Racing",
+    tab: "horseracing",
+    icon: "icon-horse",
+    count: 7,
+  },
+  { id: 12, name: "Virtual", tab: "virtual", icon: "icon-virtual", count: 0 },
+  {
+    id: 13,
+    name: "Favourites",
+    tab: "favourites",
+    icon: "icon-star",
+    count: 0,
+  },
 ];
 
 const currentTab = computed(() => tabStore.currentTab);
