@@ -8,95 +8,152 @@
       </div>
 
       <!-- Content -->
-      <div v-else class="tab-content">
-        <!-- Home Tab -->
-        <div v-if="currentTab === 'home'" class="tab-section">
-          <SportMatches 
-            v-for="sport in availableSports"
-            :key="sport.key"
-            :sportKey="sport.key"
-            :sportTitle="sport.title"
-            :tabId="sport.tabId"
-            :iconClass="sport.iconClass"
-            :tableClass="sport.tableClass"
-          />
-        </div>
 
-        <!-- Live Tab -->
-        <div v-else-if="currentTab === 'live'" class="tab-section">
-          <LiveMatches />
-        </div>
+      <!-- Home Tab -->
+      <div v-if="currentTab === 'home'" class="tab-section">
+        <SportMatches
+          v-for="sport in availableSports"
+          :key="sport.key"
+          :sportKey="sport.key"
+          :sportTitle="sport.title"
+          :tabId="sport.tabId"
+          :iconClass="sport.iconClass"
+          :tableClass="sport.tableClass"
+        />
+      </div>
 
-        <!-- Today Tab -->
-        <div v-else-if="currentTab === 'today'" class="tab-section">
-          <TodayMatches />
-        </div>
+      <!-- Live Tab -->
+      <div v-else-if="currentTab === 'live'" class="tab-section">
+        <LiveMatches />
+      </div>
 
-        <!-- Sport Specific Tabs -->
-        <div v-else class="tab-section">
-          <SportMatches 
-            :sportKey="getCurrentSportKey"
-            :sportTitle="getCurrentSportTitle"
-            :tabId="currentTab"
-            :iconClass="getCurrentSportIcon"
-            :tableClass="`${currentTab}-table`"
-          />
-        </div>
+      <!-- Today Tab -->
+      <div v-else-if="currentTab === 'today'" class="tab-section">
+        <TodayMatches />
+      </div>
+
+      <!-- Sport Specific Tabs -->
+      <div v-else class="tab-section">
+        <SportMatches
+          :sportKey="getCurrentSportKey"
+          :sportTitle="getCurrentSportTitle"
+          :tabId="currentTab"
+          :iconClass="getCurrentSportIcon"
+          :tableClass="`${currentTab}-table`"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useTabStore } from '../../stores/tab';
-import SportMatches from '../Sports/SportMatches.vue';
-import LiveMatches from '../Sports/LiveMatches.vue';
-import TodayMatches from '../Sports/TodayMatches.vue';
+import { ref, computed, watch } from "vue";
+import { useTabStore } from "../../stores/tab";
+import SportMatches from "../Sports/SportMatches.vue";
+import LiveMatches from "../Sports/LiveMatches.vue";
+import TodayMatches from "../Sports/TodayMatches.vue";
 
 const tabStore = useTabStore();
 const currentTab = computed(() => tabStore.currentTab);
 const isLoading = ref(false);
 
 const availableSports = [
-  { key: 'soccer', title: 'Football', tabId: 'football', iconClass: 'icon-football', tableClass: 'football-table' },
-  { key: 'tennis', title: 'Tennis', tabId: 'tennis', iconClass: 'icon-tennis', tableClass: 'tennis-table' },
-  { key: 'basketball', title: 'Basketball', tabId: 'basketball', iconClass: 'icon-basketball', tableClass: 'basketball-table' },
-  { key: 'icehockey', title: 'Ice Hockey', tabId: 'icehockey', iconClass: 'icon-hockey', tableClass: 'hockey-table' },
-  { key: 'handball', title: 'Handball', tabId: 'handball', iconClass: 'icon-handball', tableClass: 'handball-table' },
-  { key: 'american-football', title: 'American Football', tabId: 'american', iconClass: 'icon-football-american', tableClass: 'american-table' },
-  { key: 'baseball', title: 'Baseball', tabId: 'baseball', iconClass: 'icon-baseball', tableClass: 'baseball-table' },
-  { key: 'horse-racing', title: 'Horse Racing', tabId: 'horseracing', iconClass: 'icon-horse', tableClass: 'horse-table' },
+  {
+    key: "soccer",
+    title: "Football",
+    tabId: "football",
+    iconClass: "icon-football",
+    tableClass: "football-table",
+  },
+  {
+    key: "tennis",
+    title: "Tennis",
+    tabId: "tennis",
+    iconClass: "icon-tennis",
+    tableClass: "tennis-table",
+  },
+  {
+    key: "basketball",
+    title: "Basketball",
+    tabId: "basketball",
+    iconClass: "icon-basketball",
+    tableClass: "basketball-table",
+  },
+  {
+    key: "icehockey",
+    title: "Ice Hockey",
+    tabId: "icehockey",
+    iconClass: "icon-hockey",
+    tableClass: "hockey-table",
+  },
+  {
+    key: "handball",
+    title: "Handball",
+    tabId: "handball",
+    iconClass: "icon-handball",
+    tableClass: "handball-table",
+  },
+  {
+    key: "american-football",
+    title: "American Football",
+    tabId: "american",
+    iconClass: "icon-football-american",
+    tableClass: "american-table",
+  },
+  {
+    key: "baseball",
+    title: "Baseball",
+    tabId: "baseball",
+    iconClass: "icon-baseball",
+    tableClass: "baseball-table",
+  },
+  {
+    key: "horse-racing",
+    title: "Horse Racing",
+    tabId: "horseracing",
+    iconClass: "icon-horse",
+    tableClass: "horse-table",
+  },
 ];
 
 // Computed properties for current sport
 const getCurrentSportKey = computed(() => {
-  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
-  return sport?.key || '';
+  const sport = availableSports.find(
+    (sport) => sport.tabId === currentTab.value
+  );
+  return sport?.key || "";
 });
 
 const getCurrentSportTitle = computed(() => {
-  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
-  return sport?.title || '';
+  const sport = availableSports.find(
+    (sport) => sport.tabId === currentTab.value
+  );
+  return sport?.title || "";
 });
 
 const getCurrentSportIcon = computed(() => {
-  const sport = availableSports.find(sport => sport.tabId === currentTab.value);
-  return sport?.iconClass || '';
+  const sport = availableSports.find(
+    (sport) => sport.tabId === currentTab.value
+  );
+  return sport?.iconClass || "";
 });
 
 // Handle tab changes
-watch(currentTab, async (newTab) => {
-  isLoading.value = true;
-  try {
-    // Simulate data loading - replace with actual API calls
-    await new Promise(resolve => setTimeout(resolve, 300));
-  } catch (error) {
-    console.error('Error loading tab data:', error);
-  } finally {
-    isLoading.value = false;
-  }
-}, { immediate: true });
+watch(
+  currentTab,
+  async (newTab) => {
+    isLoading.value = true;
+    try {
+      // Simulate data loading - replace with actual API calls
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    } catch (error) {
+      console.error("Error loading tab data:", error);
+    } finally {
+      isLoading.value = false;
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
