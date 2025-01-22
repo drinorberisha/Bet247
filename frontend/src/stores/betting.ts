@@ -280,68 +280,111 @@ export const useBettingStore = defineStore("betting", {
         throw new Error("Authentication required");
       }
 
-      // Add debug logging
-      console.log("Auth token:", authStore.token);
-
       this.loading = true;
       this.error = null;
 
       try {
-        // Calculate total odds
-        const totalOdds =
-          this.activeMode === "multi"
-            ? this.multiOdds
-            : this.bets[0]?.selections[0]?.odds || 0;
+        if (this.activeMode === "single") {
+          // Get only the bets that have stakes
+          const betsToPlace = this.bets.filter((bet) => bet.stake > 0);
+          const placedBetIds: string[] = [];
 
-        // Calculate amount and potential win
-        const amount =
-          this.activeMode === "multi"
-            ? this.multiStake
-            : this.bets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
+          for (const bet of betsToPlace) {
+            const formattedBet = {
+              betType: "single",
+              amount: bet.stake,
+              totalOdds: bet.selections[0].odds,
+              potentialWin: bet.stake * bet.selections[0].odds,
+              selections: [
+                {
+                  matchId: bet.matchId,
+                  selection: bet.selections[0].type,
+                  odds: bet.selections[0].odds,
+                  sportKey: bet.sportKey,
+                  event: `${bet.homeTeam} vs ${bet.awayTeam}`,
+                  market: this.getMarketType(bet.selections[0].type),
+                  sport: bet.sportKey.split(":")[0],
+                  homeTeam: bet.homeTeam,
+                  awayTeam: bet.awayTeam,
+                },
+              ],
+            };
 
-        const potentialWin = amount * totalOdds;
+            try {
+              const response = await axios.post<PlaceBetResponse>(
+                `${API_URL}/bets/place`,
+                formattedBet,
+                {
+                  headers: {
+                    Authorization: `Bearer ${authStore.token}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
 
-        const payload = {
-          betType: this.activeMode === "multi" ? "multiple" : "single",
-          amount,
-          totalOdds,
-          potentialWin,
-          selections: this.bets.flatMap((bet) =>
-            bet.selections.map((selection) => ({
+              if (response.data.success) {
+                // Add this bet's ID to the list of successfully placed bets
+                placedBetIds.push(bet.id);
+                // Update user balance
+                authStore.updateBalance(response.data.newBalance);
+              }
+            } catch (error) {
+              console.error(
+                `Failed to place bet for match ${bet.matchId}:`,
+                error
+              );
+              // Continue with other bets even if one fails
+              continue;
+            }
+          }
+
+          // Remove only the successfully placed bets
+          placedBetIds.forEach((id) => {
+            const index = this.bets.findIndex((bet) => bet.id === id);
+            if (index !== -1) {
+              this.bets.splice(index, 1);
+            }
+          });
+
+          return { success: true, newBalance: authStore.getUserBalance() };
+        } else {
+          // Multi bet logic remains unchanged
+          const formattedBet = {
+            betType: "multiple",
+            amount: this.multiStake,
+            totalOdds: this.multiOdds,
+            potentialWin: this.potentialMultiWin,
+            selections: this.bets.map((bet) => ({
               matchId: bet.matchId,
-              selection: selection.type,
-              odds: selection.odds,
+              selection: bet.selections[0].type,
+              odds: bet.selections[0].odds,
               sportKey: bet.sportKey,
               event: `${bet.homeTeam} vs ${bet.awayTeam}`,
-              market: this.getMarketType(selection.type),
+              market: this.getMarketType(bet.selections[0].type),
               sport: bet.sportKey.split(":")[0],
               homeTeam: bet.homeTeam,
               awayTeam: bet.awayTeam,
-            }))
-          ),
-        };
+            })),
+          };
 
-        console.log("Placing bet with payload:", payload); // Debug log
+          const response = await axios.post<PlaceBetResponse>(
+            `${API_URL}/bets/place`,
+            formattedBet,
+            {
+              headers: {
+                Authorization: `Bearer ${authStore.token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-        const response = await axios.post<PlaceBetResponse>(
-          `${API_URL}/bets/place`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${authStore.token}`,
-              "Content-Type": "application/json",
-            },
+          if (response.data.success) {
+            authStore.updateBalance(response.data.newBalance);
+            this.clearAllBets(); // Multi bets still clear all selections
           }
-        );
 
-        console.log("Bet placement response:", response.data); // Debug log
-
-        if (response.data.success) {
-          authStore.updateBalance(response.data.newBalance);
-          this.clearAllBets();
+          return response.data;
         }
-
-        return response.data;
       } catch (error: any) {
         console.error("Bet placement error:", error.response?.data || error);
         this.error = error.response?.data?.message || "Failed to place bet";
