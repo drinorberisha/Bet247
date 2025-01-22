@@ -20,12 +20,22 @@
       <span>Events</span>
     </RouterLink>
 
+    <button
+      class="nav-item betslip-button"
+      @click="toggleBetslip"
+      :class="{ active: isBetslipOpen || hasBets }"
+    >
+      <i class="fas fa-ticket-alt"></i>
+      <span>Betslip</span>
+      <span v-if="totalBets" class="bet-count">{{ totalBets }}</span>
+    </button>
+
     <RouterLink
       to="/my-bets"
       class="nav-item"
       :class="{ active: currentRoute === '/my-bets' }"
     >
-      <i class="fas fa-ticket-alt"></i>
+      <i class="fas fa-list"></i>
       <span>My Bets</span>
     </RouterLink>
 
@@ -45,13 +55,23 @@
 import { RouterLink, useRoute } from "vue-router";
 import { onMounted, ref, computed } from "vue";
 import { Modal } from "bootstrap";
+import { useBettingStore } from "../../stores/betting";
 
 const route = useRoute();
+const bettingStore = useBettingStore();
 const currentRoute = computed(() => route.path);
 const isMenuOpen = ref(false);
+const isBetslipOpen = ref(false);
+
+// Get total number of bets
+const totalBets = computed(() => bettingStore.bets.length);
+const hasBets = computed(() => totalBets.value > 0);
 
 const eventsModal = ref<Modal | null>(null);
 const betsModal = ref<Modal | null>(null);
+
+// Add emitter for betslip state
+const emit = defineEmits(["toggle-betslip"]);
 
 onMounted(() => {
   const eventsModalElement = document.getElementById("eventsp");
@@ -87,6 +107,16 @@ const openBetsModal = () => {
   }
 };
 
+const toggleBetslip = () => {
+  const betslipContainer = document.querySelector(".betslip-container");
+  if (betslipContainer) {
+    isBetslipOpen.value = !isBetslipOpen.value;
+    betslipContainer.classList.toggle("closed");
+    betslipContainer.classList.toggle("expanded");
+    emit("toggle-betslip", isBetslipOpen.value);
+  }
+};
+
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
@@ -119,6 +149,32 @@ const toggleMenu = () => {
   min-width: 64px;
   border-radius: 8px;
   transition: all 0.2s ease;
+  position: relative; /* Added for bet count positioning */
+}
+
+/* New styles for betslip button */
+.betslip-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bet-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--active-color);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
 }
 
 .nav-item i {
@@ -139,15 +195,9 @@ const toggleMenu = () => {
   color: var(--active-color);
 }
 
-.menu-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-}
-
-.menu-button.active i {
-  transform: rotate(180deg);
+/* Highlight betslip when there are bets */
+.betslip-button.active {
+  color: var(--active-color);
 }
 
 /* Safe area support for mobile devices */
