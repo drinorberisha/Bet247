@@ -68,7 +68,6 @@ export const useBettingStore = defineStore("betting", {
       );
     },
     potentialMultiWin(): number {
-   
       return this.multiStake * this.multiOdds;
     },
     selections(): Selection[] {
@@ -119,7 +118,7 @@ export const useBettingStore = defineStore("betting", {
         market: this.getMarketType(matchData.type),
         status: matchData.status,
         event: matchData.event,
-        commenceTime: matchData.commenceTime
+        commenceTime: matchData.commenceTime,
       };
 
       // Check if selection already exists
@@ -272,24 +271,25 @@ export const useBettingStore = defineStore("betting", {
         throw new Error("Authentication required");
       }
 
-      // Add debug logging
-      console.log("Auth token:", authStore.token);
-
       this.loading = true;
       this.error = null;
 
       try {
-        // Calculate total odds
+        // For single bets, only process bets with stakes > 0
+        const betsToPlace =
+          this.activeMode === "multi"
+            ? this.currentBets
+            : this.currentBets.filter((bet) => (bet.stake || 0) > 0);
+
         const totalOdds =
           this.activeMode === "multi"
             ? this.multiOdds
-            : this.currentBets[0]?.selections[0]?.odds || 0;
+            : betsToPlace[0]?.selections[0]?.odds || 0;
 
-        // Calculate amount using stake instead of amount
         const amount =
           this.activeMode === "multi"
             ? this.multiStake
-            : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
+            : betsToPlace.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
         const potentialWin = amount * totalOdds;
 
@@ -298,7 +298,7 @@ export const useBettingStore = defineStore("betting", {
           amount,
           totalOdds,
           potentialWin,
-          selections: this.currentBets.flatMap((bet) =>
+          selections: betsToPlace.flatMap((bet) =>
             bet.selections.map((selection) => ({
               matchId: selection.matchId,
               selection: selection.type,
@@ -313,8 +313,6 @@ export const useBettingStore = defineStore("betting", {
           ),
         };
 
-        console.log("Placing bet with payload:", payload); // Debug log
-
         const response = await axios.post<PlaceBetResponse>(
           `${API_URL}/bets/place`,
           payload,
@@ -326,11 +324,22 @@ export const useBettingStore = defineStore("betting", {
           }
         );
 
-        console.log("Bet placement response:", response.data); // Debug log
-
         if (response.data.success) {
           authStore.updateBalance(response.data.newBalance);
-          this.clearBetSlip();
+
+          // Only clear placed bets in single mode
+          if (this.activeMode === "single") {
+            const placedBetIds = betsToPlace.map((bet) => bet.id);
+            this.currentBets = this.currentBets.filter(
+              (bet) => !placedBetIds.includes(bet.id)
+            );
+            this.currentSelections = this.currentSelections.filter(
+              (selection) => !placedBetIds.includes(selection.matchId)
+            );
+          } else {
+            // For multi bets, clear everything
+            this.clearBetSlip();
+          }
         }
 
         return response.data;
@@ -357,14 +366,17 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/bets/user`, {
-          headers: {
-            Authorization: `Bearer ${authStore.token}`
-          },
-          params: {
-            populate: 'selections'
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/bets/user`,
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+            params: {
+              populate: "selections",
+            },
           }
-        });
+        );
 
         // With axios, we use response.data instead of response.json()
         const data = response.data;
@@ -374,17 +386,16 @@ export const useBettingStore = defineStore("betting", {
         this.activeBets = this.placedBets.filter((bet) =>
           ["pending"].includes(bet.status || "")
         );
-        
-        this.settledBets = this.placedBets.filter(bet => 
-          ['won', 'lost', 'cancelled', 'cashed_out'].includes(bet.status || '')
+
+        this.settledBets = this.placedBets.filter((bet) =>
+          ["won", "lost", "cancelled", "cashed_out"].includes(bet.status || "")
         );
 
         // Debug log to check the data
-        console.log('Fetched bets:', this.placedBets);
-
+        console.log("Fetched bets:", this.placedBets);
       } catch (err: any) {
-        this.error = err.response?.data?.message || 'Failed to fetch bets';
-        console.error('Error fetching bets:', err);
+        this.error = err.response?.data?.message || "Failed to fetch bets";
+        console.error("Error fetching bets:", err);
       } finally {
         this.loading = false;
       }
@@ -461,22 +472,22 @@ export const useBettingStore = defineStore("betting", {
           {
             headers: {
               Authorization: `Bearer ${authStore.token}`,
-              'Content-Type': 'application/json'
-            }
+              "Content-Type": "application/json",
+            },
           }
         );
 
         if (response.data.success) {
           // Update local state with the cashed out bet
           const updatedBet = response.data.bet;
-          
+
           // Update the bets lists
-          this.placedBets = this.placedBets.map(bet => 
+          this.placedBets = this.placedBets.map((bet) =>
             bet._id === betId ? updatedBet : bet
           );
-          
+
           // Move bet from active to settled
-          this.activeBets = this.activeBets.filter(bet => bet._id !== betId);
+          this.activeBets = this.activeBets.filter((bet) => bet._id !== betId);
           this.settledBets.unshift(updatedBet);
 
           // Update user balance
@@ -484,11 +495,11 @@ export const useBettingStore = defineStore("betting", {
 
           return response.data;
         } else {
-          throw new Error(response.data.message || 'Failed to cash out bet');
+          throw new Error(response.data.message || "Failed to cash out bet");
         }
       } catch (err: any) {
-        console.error('Cashout error:', err.response?.data || err);
-        this.error = err.response?.data?.message || 'Failed to cash out bet';
+        console.error("Cashout error:", err.response?.data || err);
+        this.error = err.response?.data?.message || "Failed to cash out bet";
         throw new Error(this.error);
       } finally {
         this.loading = false;
