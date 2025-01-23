@@ -1,20 +1,21 @@
 <template>
   <div
+    v-show="isMobile ? isVisible : true"
     class="betslip-container"
-    :class="{ expanded: isExpanded, closed: isClosed }"
+    :class="{ closed: isMobile && isClosed }"
     ref="betslipContainer"
   >
-    <!-- Move swipe handle outside main content -->
-    <div
-      class="swipe-handle"
-      @touchstart="handleTouchStart"
-      @touchmove="handleTouchMove"
-    >
-      <div class="handle-indicator"></div>
-    </div>
-
     <div class="betslip-wrapper">
-      <!-- Rest of the content -->
+      <!-- Update close button for mobile -->
+      <button v-if="isMobile" class="mobile-close-btn" @click="closeBetslip">
+        &times;
+      </button>
+
+      <!-- Remove swipe-handle only for mobile -->
+      <div v-if="!isMobile" class="swipe-handle">
+        <div class="handle-indicator"></div>
+      </div>
+
       <div class="betslip-header">
         <div class="header-tabs">
           <button
@@ -37,7 +38,7 @@
           @click="bettingStore.clearAllBets"
           v-if="bets.length"
         >
-          <i class="icon-trash"></i>
+          Clear All
         </button>
       </div>
 
@@ -196,14 +197,18 @@
         </template>
       </div>
 
-      <!-- Move place bet button outside scrollable content -->
+      <!-- Keep place bet button -->
       <div class="place-bet-wrapper" v-if="bets.length">
         <div v-if="betError" class="bet-error">
           {{ betError }}
         </div>
+        <!-- Add warning message for conflicting selections -->
+        <div v-if="hasConflictingSelections" class="conflict-warning">
+          Multiple selections from the same game are not allowed in Multi mode
+        </div>
         <button
           class="place-bet-button"
-          :disabled="!canPlaceBet || isPlacingBet"
+          :disabled="!canPlaceBet || isPlacingBet || hasConflictingSelections"
           @click="placeBet"
         >
           <span v-if="isPlacingBet">Placing Bet...</span>
@@ -218,7 +223,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useBettingStore } from "../../stores/betting";
 import { useNotificationStore } from "../../stores/notification";
 
@@ -229,7 +234,7 @@ const bets = computed(() => bettingStore.currentBets || []);
 
 const getBetCount = (mode: string) => {
   if (!bets.value) return 0;
-  
+
   if (mode === "multi" && bets.value.length > 1) {
     return 1;
   }
@@ -255,13 +260,34 @@ const updateMultiStake = (event: Event) => {
   bettingStore.updateMultiStake(Number(value));
 };
 
+// Add computed property to check for conflicting selections
+const hasConflictingSelections = computed(() => {
+  if (bettingStore.activeMode !== "multi") return false;
+
+  // Create a map to count selections per match
+  const matchSelections = new Map();
+
+  bets.value?.forEach((bet) => {
+    const count = matchSelections.get(bet.matchId) || 0;
+    matchSelections.set(bet.matchId, count + 1);
+  });
+
+  // Check if any match has more than one selection
+  return Array.from(matchSelections.values()).some((count) => count > 1);
+});
+
+// Update canPlaceBet computed property
 const canPlaceBet = computed(() => {
   if (!bets.value) return false;
-  
+
   if (bettingStore.activeMode === "single") {
     return bets.value.some((bet) => bet.stake > 0);
   } else {
-    return bets.value.length > 1 && bettingStore.multiStake > 0;
+    return (
+      bets.value.length > 1 &&
+      bettingStore.multiStake > 0 &&
+      !hasConflictingSelections.value
+    );
   }
 });
 
@@ -317,8 +343,9 @@ const clearMultiStake = () => {
   bettingStore.updateMultiStake(0);
 };
 
-const isExpanded = ref(false);
+const isVisible = ref(false);
 const isClosed = ref(false);
+const isMobile = ref(false);
 const touchStart = ref(0);
 const betslipContainer = ref<HTMLElement | null>(null);
 
@@ -336,22 +363,14 @@ const handleTouchMove = (e: TouchEvent) => {
   const touchMove = e.touches[0].clientY;
   const delta = touchStart.value - touchMove;
 
-  // Swipe up to expand
+  // Only handle swipe up to expand
   if (delta > 50 && !isExpanded.value) {
     isExpanded.value = true;
     isClosed.value = false;
   }
-  // Swipe down to collapse or close
-  else if (delta < -50) {
-    if (isExpanded.value) {
-      isExpanded.value = false;
-    } else {
-      isClosed.value = true;
-      // Reset after animation
-      setTimeout(() => {
-        isClosed.value = false;
-      }, 300);
-    }
+  // Only collapse if explicitly swiped down when expanded
+  else if (delta < -50 && isExpanded.value) {
+    isExpanded.value = false;
   }
 };
 
@@ -370,6 +389,46 @@ const getTotalSinglePotentialWin = computed(() => {
 });
 
 const isSingleMode = computed(() => bettingStore.activeMode === "single");
+
+// Add check for mobile devices
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 992;
+};
+
+onMounted(() => {
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", checkMobile);
+});
+
+const openBetslip = () => {
+  if (isMobile.value) {
+    isVisible.value = true;
+    isClosed.value = false;
+  }
+};
+
+const closeBetslip = () => {
+  if (isMobile.value) {
+    isClosed.value = true;
+    setTimeout(() => {
+      isVisible.value = false;
+      isClosed.value = false;
+    }, 300);
+  }
+};
+
+// Update exposed methods
+defineExpose({
+  isVisible,
+  isClosed,
+  isMobile,
+  openBetslip,
+  closeBetslip,
+});
 </script>
 
 <style scoped>
@@ -397,6 +456,7 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
   padding: 1.2rem;
   border-radius: 6px;
   margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 /* Reuse the same styles as multi-summary */
@@ -470,7 +530,7 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
 .tab-button .bet-count {
   position: absolute;
   top: -8px;
-  right: -8px;
+  right: -28px;
   background: var(--active-color);
   color: var(--black);
   font-size: 0.7rem;
@@ -479,15 +539,14 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
 }
 
 .clear-all {
+  color: var(--button-one);
   background: none;
   border: none;
-  color: var(--button-one);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  padding: 4px 8px;
   font-size: 0.9rem;
   transition: color 0.3s ease;
+  text-transform: capitalize;
 }
 
 .clear-all:hover {
@@ -699,42 +758,110 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
   cursor: not-allowed;
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
+/* Update mobile styles */
+@media (max-width: 991px) {
   .betslip-container {
-    border-radius: 0;
-    height: auto;
     position: fixed;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    margin: 0;
+    height: calc(100vh - 120px);
+    background: var(--subheader);
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .betslip-container:not(.closed) {
+    transform: translateY(0);
+  }
+
+  .betslip-container.closed {
+    transform: translateY(100%);
+  }
+
+  .betslip-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .betslip-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem;
+    padding-bottom: calc(80px + 1rem);
+  }
+
+  .place-bet-wrapper {
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
-    max-height: 80vh;
+    padding: 1rem;
+    background: var(--body-color);
+    border-top: 1px solid var(--leftpreborder);
+    z-index: 1001;
   }
 
-  .bet-details {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
+  /* Safe area support */
+  @supports (padding: max(0px)) {
+    .betslip-container {
+      height: calc(100vh - 120px - env(safe-area-inset-bottom));
+      bottom: calc(60px + env(safe-area-inset-bottom));
+    }
+
+    .betslip-content {
+      padding-bottom: calc(80px + 1rem + env(safe-area-inset-bottom));
+    }
+
+    .place-bet-wrapper {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
   }
 
-  .bet-amount input {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-tabs {
-    gap: 0.5rem;
+  .conflict-warning {
+    margin: 0 0 0.8rem 0;
   }
 
-  .tab-button {
-    padding: 0.5rem;
-    font-size: 0.9rem;
+  .mobile-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: red;
+    font-size: 24px;
+    padding: 8px;
+    cursor: pointer;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-weight: bold;
+    line-height: 1;
   }
 
-  .bet-card {
-    padding: 0.8rem;
+  .mobile-close-btn:hover {
+    opacity: 0.8;
+  }
+
+  /* Adjust header padding to accommodate close button */
+  .betslip-header {
+    padding-right: 48px;
+  }
+
+  .clear-all {
+    font-size: 0.85rem;
+    padding: 4px 8px;
   }
 }
 
@@ -760,102 +887,6 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
   border-radius: 6px;
 }
 
-/* Updated mobile styles */
-@media (max-width: 768px) {
-  .betslip-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin: 0;
-    height: 60vh;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .betslip-container.expanded {
-    height: 95vh;
-  }
-
-  .betslip-container.closed {
-    transform: translateY(100%);
-  }
-
-  /* Add transition for smooth animation */
-  .betslip-container {
-    transition: transform 0.3s ease, height 0.3s ease;
-  }
-
-  .swipe-handle {
-    display: flex;
-    height: 24px;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    padding: 10px 0;
-    cursor: grab;
-    background: var(--header);
-    border-radius: 12px 12px 0 0;
-    position: sticky;
-    top: 0;
-    z-index: 3;
-  }
-
-  .handle-indicator {
-    width: 40px;
-    height: 4px;
-    background: var(--leftpreborder);
-    border-radius: 2px;
-  }
-
-  .betslip-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .betslip-content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 1rem;
-    padding-bottom: 80px; /* Space for place bet button */
-  }
-
-  .place-bet-wrapper {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 1rem;
-    background: var(--body-color);
-    border-top: 1px solid var(--leftpreborder);
-    z-index: 2;
-  }
-
-  .place-bet-button {
-    width: 100%;
-    margin: 0;
-    border-radius: 6px;
-  }
-}
-
-/* Safe area support */
-@supports (padding: max(0px)) {
-  @media (max-width: 768px) {
-    .betslip-container {
-      padding-bottom: max(0px, env(safe-area-inset-bottom));
-    }
-
-    .place-bet-wrapper {
-      padding-bottom: max(1rem, env(safe-area-inset-bottom) + 1rem);
-    }
-  }
-}
-
 /* Improved clear button */
 .clear-stake {
   background: none;
@@ -877,15 +908,6 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
 
 .clear-stake i {
   font-size: 1.1rem;
-}
-
-/* Safe area support for modern iOS devices */
-@supports (padding: max(0px)) {
-  @media (max-width: 768px) {
-    .betslip-container {
-      padding-bottom: max(80px, env(safe-area-inset-bottom) + 80px);
-    }
-  }
 }
 
 /* Multi bet specific input styles */
@@ -932,6 +954,7 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
   padding: 1.2rem;
   border-radius: 6px;
   margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .summary-row {
@@ -1003,13 +1026,12 @@ const isSingleMode = computed(() => bettingStore.activeMode === "single");
 }
 
 .conflict-warning {
-  background: var(--signbet);
   color: var(--button-one);
+  background: var(--signbet);
   padding: 0.8rem;
-  border-radius: 6px;
-  margin: 1rem 0;
+  border-radius: 4px;
+  margin-bottom: 1rem;
   font-size: 0.9rem;
   text-align: center;
-  font-weight: 500;
 }
 </style>
