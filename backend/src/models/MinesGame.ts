@@ -20,7 +20,7 @@ export interface IMinesGame extends Document {
 }
 
 const MinesGameSchema: Schema = new Schema({
-  gameId: { type: String, required: true, unique: true },
+  gameId: { type: String, required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   betAmount: { type: Number, required: true },
   minesCount: { type: Number, required: true },
@@ -46,7 +46,7 @@ const MinesGameSchema: Schema = new Schema({
   completedAt: { type: Date }
 });
 
-// Indexes
+// Define indexes once
 MinesGameSchema.index({ userId: 1, createdAt: -1 });
 MinesGameSchema.index({ gameId: 1 }, { unique: true });
 MinesGameSchema.index({ status: 1 });

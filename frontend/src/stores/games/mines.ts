@@ -1,161 +1,204 @@
 import { defineStore } from 'pinia';
+import { wsService } from '../../services/websocket';
 import { useAuthStore } from '../auth';
 import { useNotificationStore } from '../notification';
-import { wsService } from '../../services/websocket';
 
-interface MinesTile {
+interface Tile {
   revealed: boolean;
   isMine: boolean;
 }
 
 interface MinesState {
+  tiles: Tile[];
   gameId: string | null;
-  tiles: MinesTile[];
   betAmount: number;
   minesCount: number;
-  isGameActive: boolean;
   currentMultiplier: number;
   currentProfit: number;
+  isGameActive: boolean;
   loading: boolean;
-  error: string | null;
   canCashout: boolean;
 }
 
 export const useMinesStore = defineStore('mines', {
   state: (): MinesState => ({
-    gameId: null,
     tiles: Array(25).fill(null).map(() => ({
       revealed: false,
       isMine: false
     })),
-    betAmount: 1.00,
+    gameId: null,
+    betAmount: 5,
     minesCount: 3,
-    isGameActive: false,
-    currentMultiplier: 1.00,
+    currentMultiplier: 1,
     currentProfit: 0,
+    isGameActive: false,
     loading: false,
-    error: null,
     canCashout: false
   }),
 
   actions: {
-    async startGame() {
-      const authStore = useAuthStore();
-      const notificationStore = useNotificationStore();
+    setupWebSocketListeners() {
+      console.log('Setting up WebSocket listeners');
+      
+      wsService.on('mines:start', (data) => {
+        console.log('Received start response:', data);
+        if (data.success) {
+          this.gameId = data.data.gameId;
+          this.isGameActive = true;
+          this.loading = false;
+          
+          const notificationStore = useNotificationStore();
+          notificationStore.show({
+            type: 'success',
+            message: 'Game started! Click tiles to reveal them.',
+            duration: 3000
+          });
+        }
+      });
 
-      if (!authStore.isAuthenticated) {
+      wsService.on('mines:reveal', (data) => {
+        console.log('Received reveal response:', data);
+        if (data.success) {
+          const { tileIndex, isMine, currentMultiplier, currentProfit } = data.data;
+          
+          // Update tile state
+          this.tiles[tileIndex] = {
+            revealed: true,
+            isMine: isMine
+          };
+
+          if (isMine) {
+            this.gameOver(false);
+          } else {
+            this.currentMultiplier = currentMultiplier;
+            this.currentProfit = currentProfit;
+            this.canCashout = true;
+          }
+        }
+        this.loading = false;
+      });
+
+      wsService.on('mines:cashout', (data) => {
+        console.log('Received cashout response:', data);
+        if (data.success) {
+          const authStore = useAuthStore();
+          authStore.updateBalance(data.data.newBalance);
+          this.gameOver(true);
+        }
+        this.loading = false;
+      });
+    },
+
+    async startGame() {
+      if (this.loading || this.isGameActive) return;
+
+      try {
+        this.loading = true;
+        
+        // Reset game state
+        this.tiles = Array(25).fill(null).map(() => ({
+          revealed: false,
+          isMine: false
+        }));
+        this.currentMultiplier = 1;
+        this.currentProfit = 0;
+        this.canCashout = false;
+        this.gameId = null;
+
+        console.log('Sending start game request:', {
+          betAmount: this.betAmount,
+          minesCount: this.minesCount
+        });
+
+        wsService.send('mines:start', {
+          betAmount: this.betAmount,
+          minesCount: this.minesCount
+        });
+
+      } catch (error: any) {
+        this.loading = false;
+        const notificationStore = useNotificationStore();
         notificationStore.show({
           type: 'error',
-          message: 'Please login to play'
+          message: error.message || 'Failed to start game',
+          duration: 3000
+        });
+      }
+    },
+
+    async revealTile(index: number) {
+      if (!this.isGameActive || this.tiles[index].revealed || this.loading) {
+        console.log('Cannot reveal tile:', { 
+          isGameActive: this.isGameActive, 
+          isRevealed: this.tiles[index].revealed, 
+          isLoading: this.loading 
         });
         return;
       }
 
       try {
         this.loading = true;
-        wsService.send('mines:start', {
-          betAmount: this.betAmount,
-          minesCount: this.minesCount
+        console.log('Sending reveal request:', {
+          gameId: this.gameId,
+          tileIndex: index
         });
 
-        // Handle response
-        wsService.on('mines:start', (data) => {
-          this.gameId = data.gameId;
-          this.isGameActive = true;
-          this.canCashout = false;
-          this.resetGrid();
-          
-          // Update user balance
-          authStore.updateBalance(data.newBalance);
-        });
-
-      } catch (error: any) {
-        this.handleError(error);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async revealTile(index: number) {
-      if (!this.isGameActive || this.tiles[index].revealed) return;
-
-      const authStore = useAuthStore();
-      const notificationStore = useNotificationStore();
-
-      try {
-        this.loading = true;
         wsService.send('mines:reveal', {
           gameId: this.gameId,
           tileIndex: index
         });
 
-        // Handle response
-        wsService.on('mines:reveal', (data) => {
-          // Update tile state
-          this.tiles[index] = {
-            revealed: true,
-            isMine: data.isMine
-          };
-
-          if (data.isMine) {
-            this.gameOver(false);
-          } else {
-            this.currentMultiplier = data.multiplier;
-            this.currentProfit = data.currentProfit;
-            this.canCashout = true;
-          }
-        });
-
       } catch (error: any) {
-        this.handleError(error);
-      } finally {
         this.loading = false;
+        const notificationStore = useNotificationStore();
+        notificationStore.show({
+          type: 'error',
+          message: error.message || 'Failed to reveal tile',
+          duration: 3000
+        });
       }
     },
 
     async cashout() {
-      if (!this.canCashout) return;
-
-      const authStore = useAuthStore();
-      const notificationStore = useNotificationStore();
+      if (!this.canCashout || this.loading) return;
 
       try {
         this.loading = true;
+        console.log('Sending cashout request:', {
+          gameId: this.gameId
+        });
+
         wsService.send('mines:cashout', {
           gameId: this.gameId
         });
 
-        // Handle response
-        wsService.on('mines:cashout', (data) => {
-          // Update user balance
-          authStore.updateBalance(data.newBalance);
-
-          // Show success notification
-          notificationStore.show({
-            type: 'success',
-            message: `Successfully cashed out ${this.currentProfit.toFixed(2)}!`,
-            duration: 3000
-          });
-
-          this.gameOver(true);
-        });
-
       } catch (error: any) {
-        this.handleError(error);
-      } finally {
         this.loading = false;
+        const notificationStore = useNotificationStore();
+        notificationStore.show({
+          type: 'error',
+          message: error.message || 'Failed to cashout',
+          duration: 3000
+        });
       }
     },
 
-    gameOver(success: boolean) {
+    gameOver(won: boolean) {
       this.isGameActive = false;
       this.canCashout = false;
+      this.gameId = null;
       
       const notificationStore = useNotificationStore();
-      if (!success) {
+      if (won) {
+        notificationStore.show({
+          type: 'success',
+          message: `Won ${this.currentProfit.toFixed(2)}€!`,
+          duration: 3000
+        });
+      } else {
         notificationStore.show({
           type: 'error',
-          message: 'Game Over! You hit a mine!',
+          message: 'Game Over! Hit a mine!',
           duration: 3000
         });
       }
@@ -166,7 +209,7 @@ export const useMinesStore = defineStore('mines', {
         revealed: false,
         isMine: false
       }));
-      this.currentMultiplier = 1.00;
+      this.currentMultiplier = 1;
       this.currentProfit = 0;
     },
 

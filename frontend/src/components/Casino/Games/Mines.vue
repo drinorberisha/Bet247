@@ -13,6 +13,24 @@
       </div>
     </div>
 
+    <div class="game-grid">
+      <div 
+        v-for="(tile, index) in tiles" 
+        :key="index"
+        class="mine-tile"
+        :class="{
+          'clickable': isGameActive && !tile.revealed,
+          'revealed': tile.revealed,
+          'mine': tile.revealed && tile.isMine,
+          'gem': tile.revealed && !tile.isMine
+        }"
+        @click="handleTileClick(index)"
+      >
+        <i v-if="tile.revealed" :class="tile.isMine ? 'fas fa-bomb' : 'fas fa-gem'"></i>
+        <div v-else class="tile-content">?</div>
+      </div>
+    </div>
+
     <div class="game-controls">
       <div class="bet-controls">
         <div class="input-group">
@@ -21,7 +39,7 @@
             <input 
               type="number" 
               v-model="betAmount" 
-              :disabled="gameStarted"
+              :disabled="isGameActive"
               min="0.1" 
               step="0.1"
             />
@@ -29,273 +47,252 @@
           </div>
         </div>
         <div class="input-group">
-          <label>Number of Mines</label>
-          <div class="amount-input">
+          <label>Mines Count</label>
+          <div class="mines-input">
             <input 
               type="number" 
               v-model="minesCount" 
-              :disabled="gameStarted"
+              :disabled="isGameActive"
               min="1" 
-              max="24" 
+              max="24"
             />
-            <i class="fas fa-bomb"></i>
           </div>
         </div>
       </div>
 
       <div class="action-buttons">
         <button 
-          class="game-button start-button" 
-          @click="startGame" 
-          :disabled="gameStarted"
+          :class="['game-button', isGameActive ? 'cashout-button' : 'start-button']"
+          :disabled="loading"
+          @click="handleGameAction"
         >
-          <i class="fas fa-play"></i>
-          Start Game
+          <i :class="isGameActive ? 'fas fa-coins' : 'fas fa-play'"></i>
+          {{ isGameActive ? 'Cashout' : 'Start Game' }}
         </button>
-        <button 
-          class="game-button cashout-button" 
-          @click="cashout" 
-          :disabled="!gameStarted || !canCashout"
-        >
-          <i class="fas fa-coins"></i>
-          Cashout {{ currentProfit }}€
-        </button>
-      </div>
-    </div>
-
-    <div class="mines-grid">
-      <div 
-        v-for="(tile, index) in tiles" 
-        :key="index"
-        class="mine-tile"
-        :class="{
-          'revealed': tile.revealed,
-          'gem': tile.revealed && !tile.isMine,
-          'mine': tile.revealed && tile.isMine,
-          'clickable': !tile.revealed && gameStarted
-        }"
-        @click="revealTile(index)"
-      >
-        <template v-if="tile.revealed">
-          <i v-if="tile.isMine" class="fas fa-bomb"></i>
-          <i v-else class="fas fa-gem"></i>
-        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useMinesStore } from '../../../stores/games/mines';
+import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useMinesStore } from '../../../stores/games/mines';
+
 
 const minesStore = useMinesStore();
 const { 
   tiles, 
   betAmount, 
   minesCount, 
-  isGameActive, 
   currentMultiplier, 
-  currentProfit, 
   loading, 
-  canCashout 
+  canCashout,
+  isGameActive 
 } = storeToRefs(minesStore);
 
-// Use store actions directly
-const startGame = () => minesStore.startGame();
-const revealTile = (index: number) => minesStore.revealTile(index);
-const cashout = () => minesStore.cashout();
+// Initialize WebSocket listeners when component mounts
+onMounted(() => {
+  minesStore.setupWebSocketListeners();
+});
 
-const gameStarted = ref(false);
+// Handle tile click
+const handleTileClick = (index: number) => {
+  if (isGameActive.value && !tiles.value[index].revealed) {
+    minesStore.revealTile(index);
+  }
+};
 
+// Handle game action (start/cashout)
+const handleGameAction = () => {
+  if (isGameActive.value) {
+    minesStore.cashout();
+  } else {
+    minesStore.startGame();
+  }
+};
+
+// Calculate next profit
 const nextProfit = computed(() => {
   return (betAmount.value * currentMultiplier.value).toFixed(2);
 });
-
-const resetGrid = () => {
-  tiles.value = Array(25).fill(null).map(() => ({
-    revealed: false,
-    isMine: false
-  }));
-  currentProfit.value = 0;
-};
 </script>
 
 <style scoped>
 .mines-game {
-  padding: 2rem;
-  background: var(--header);
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: #1a1d24;
   border-radius: 12px;
-  color: var(--white);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.game-header {
-  margin-bottom: 2rem;
-}
-
-.stats-container {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-box {
-  background: var(--surface-color);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  border: 1px solid var(--leftpreborder);
-}
-
-.stat-label {
-  color: var(--textcolor);
-  font-size: 0.875rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--white);
-}
-
-.game-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.bet-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.input-group label {
-  color: var(--textcolor);
-  font-size: 0.875rem;
-}
-
-.amount-input {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.amount-input input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--surface-color);
-  border: 1px solid var(--leftpreborder);
-  border-radius: 8px;
-  color: var(--white);
-  font-size: 1rem;
-}
-
-.amount-input .currency,
-.amount-input i {
-  position: absolute;
-  right: 1rem;
-  color: var(--textcolor);
-}
-
-.action-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.game-button {
-  padding: 1rem;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.start-button {
-  background: var(--active-color);
-  color: var(--white);
-}
-
-.start-button:hover:not(:disabled) {
-  background: var(--active-hover);
-}
-
-.cashout-button {
-  background: var(--success);
-  color: var(--white);
-}
-
-.cashout-button:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.game-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.mines-grid {
+.game-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
+  gap: 8px;
+  margin: 1.5rem 0;
   padding: 1rem;
-  background: var(--surface-color);
+  background: #242830;
   border-radius: 12px;
-  border: 1px solid var(--leftpreborder);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .mine-tile {
   aspect-ratio: 1;
-  background: var(--header);
-  border: 1px solid var(--leftpreborder);
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  background: #2d3139;
+  border: 2px solid #363a47;
+  border-radius: 8px;
+  font-size: 1.4rem;
   transition: all 0.2s ease;
+  color: #8a8d94;
 }
 
 .mine-tile.clickable:hover {
-  background: var(--active-color);
+  background: #3a3f4c;
+  transform: translateY(-2px);
   cursor: pointer;
+  border-color: #4a4f5c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .mine-tile.revealed.gem {
-  background: var(--success);
-  border-color: var(--success);
+  background: #2ecc71;
+  border-color: #27ae60;
+  color: white;
+  animation: reveal 0.3s ease-out;
 }
 
 .mine-tile.revealed.mine {
-  background: var(--error);
-  border-color: var(--error);
+  background: #e74c3c;
+  border-color: #c0392b;
+  color: white;
+  animation: reveal 0.3s ease-out;
 }
 
-.mine-tile i {
-  opacity: 0;
-  transform: scale(0.8);
+.tile-content {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #6a6d74;
+}
+
+.stats-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-box {
+  flex: 1;
+  padding: 1rem;
+  background: #242830;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #8a8d94;
+  margin-bottom: 0.3rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.game-controls {
+  margin-top: 1.5rem;
+}
+
+.bet-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-group {
+  flex: 1;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #8a8d94;
+  font-size: 0.9rem;
+}
+
+.amount-input, .mines-input {
+  position: relative;
+  background: #242830;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  padding: 0.5rem;
+  outline: none;
+}
+
+.game-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.mine-tile.revealed i {
-  opacity: 1;
-  transform: scale(1);
+.start-button {
+  background: #3498db;
+  color: white;
+}
+
+.start-button:hover {
+  background: #2980b9;
+}
+
+.cashout-button {
+  background: #2ecc71;
+  color: white;
+}
+
+.cashout-button:hover {
+  background: #27ae60;
+}
+
+@keyframes reveal {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style> 

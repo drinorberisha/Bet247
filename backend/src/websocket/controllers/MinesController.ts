@@ -4,62 +4,51 @@ import MinesGame from '../../games/mines/MinesGame';
 import { verifyToken } from '../../middleware/auth';
 import { WebSocketMessage, WebSocketClient } from '../../types/websocket';
 import { DatabaseService } from '../../services/DatabaseService';
+import { WebSocketHandler } from './WebSocketHandler';
 
 interface MinesGameSession {
   userId: string;
   game: MinesGame;
 }
 
-class MinesController {
+export class MinesController {
   private games: Map<string, MinesGameSession>;
   private db: DatabaseService;
 
-  constructor(wss: WebSocketServer, server: Server, db: DatabaseService) {
+  constructor(wsHandler: WebSocketHandler, server: Server, db: DatabaseService) {
     this.games = new Map();
     this.db = db;
 
-    wss.on('connection', async (ws: WebSocketClient, request) => {
-      try {
-        // Verify token from request headers
-        const token = request.headers['authorization']?.split(' ')[1];
-        if (!token) {
-          ws.close(4001, 'Unauthorized');
-          return;
+    // Use getWss() instead of getServer()
+    const wss = wsHandler.getWss();
+    
+    wss.on('connection', (ws: WebSocketClient) => {
+      // Only handle messages if the connection is authenticated
+      if (!ws.isAuthenticated) return;
+
+      ws.on('message', async (message: string) => {
+        try {
+          const data: WebSocketMessage = JSON.parse(message);
+          await this.handleMessage(ws, data);
+        } catch (error) {
+          this.sendError(ws, 'Invalid message format');
         }
-
-        const user = await verifyToken(token);
-        if (!user) {
-          ws.close(4001, 'Unauthorized');
-          return;
-        }
-
-        ws.userId = user.id;
-
-        ws.on('message', async (message: string) => {
-          try {
-            const data: WebSocketMessage = JSON.parse(message);
-            await this.handleMessage(ws, data);
-          } catch (error) {
-            this.sendError(ws, 'Invalid message format');
-          }
-        });
-
-      } catch (error) {
-        ws.close(4001, 'Unauthorized');
-      }
+      });
     });
   }
 
-  private async handleMessage(ws: WebSocketClient, message: WebSocketMessage) {
-    switch (message.action) {
+  private async handleMessage(ws: WebSocketClient, data: WebSocketMessage) {
+    if (!ws.userId) return;
+
+    switch (data.action) {
       case 'mines:start':
-        await this.handleGameStart(ws, message.data);
+        await this.handleGameStart(ws, data.data);
         break;
       case 'mines:reveal':
-        await this.handleRevealTile(ws, message.data);
+        await this.handleRevealTile(ws, data.data);
         break;
       case 'mines:cashout':
-        await this.handleCashout(ws, message.data);
+        await this.handleCashout(ws, data.data);
         break;
       default:
         this.sendError(ws, 'Unknown action');
@@ -101,8 +90,7 @@ class MinesController {
         data: {
           gameId,
           betAmount,
-          minesCount,
-          newBalance: user.balance - betAmount
+          minesCount
         }
       }));
 
@@ -189,7 +177,7 @@ class MinesController {
     return (
       typeof betAmount === 'number' &&
       typeof minesCount === 'number' &&
-      betAmount >= 0.1 &&
+      betAmount > 0 &&
       minesCount >= 1 &&
       minesCount <= 24
     );
@@ -214,6 +202,4 @@ class MinesController {
       timestamp: new Date()
     });
   }
-}
-
-export default MinesController; 
+} 

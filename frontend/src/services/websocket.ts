@@ -5,101 +5,156 @@ class WebSocketService {
   private reconnectTimeout = 1000;
   private messageQueue: any[] = [];
   private handlers: Map<string, Function[]> = new Map();
+  private pingInterval: number | null = null;
+  private isConnecting: boolean = false;
+  private isAuthenticated: boolean = false;
 
   constructor() {
-    // Use the correct WebSocket URL from environment variables
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws';
-    this.connect(wsUrl);
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+    this.connect(`${wsUrl}/ws`); // Add /ws path
   }
 
   private connect(wsUrl: string) {
+    if (this.isConnecting) {
+      console.log('Connection already in progress');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.log('No token available, skipping connection');
+        return;
+      }
 
-      this.ws = new WebSocket(wsUrl);
+      this.isConnecting = true;
+      console.log('Creating WebSocket connection');
+      
+      // Add token to URL as a query parameter
+      const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
+      this.ws = new WebSocket(wsUrlWithToken);
       
       this.ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connection opened');
         this.reconnectAttempts = 0;
-        this.processMessageQueue();
+        this.isConnecting = false;
         
-        // Send authentication
-        this.send('auth', { token });
+        // Wait for auth confirmation before setting authenticated
+        this.send('ping', {});
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log('Received message:', message);
+
+          if (message.type === 'auth' && message.success) {
+            console.log('Authentication confirmed by server');
+            this.isAuthenticated = true;
+            this.processMessageQueue();
+            
+            // Set up ping interval after authentication
+            if (this.pingInterval) {
+              clearInterval(this.pingInterval);
+            }
+            this.pingInterval = setInterval(() => {
+              if (this.ws?.readyState === WebSocket.OPEN) {
+                this.send('ping', {});
+              }
+            }, 25000) as unknown as number;
+          }
+
           this.handleMessage(message);
         } catch (error) {
-          console.error('WebSocket message parsing error:', error);
+          console.error('Message parsing error:', error);
         }
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        this.handleDisconnect(wsUrl);
+      this.ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+        
+        this.isAuthenticated = false;
+        this.isConnecting = false;
+        
+        if (this.pingInterval) {
+          clearInterval(this.pingInterval);
+          this.pingInterval = null;
+        }
+
+        if (event.code !== 1000 && event.code !== 1001) {
+          this.handleDisconnect(wsUrl);
+        }
       };
 
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        this.isConnecting = false;
       };
 
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error('Connection error:', error);
+      this.isConnecting = false;
     }
   }
 
   private handleDisconnect(wsUrl: string) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => this.connect(wsUrl), this.reconnectTimeout * this.reconnectAttempts);
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('Max reconnection attempts reached');
+      return;
     }
+
+    this.reconnectAttempts++;
+    const delay = this.reconnectTimeout * Math.pow(2, this.reconnectAttempts - 1);
+    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    
+    setTimeout(() => {
+      this.connect(wsUrl);
+    }, delay);
   }
 
   private processMessageQueue() {
+    console.log('Processing message queue:', this.messageQueue.length, 'messages');
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
-      this.sendMessage(message);
-    }
-  }
-
-  private sendMessage(message: any) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
-    } else {
-      this.messageQueue.push(message);
-    }
-  }
-
-  public send(action: string, data: any = {}) {
-    const message = { action, data };
-    this.sendMessage(message);
-  }
-
-  public on(type: string, handler: Function) {
-    if (!this.handlers.has(type)) {
-      this.handlers.set(type, []);
-    }
-    this.handlers.get(type)?.push(handler);
-  }
-
-  public off(type: string, handler: Function) {
-    const handlers = this.handlers.get(type);
-    if (handlers) {
-      const index = handlers.indexOf(handler);
-      if (index !== -1) {
-        handlers.splice(index, 1);
+      if (message && this.ws?.readyState === WebSocket.OPEN) {
+        console.log('Sending queued message:', message);
+        this.ws.send(message);
       }
     }
   }
 
   private handleMessage(message: any) {
-    const handlers = this.handlers.get(message.type);
-    if (handlers) {
-      handlers.forEach(handler => handler(message.data));
+    console.log('Handling WebSocket message:', message);
+    const callbacks = this.handlers.get(message.type);
+    if (callbacks) {
+      callbacks.forEach(callback => callback(message.data));
     }
+  }
+
+  public send(action: string, data: any) {
+    const message = JSON.stringify({ action, data });
+    
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(message);
+    } else {
+      this.messageQueue.push(message);
+    }
+  }
+
+  public on(action: string, callback: Function) {
+    if (!this.handlers.has(action)) {
+      this.handlers.set(action, []);
+    }
+    this.handlers.get(action)?.push(callback);
+  }
+
+  public off(action: string) {
+    // Remove all handlers for this action
+    this.handlers.delete(action);
   }
 
   public disconnect() {
@@ -110,4 +165,8 @@ class WebSocketService {
   }
 }
 
-export const wsService = new WebSocketService(); 
+// Create a single instance
+export const wsService = new WebSocketService();
+
+// Default export for backwards compatibility
+export default wsService; 
