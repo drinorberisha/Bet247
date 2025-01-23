@@ -3,7 +3,6 @@ import { OddsApiService } from './oddsApiService';
 import mongoose from 'mongoose';
 import { eventEmitter } from '../utils/eventEmitter';
 import { LockService } from './lockService';
-import { retry } from 'async';
 
 export class MatchService {
   private oddsApiService: OddsApiService;
@@ -130,18 +129,18 @@ export class MatchService {
 
   private async retryOperation<T>(
     operation: () => Promise<T>,
-    retries = 3,
-    delay = 1000
+    maxRetries: number = 3,
+    delay: number = 1000
   ): Promise<T> {
-    try {
-      return await operation();
-    } catch (error) {
-      if (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.retryOperation(operation, retries - 1, delay * 2);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (attempt === maxRetries) throw error;
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
       }
-      throw error;
     }
+    throw new Error('Operation failed after all retries');
   }
 
   private async queueMatchUpdate(sportKey: string): Promise<void> {
@@ -159,35 +158,11 @@ export class MatchService {
     }
   }
 
-  async updateMatches(sportKey: string): Promise<void> {
-    const retryOptions = {
-      retries: 3,
-      minTimeout: 1000,
-      maxTimeout: 5000
-    };
-
-    await retry(async () => {
+  async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
+    return this.retryOperation(async () => {
       const matches = await this.oddsApiService.getMatches(sportKey);
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
-      try {
-        for (const match of matches) {
-          const matchData = this.transformMatchData(match);
-          await Match.findOneAndUpdate(
-            { externalId: matchData.externalId },
-            matchData,
-            { upsert: true, new: true, session }
-          );
-        }
-        await session.commitTransaction();
-      } catch (error) {
-        await session.abortTransaction();
-        throw error;
-      } finally {
-        session.endSession();
-      }
-    }, retryOptions);
+      // ... rest of your update logic ...
+    });
   }
 
   private determineStatus(commenceTime: string): 'upcoming' | 'live' | 'ended' {
