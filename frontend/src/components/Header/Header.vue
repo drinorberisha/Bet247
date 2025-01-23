@@ -536,6 +536,7 @@ watch(currentPath, () => {
   position: relative;
   right: auto;
   margin-left: 1rem;
+  margin-right: 1rem;
 }
 
 .balance-display {
@@ -850,6 +851,7 @@ watch(currentPath, () => {
 .menu-toggle-btn {
   width: 40px;
   height: 40px;
+  padding-left: 0.5rem;
   border-radius: 50%;
   background: var(--pointbox);
   border: none;
@@ -968,7 +970,6 @@ watch(currentPath, () => {
   visibility: visible;
 }
 
-/* Hide left menu on mobile */
 @media (max-width: 768px) {
   .left-side-menu {
     display: none;
@@ -985,6 +986,7 @@ watch(currentPath, () => {
 
   /* Adjust left menu button position for mobile */
   .menu-toggle-btn {
+    margin-left: 0.5rem;
     margin-right: 0.5rem;
   }
 
