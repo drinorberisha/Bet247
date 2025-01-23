@@ -41,6 +41,7 @@
                   <span class="team home">{{ getHomeTeam(selection.event) }}</span>
                   <span class="vs">vs</span>
                   <span class="team away">{{ getAwayTeam(selection.event) }}</span>
+                  <span v-if="selection.status === 'won'" class="won-indicator">✓</span>
                 </div>
                 <div class="selection-details">
                   <div class="selection-info">
@@ -58,7 +59,11 @@
                   <span>Stake:</span>
                   <span>${{ bet.amount.toFixed(2) }}</span>
                 </div>
-                <div class="potential-win">
+                <div class="cashout-amount" v-if="bet.status === 'cashed_out'">
+                  <span>Cashed Out:</span>
+                  <span>${{ (bet.cashoutAmount || 0).toFixed(2) }}</span>
+                </div>
+                <div class="potential-win" v-else>
                   <span>Potential Win:</span>
                   <span>${{ bet.potentialWin.toFixed(2) }}</span>
                 </div>
@@ -422,6 +427,28 @@ const handleCashout = async (betId: string) => {
 
 .cashout-button:hover {
   opacity: 0.9;
+}
+
+.won-indicator {
+  color: var(--success);
+  margin-left: 0.5rem;
+  font-weight: bold;
+}
+
+.cashout-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cashout-amount span:first-child {
+  color: var(--textcolor);
+  font-size: 0.875rem;
+}
+
+.cashout-amount span:last-child {
+  color: var(--warning);
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {

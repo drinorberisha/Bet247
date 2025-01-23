@@ -34,6 +34,8 @@ interface Bet {
   status?: string;
   createdAt?: Date;
   settledAt?: Date;
+  cashoutAmount?: number;
+  amount: number;
   stake?: number;
   homeTeam?: string;
   awayTeam?: string;
@@ -472,34 +474,37 @@ export const useBettingStore = defineStore("betting", {
           {
             headers: {
               Authorization: `Bearer ${authStore.token}`,
-              "Content-Type": "application/json",
-            },
+              'Content-Type': 'application/json'
+            }
           }
         );
 
         if (response.data.success) {
           // Update local state with the cashed out bet
-          const updatedBet = response.data.bet;
-
+          const updatedBet = {
+            ...response.data.bet,
+            cashoutAmount: response.data.cashoutAmount // Ensure cashoutAmount is included
+          };
+          
           // Update the bets lists
-          this.placedBets = this.placedBets.map((bet) =>
+          this.placedBets = this.placedBets.map(bet => 
             bet._id === betId ? updatedBet : bet
           );
-
+          
           // Move bet from active to settled
-          this.activeBets = this.activeBets.filter((bet) => bet._id !== betId);
+          this.activeBets = this.activeBets.filter(bet => bet._id !== betId);
           this.settledBets.unshift(updatedBet);
 
           // Update user balance
           authStore.updateBalance(response.data.newBalance);
-
+          
           return response.data;
         } else {
-          throw new Error(response.data.message || "Failed to cash out bet");
+          throw new Error(response.data.message || 'Failed to cash out bet');
         }
       } catch (err: any) {
-        console.error("Cashout error:", err.response?.data || err);
-        this.error = err.response?.data?.message || "Failed to cash out bet";
+        console.error('Cashout error:', err.response?.data || err);
+        this.error = err.response?.data?.message || 'Failed to cash out bet';
         throw new Error(this.error);
       } finally {
         this.loading = false;
