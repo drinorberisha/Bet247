@@ -10,7 +10,12 @@
 
     <!-- Games Grid -->
     <div class="games-wrapper">
-      <div v-for="game in filteredGames" :key="game.id" class="game-card">
+      <div 
+        v-for="game in games" 
+        :key="game.id" 
+        class="game-card"
+        @click="handleGameClick(game)"
+      >
         <div class="game-thumbnail">
           <img :src="game.thumbnail" :alt="game.name">
           <div class="game-overlay">
@@ -33,24 +38,27 @@ const props = defineProps<{
   currentGame: string;
 }>();
 
-// Sample game data - replace with actual data from your backend
+const emit = defineEmits(['launch-game']);
+
 const games = [
   {
-    id: 1,
+    id: 'mines',
     name: 'Mines',
     provider: 'Stake Originals',
     thumbnail: '/images/games/mines.webp',
+    type: 'mines',
     category: 'originals'
   },
-  {
-    id: 2,
-    name: 'Plinko',
-    provider: 'Stake Originals',
-    thumbnail: '/images/games/plinko.webp',
-    category: 'originals'
-  },
-  // Add more games here
+  // ... other games
 ];
+
+const handleGameClick = (game: any) => {
+  console.log('GameGrid handling game click:', game); // Debug log
+  emit('launch-game', {
+    type: game.type,
+    name: game.name
+  });
+};
 
 const filteredGames = computed(() => {
   return games.filter(game => game.category === props.currentGame);

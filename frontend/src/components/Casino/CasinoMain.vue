@@ -26,7 +26,10 @@
 
     <!-- Main Content -->
     <div class="main-content">
-      <GameGrid :currentGame="currentGame" />
+      <GameGrid 
+        :currentGame="currentGame" 
+        @launch-game="handleGameLaunch"
+      />
     </div>
 
     <!-- Right Sidebar -->
@@ -39,11 +42,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import GameGrid from './GameGrid.vue';
 import BetSlip from '../Common/BetSlip.vue';
 import FooterMobile from '../Footer/FooterMobile.vue';
-import GameGrid from './GameGrid.vue';
 
+const emit = defineEmits(['launch-game']);
 const currentGame = ref('originals');
+
+const handleGameLaunch = (game: any) => {
+  console.log('CasinoMain handling game launch:', game); // Debug log
+  emit('launch-game', game);
+};
 
 const casinoGames = [
   { id: 'originals', name: 'Originals', icon: 'fas fa-star', count: 12 },
