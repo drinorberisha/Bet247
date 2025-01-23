@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia';
-import axios from 'axios';
-import { useAuthStore } from './auth';
-import { useMatchesStore } from './matches';
+import { defineStore } from "pinia";
+import axios from "axios";
+import { useAuthStore } from "./auth";
+import { useMatchesStore } from "./matches";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -25,7 +25,7 @@ interface Selection {
 interface Bet {
   _id?: string;
   id?: string;
-  betType: 'single' | 'multiple';
+  betType: "single" | "multiple";
   selections: Selection[];
   amount: number;
   totalOdds: number;
@@ -38,17 +38,17 @@ interface Bet {
   awayTeam?: string;
 }
 
-export const useBettingStore = defineStore('betting', {
+export const useBettingStore = defineStore("betting", {
   state: () => ({
     // Current betslip selections
     currentSelections: [] as Selection[],
     currentBets: [] as Bet[],
-    
+
     // Historical bets from DB
     placedBets: [] as Bet[],
     activeBets: [] as Bet[],
     settledBets: [] as Bet[],
-    
+
     loading: false,
     error: null as string | null,
     activeMode: "single" as "single" | "multi",
@@ -61,9 +61,12 @@ export const useBettingStore = defineStore('betting', {
   getters: {
     // Use currentSelections for betslip calculations
     multiOdds(): number {
-      return this.currentSelections.reduce((total, selection) => total * selection.odds, 1);
+      return this.currentSelections.reduce(
+        (total, selection) => total * selection.odds,
+        1
+      );
     },
-potentialMultiWin(): number {
+    potentialMultiWin(): number {
       return this.multiStake * this.multiOdds;
     },
     // Alias currentBets as bets for BetSlip component compatibility
@@ -115,12 +118,12 @@ potentialMultiWin(): number {
         type: matchData.type,
         odds: matchData.odds,
         sportKey: matchData.sportKey,
-        market: this.getMarketType(matchData.type)
+        market: this.getMarketType(matchData.type),
       };
 
       // Check if selection already exists
-      const existingIndex = this.currentSelections.findIndex(s => 
-        s.matchId === selection.matchId && s.type === selection.type
+      const existingIndex = this.currentSelections.findIndex(
+        (s) => s.matchId === selection.matchId && s.type === selection.type
       );
 
       if (existingIndex !== -1) {
@@ -132,16 +135,16 @@ potentialMultiWin(): number {
       }
 
       // Update currentBets array for betslip
-      this.currentBets = this.currentSelections.map(s => ({
+      this.currentBets = this.currentSelections.map((s) => ({
         id: s.matchId,
-        betType: this.activeMode === 'multi' ? 'multiple' : 'single',
+        betType: this.activeMode === "multi" ? "multiple" : "single",
         selections: [s],
         amount: 0,
         totalOdds: s.odds,
         potentialWin: 0,
         stake: 0,
         homeTeam: s.homeTeam,
-        awayTeam: s.awayTeam
+        awayTeam: s.awayTeam,
       }));
     },
 
@@ -176,7 +179,9 @@ potentialMultiWin(): number {
       if (index !== -1) {
         this.currentBets.splice(index, 1);
         // Also remove from currentSelections
-        this.currentSelections = this.currentSelections.filter(s => s.matchId !== betId);
+        this.currentSelections = this.currentSelections.filter(
+          (s) => s.matchId !== betId
+        );
       }
     },
 
@@ -351,32 +356,34 @@ potentialMultiWin(): number {
       this.error = null;
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/bets/user`, {
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`,
-            'Content-Type': 'application/json'
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/bets/user`,
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch bets');
+          throw new Error("Failed to fetch bets");
         }
 
         const data = await response.json();
         this.placedBets = Array.isArray(data) ? data : [];
-        
+
         // Filter bets into active and settled
-        this.activeBets = this.placedBets.filter(bet => 
-          ['pending'].includes(bet.status || '')
-        );
-        
-        this.settledBets = this.placedBets.filter(bet => 
-          ['won', 'lost', 'cancelled', 'cashed_out'].includes(bet.status || '')
+        this.activeBets = this.placedBets.filter((bet) =>
+          ["pending"].includes(bet.status || "")
         );
 
+        this.settledBets = this.placedBets.filter((bet) =>
+          ["won", "lost", "cancelled", "cashed_out"].includes(bet.status || "")
+        );
       } catch (err: any) {
         this.error = err.message;
-        console.error('Error fetching bets:', err);
+        console.error("Error fetching bets:", err);
       } finally {
         this.loading = false;
       }
@@ -388,29 +395,32 @@ potentialMultiWin(): number {
 
     async settleBets() {
       const authStore = useAuthStore();
-      
+
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/bets/settle`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`,
-            'Content-Type': 'application/json'
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/bets/settle`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to settle bets');
+          throw new Error("Failed to settle bets");
         }
 
         const data = await response.json();
-        console.log('Settled bets:', data);
+        console.log("Settled bets:", data);
 
         // Refresh user bets after settlement
         await this.fetchUserBets();
 
         return data;
       } catch (error) {
-        console.error('Error settling bets:', error);
+        console.error("Error settling bets:", error);
         throw error;
       }
     },
@@ -418,23 +428,23 @@ potentialMultiWin(): number {
     // Method to check and update bet statuses
     async checkBetStatuses() {
       const matchesStore = useMatchesStore();
-      
+
       try {
         // First check for new match results
         const updatedMatches = await matchesStore.checkMatchResults();
-        
+
         if (updatedMatches && updatedMatches.length > 0) {
           // If we have updated matches, trigger bet settlement
           await this.settleBets();
         }
       } catch (error) {
-        console.error('Error checking bet statuses:', error);
+        console.error("Error checking bet statuses:", error);
       }
     },
 
     isBetSelected(matchId: string, type: string): boolean {
       return this.currentSelections.some(
-        selection => selection.matchId === matchId && selection.type === type
+        (selection) => selection.matchId === matchId && selection.type === type
       );
     },
   },
