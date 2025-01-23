@@ -70,67 +70,30 @@ export const useMatchesStore = defineStore('matches', {
         this.loading = true;
         this.error = null;
         
-        console.log(`Fetching ${status} matches for ${sportKey}`);
-        console.log('Auth token:', authStore.token); // Debug log
-        
-        const response = await axios.get(`${API_URL}/matches/matches`, {
-          params: {
-            sport: sportKey,
-            status
-          },
+        const response = await axios.get(`${API_URL}/matches/${sportKey}/matches`, {
+          params: { status },
           headers: {
             'Authorization': `Bearer ${authStore.token}`
           }
         });
 
-        // Debug logs to inspect the data
-        console.log('Raw API Response:', response);
-        console.log('Response data structure:', {
-          dataType: typeof response.data,
-          isArray: Array.isArray(response.data),
-          length: response.data?.length,
-          firstItem: response.data[0]
-        });
-        
-        // Validate and transform matches with detailed logging
-        const validMatches = response.data.filter((match: any) => {
-          console.log('Validating match:', match);
-          console.log('Match properties:', {
-            hasExternalId: !!match?.externalId,
-            hasSportKey: !!match?.sportKey,
-            hasStatus: !!match?.status,
-            sportKey: match?.sportKey,
-            status: match?.status
+        // Check if response has the expected structure
+        if (response.data && response.data.success && Array.isArray(response.data.matches)) {
+          const validMatches = response.data.matches.filter((match: any) => {
+            return match && 
+                   match.externalId && 
+                   match.sportKey && 
+                   match.status;
           });
 
-          const isValid = match && 
-                         match.externalId && 
-                         match.sportKey && 
-                         match.status;
+          // Merge new matches with existing ones, avoiding duplicates
+          const existingIds = new Set(this.matches.map(m => m.externalId));
+          const uniqueNewMatches = validMatches.filter((m: Match) => !existingIds.has(m.externalId));
           
-          if (!isValid) {
-            console.warn('Invalid match data:', {
-              match,
-              reason: {
-                noMatch: !match,
-                noExternalId: !match?.externalId,
-                noSportKey: !match?.sportKey,
-                noStatus: !match?.status
-              }
-            });
-          }
-          
-          return isValid;
-        });
-
-        console.log('Valid matches:', validMatches);
-        
-        // Merge new matches with existing ones, avoiding duplicates
-        const existingIds = new Set(this.matches.map(m => m.externalId));
-        const uniqueNewMatches = validMatches.filter((m: Match) => !existingIds.has(m.externalId));
-        
-        this.matches = [...this.matches, ...uniqueNewMatches];
-        console.log('Updated matches state:', this.matches);
+          this.matches = [...this.matches, ...uniqueNewMatches];
+        } else {
+          throw new Error('Invalid response format from server');
+        }
       } catch (error: any) {
         console.error('Error fetching matches:', error);
         if (error.response?.status === 401) {

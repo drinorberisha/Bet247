@@ -9,13 +9,14 @@ import adminRoutes from './routes/adminRoutes';
 import matchRoutes from './routes/matchRoutes';
 import { SchedulerService } from './services/schedulerService';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
-import './jobs/matchResultsJob'; 
+import { startMatchResultsJob } from './jobs/matchResultsJob';
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+startMatchResultsJob();
 
 // Basic route
 app.get('/', (req, res) => {

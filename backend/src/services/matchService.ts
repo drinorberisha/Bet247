@@ -1,5 +1,9 @@
 import { Match, IMatch } from '../models/Match';
 import { OddsApiService } from './oddsApiService';
+import mongoose from 'mongoose';
+import { eventEmitter } from '../utils/eventEmitter';
+import { LockService } from './lockService';
+import { retry } from 'async';
 
 export class MatchService {
   private oddsApiService: OddsApiService;
@@ -140,31 +144,50 @@ export class MatchService {
     }
   }
 
-  async updateMatches(sportKey: string): Promise<void> {
-    await this.retryOperation(async () => {
-      const matches = await this.oddsApiService.getMatches(sportKey);
-      
-      for (const match of matches) {
-        const matchData = {
-          externalId: match.id,
-          sportKey: match.sport_key,
-          sportTitle: match.sport_title,
-          homeTeam: match.home_team,
-          awayTeam: match.away_team,
-          commenceTime: new Date(match.commence_time),
-          // ... other match data transformation
-          status: this.determineStatus(match.commence_time),
-          tier: this.determineTier(match as any),
-          lastUpdated: new Date()
-        };
+  private async queueMatchUpdate(sportKey: string): Promise<void> {
+    const queueKey = `match_update_${sportKey}`;
+    
+    if (!await LockService.acquireLock(queueKey, 30000)) { // 30 second lock
+      console.log(`Update for ${sportKey} already in progress, skipping`);
+      return;
+    }
 
-        await Match.findOneAndUpdate(
-          { externalId: matchData.externalId },
-          matchData,
-          { upsert: true, new: true }
-        );
+    try {
+      await this.updateMatches(sportKey);
+    } finally {
+      await LockService.releaseLock(queueKey);
+    }
+  }
+
+  async updateMatches(sportKey: string): Promise<void> {
+    const retryOptions = {
+      retries: 3,
+      minTimeout: 1000,
+      maxTimeout: 5000
+    };
+
+    await retry(async () => {
+      const matches = await this.oddsApiService.getMatches(sportKey);
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        for (const match of matches) {
+          const matchData = this.transformMatchData(match);
+          await Match.findOneAndUpdate(
+            { externalId: matchData.externalId },
+            matchData,
+            { upsert: true, new: true, session }
+          );
+        }
+        await session.commitTransaction();
+      } catch (error) {
+        await session.abortTransaction();
+        throw error;
+      } finally {
+        session.endSession();
       }
-    });
+    }, retryOptions);
   }
 
   private determineStatus(commenceTime: string): 'upcoming' | 'live' | 'ended' {
@@ -197,25 +220,6 @@ export class MatchService {
     const matches = await this.getMatches(sportKey);
     this.cache.set(sportKey, { data: matches, timestamp: now });
     return matches;
-  }
-
-  async queueMatchUpdate(sportKey: string): Promise<void> {
-    if (this.requestQueue.has(sportKey)) {
-      await this.requestQueue.get(sportKey);
-      return;
-    }
-
-    const updatePromise = (async () => {
-      try {
-        await this.updateMatches(sportKey);
-      } finally {
-        this.requestQueue.delete(sportKey);
-        await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
-      }
-    })();
-
-    this.requestQueue.set(sportKey, updatePromise);
-    await updatePromise;
   }
 
   async checkAndUpdateMatchResults(matches: IMatch[]): Promise<IMatch[]> {
@@ -258,20 +262,29 @@ export class MatchService {
     return updatedMatches;
   }
 
-  async settleMatches(): Promise<IMatch[]> {
+  async settleMatches(session?: mongoose.ClientSession): Promise<IMatch[]> {
     const unsettledMatches = await Match.find({
       status: 'ended',
       result: { $exists: true },
       settled: { $ne: true }
-    });
+    }).session(session);
 
     const settledMatches: IMatch[] = [];
 
     for (const match of unsettledMatches) {
       try {
+        // Verify match can be settled
+        if (!this.verifyMatchSettlement(match)) {
+          console.error(`Match ${match._id} failed settlement verification`);
+          continue;
+        }
+
         match.settled = true;
-        await match.save();
+        await match.save({ session });
         settledMatches.push(match);
+
+        // Emit event for bet settlement
+        await this.emitMatchSettled(match);
       } catch (error) {
         console.error(`Error settling match ${match._id}:`, error);
       }
@@ -280,14 +293,56 @@ export class MatchService {
     return settledMatches;
   }
 
+  private verifyMatchSettlement(match: IMatch): boolean {
+    // Ensure all required fields are present
+    if (!match.scores?.home || !match.scores?.away || !match.result) {
+      console.error(`Match ${match._id} missing required settlement data`);
+      return false;
+    }
+
+    // Verify result matches scores
+    const calculatedResult = this.determineResult(match.scores);
+    if (calculatedResult !== match.result) {
+      console.error(`Match ${match._id} result mismatch: stored=${match.result}, calculated=${calculatedResult}`);
+      return false;
+    }
+
+    return true;
+  }
+
   private determineResult(scores: { home: number; away: number }): '1' | 'X' | '2' | null {
+    // Validate score object structure
     if (!scores || typeof scores.home !== 'number' || typeof scores.away !== 'number') {
+      console.error('Invalid scores format:', scores);
+      return null;
+    }
+
+    // Validate score values
+    if (scores.home < 0 || scores.away < 0) {
+      console.error('Invalid negative scores:', scores);
       return null;
     }
 
     if (scores.home > scores.away) return '1';
     if (scores.home < scores.away) return '2';
-    return 'X';
+    if (scores.home === scores.away) return 'X';
+    
+    console.error('Unexpected score values:', scores);
+    return null;
+  }
+
+  private async emitMatchSettled(match: IMatch): Promise<void> {
+    try {
+      // Emit event for bet settlement processing
+      await eventEmitter.emit('matchSettled', {
+        matchId: match._id,
+        result: match.result,
+        scores: match.scores,
+        settledAt: new Date()
+      });
+    } catch (error) {
+      console.error(`Error emitting matchSettled event for ${match._id}:`, error);
+    }
   }
 
   private async debouncedRequest(sportKey: string): Promise<IMatch[]> {

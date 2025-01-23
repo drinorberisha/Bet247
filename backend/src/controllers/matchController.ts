@@ -2,9 +2,11 @@ import { Request, Response } from 'express';
 import {Match} from '../models/Match';
 import { OddsApiService } from '../services/oddsApiService';
 import { MatchService } from '../services/matchService';
+import { UnifiedMatchService } from '../services/unifiedMatchService';
 
 const oddsApiService = new OddsApiService();
 const matchService = new MatchService();
+const unifiedMatchService = new UnifiedMatchService();
 
 // Get all supported sports
 export const getSports = async (req: Request, res: Response) => {
@@ -21,79 +23,18 @@ export const getSports = async (req: Request, res: Response) => {
 // Get matches with filters
 export const getMatches = async (req: Request, res: Response) => {
   try {
-    const { 
-      sport = 'soccer_epl',
-      status = 'upcoming'
-    } = req.query;
-
-    console.log('Match request params:', {
-      sport,
-      status,
-      user: req.user
+    const { sportKey } = req.params;
+    const matches = await unifiedMatchService.getMatchesBySport(sportKey);
+    res.json({ 
+      success: true, 
+      matches  // This ensures we return an array in the matches property
     });
-
-    // First try to get matches from database
-    let matches = await Match.find({
-      sportKey: { $regex: new RegExp(`^${sport}`) },
-      status: status
-    });
-
-    console.log('Found matches in DB:', {
-      count: matches.length,
-      sample: matches[0],
-      sportKeys: matches.map(m => m.sportKey),
-      statuses: matches.map(m => m.status)
-    });
-
-    // If no matches found or matches are stale, fetch from API
-    if (matches.length === 0 || matches.some(match => isOddsStale(match))) {
-      console.log('No matches found or stale data, fetching from API...');
-      
-      try {
-        const apiMatches = await matchService.getMatches(sport as string);
-        console.log('API matches fetched:', {
-          count: apiMatches.length,
-          sample: apiMatches[0]
-        });
-
-        const transformedMatches = apiMatches
-          .map(match => transformMatchData(match))
-          .filter(match => match !== null);
-
-        console.log('Transformed matches:', {
-          count: transformedMatches.length,
-          sample: transformedMatches[0]
-        });
-
-        // Bulk update matches
-        await Promise.all(transformedMatches.map(matchData => 
-          Match.findOneAndUpdate(
-            { externalId: matchData.externalId },
-            matchData,
-            { upsert: true, new: true }
-          )
-        ));
-
-        // Get updated matches from database
-        matches = await Match.find({
-          sportKey: { $regex: new RegExp(`^${sport}`) },
-          status: status
-        });
-      } catch (apiError) {
-        console.error('Error fetching from API:', apiError);
-        // Continue with existing matches if API fetch fails
-      }
-    }
-
-    console.log('Sending matches to client:', {
-      count: matches.length,
-      sample: matches[0]
-    });
-
-    res.json(matches);
   } catch (error) {
     console.error('Error in getMatches:', error);
-    res.status(500).json({ message: 'Error fetching matches' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching matches' 
+    });
   }
 };
 
@@ -161,12 +102,15 @@ export const checkMatchResults = async (req: Request, res: Response) => {
       commenceTime: { $lt: new Date() }
     });
 
-    const updatedMatches = await matchService.checkAndUpdateMatchResults(pendingMatches);
+    const { updatedMatches, settledMatches } = await unifiedMatchService.updateMatches(
+      pendingMatches[0]?.sportKey || 'default'
+    );
 
     res.json({
       success: true,
       updatedMatches,
-      message: `Updated ${updatedMatches.length} matches`
+      settledMatches,
+      message: `Updated ${updatedMatches.length} matches, settled ${settledMatches.length} matches`
     });
   } catch (error) {
     console.error('Error checking match results:', error);
@@ -340,4 +284,62 @@ const determineMatchResult = (scores: any, homeTeam: string): '1' | 'X' | '2' | 
   if (homeScore > awayScore) return '1';
   if (homeScore < awayScore) return '2';
   return 'X';
+};
+
+// New endpoints with 'v2' prefix
+export const getMatchesV2 = async (req: Request, res: Response) => {
+  try {
+    const { sportKey } = req.params;
+    const matches = await unifiedMatchService.getMatchesBySport(sportKey);
+    res.json({ success: true, matches });
+  } catch (error) {
+    console.error('Error in getMatchesV2:', error);
+    res.status(500).json({ success: false, message: 'Error fetching matches' });
+  }
+};
+
+export const checkMatchResultsV2 = async (req: Request, res: Response) => {
+  try {
+    const pendingMatches = await Match.find({
+      status: { $in: ['live', 'upcoming'] },
+      commenceTime: { $lt: new Date() }
+    });
+
+    const { updatedMatches, settledMatches } = await unifiedMatchService.updateMatches(
+      pendingMatches[0]?.sportKey || 'default'
+    );
+
+    res.json({
+      success: true,
+      updatedMatches,
+      settledMatches,
+      message: `Updated ${updatedMatches.length} matches, settled ${settledMatches.length} matches`
+    });
+  } catch (error) {
+    console.error('Error in checkMatchResultsV2:', error);
+    res.status(500).json({ success: false, message: 'Error checking match results' });
+  }
+};
+
+// Keep old endpoints temporarily
+export const getMatchesLegacy = async (req: Request, res: Response) => {
+  try {
+    const { sportKey } = req.params;
+    const matches = await matchService.getMatchesBySport(sportKey);
+    console.log('Using legacy getMatches endpoint');
+    res.json({ success: true, matches });
+  } catch (error) {
+    console.error('Error in legacy getMatches:', error);
+    res.status(500).json({ success: false, message: 'Error fetching matches' });
+  }
+};
+
+export const getLiveMatches = async (req: Request, res: Response) => {
+  try {
+    const matches = await unifiedMatchService.getLiveMatches();
+    res.json({ success: true, matches });
+  } catch (error) {
+    console.error('Error fetching live matches:', error);
+    res.status(500).json({ message: 'Error fetching live matches' });
+  }
 }; 

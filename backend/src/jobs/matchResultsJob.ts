@@ -1,69 +1,67 @@
-import { CronJob } from 'cron';
-import { MatchService } from '../services/matchService';
+import { UnifiedMatchService } from '../services/unifiedMatchService';
+import { LockService } from '../services/lockService';
 import { Match } from '../models/Match';
+import { CronJob } from 'cron';
+import mongoose from 'mongoose';
 
-const matchService = new MatchService();
+const unifiedMatchService = new UnifiedMatchService();
 
 // Run every 5 minutes
 const matchResultsJob = new CronJob('*/5 * * * *', async () => {
+  const lockKey = 'match_results_job';
+
   try {
+    if (!await LockService.acquireLock(lockKey)) {
+      console.log('Match results job already running, skipping...');
+      return;
+    }
+
     console.log('Running match results check...', new Date());
     
-    // Find matches that are:
-    // 1. Still marked as upcoming or live
-    // 2. Have a commence time in the past
-    // 3. Are within the last 48 hours (to avoid checking very old matches)
-    const pendingMatches = await Match.find({
-      status: { $in: ['live', 'upcoming'] },
-      commenceTime: { 
-        $lt: new Date(),
-        $gt: new Date(Date.now() - 48 * 60 * 60 * 1000) // last 48 hours
-      }
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    console.log('Pending matches found:', pendingMatches.map(m => ({
-      id: m._id,
-      match: `${m.homeTeam} vs ${m.awayTeam}`,
-      status: m.status,
-      commenceTime: m.commenceTime,
-      sportKey: m.sportKey,
-      timeSinceCommence: Math.round((Date.now() - m.commenceTime.getTime()) / (60 * 1000)) + ' minutes'
-    })));
+    try {
+      const pendingMatches = await Match.find({
+        status: { $in: ['live', 'upcoming'] },
+        commenceTime: { 
+          $lt: new Date(),
+          $gt: new Date(Date.now() - 48 * 60 * 60 * 1000)
+        }
+      }).session(session);
 
-    if (pendingMatches.length > 0) {
-      console.log(`Checking results for ${pendingMatches.length} pending matches...`);
-      
-      // Use the new method from MatchService
-      const forceUpdatedMatches = await matchService.checkOldMatches(pendingMatches);
-      if (forceUpdatedMatches.length > 0) {
-        console.log('Force updated matches:', forceUpdatedMatches.map(m => ({
-          id: m._id,
-          match: `${m.homeTeam} vs ${m.awayTeam}`,
-          status: m.status,
-          scores: m.scores
-        })));
+      if (pendingMatches.length > 0) {
+        const results = await unifiedMatchService.updateMatches(
+          pendingMatches[0].sportKey,
+          session
+        );
+        
+        if (results.updatedMatches.length > 0 || results.settledMatches.length > 0) {
+          console.log('Match updates:', {
+            updated: results.updatedMatches.length,
+            settled: results.settledMatches.length
+          });
+          await session.commitTransaction();
+        } else {
+          await session.abortTransaction();
+        }
       }
-
-      const updatedMatches = await matchService.checkAndUpdateMatchResults(pendingMatches);
-      console.log('Updated matches:', updatedMatches.map(m => ({
-        id: m._id,
-        match: `${m.homeTeam} vs ${m.awayTeam}`,
-        status: m.status,
-        result: m.result,
-        scores: m.scores
-      })));
-      
-      if (updatedMatches.length > 0) {
-        const settledMatches = await matchService.settleMatches();
-        console.log('Settled matches:', settledMatches);
-      }
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
   } catch (error) {
     console.error('Error in match results job:', error);
+  } finally {
+    LockService.releaseLock(lockKey);
   }
 });
 
 // Make sure the job is started
-matchResultsJob.start();
+export const startMatchResultsJob = () => {
+  matchResultsJob.start();
+};
 
 export default matchResultsJob; 

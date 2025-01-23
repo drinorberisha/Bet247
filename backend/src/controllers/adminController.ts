@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Transaction from '../models/Transaction';
+import { monitor } from '../utils/serviceMonitor';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response) => {
@@ -338,6 +339,16 @@ export const updateUserStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const getServiceMetrics = async (req: Request, res: Response) => {
+  try {
+    const metrics = monitor.getMetrics();
+    res.json({ success: true, metrics });
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    res.status(500).json({ success: false, message: 'Error fetching metrics' });
+  }
+};
+
 export default {
   getDashboardStats,
   getAllUsers,
@@ -347,5 +358,6 @@ export default {
   getUserList,
   getTransactionHistory,
   updateUserRole,
-  updateUserStatus
+  updateUserStatus,
+  getServiceMetrics
 }; 
