@@ -220,7 +220,7 @@ export const useBettingStore = defineStore("betting", {
       const totalStake =
         this.activeMode === "multi"
           ? this.multiStake
-          : this.currentBets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+          : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
       // Check if user is authenticated
       if (!authStore.isAuthenticated) {
@@ -253,7 +253,7 @@ export const useBettingStore = defineStore("betting", {
           };
         }
       } else {
-        if (!this.currentBets.some((bet) => bet.amount > 0)) {
+        if (!this.currentBets.some((bet) => bet.stake > 0)) {
           return {
             valid: false,
             message: "Please enter stake amount",
@@ -284,11 +284,11 @@ export const useBettingStore = defineStore("betting", {
             ? this.multiOdds
             : this.currentBets[0]?.selections[0]?.odds || 0;
 
-        // Calculate amount and potential win
+        // Calculate amount using stake instead of amount
         const amount =
           this.activeMode === "multi"
             ? this.multiStake
-            : this.currentBets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+            : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
         const potentialWin = amount * totalOdds;
 
