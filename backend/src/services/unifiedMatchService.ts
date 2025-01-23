@@ -2,6 +2,7 @@ import { Match, IMatch } from '../models/Match';
 import { OddsApiService } from './oddsApiService';
 import { eventEmitter } from '../utils/eventEmitter';
 import mongoose from 'mongoose';
+import { retry } from 'async';
 
 export class UnifiedMatchService {
   private oddsApiService: OddsApiService;
@@ -124,28 +125,39 @@ export class UnifiedMatchService {
   }
 
   async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
-    try {
-      const matches = await this.oddsApiService.getMatches(sportKey);
-      const updatedMatches: IMatch[] = [];
-      const settledMatches: IMatch[] = [];
-
-      for (const match of matches) {
-        if (this.validateMatch(match)) {
-          const updatedMatch = await Match.findOneAndUpdate(
-            { externalId: match.externalId },
-            match,
-            { 
-              upsert: true, 
-              new: true, 
-              session,
-              setDefaultsOnInsert: true 
-            }
-          );
-          updatedMatches.push(updatedMatch);
-        }
+    const retryOptions = {
+      times: 3,
+      interval: 1000,
+      errorFilter: (err: any) => {
+        // Retry only on specific errors, like network issues
+        return !err.response || err.response.status >= 500;
       }
+    };
 
-      return { updatedMatches, settledMatches };
+    try {
+      return await retry(retryOptions, async () => {
+        const matches = await this.oddsApiService.getMatches(sportKey);
+        const updatedMatches: IMatch[] = [];
+        const settledMatches: IMatch[] = [];
+
+        for (const match of matches) {
+          if (this.validateMatch(match)) {
+            const updatedMatch = await Match.findOneAndUpdate(
+              { externalId: match.externalId },
+              match,
+              { 
+                upsert: true, 
+                new: true, 
+                session,
+                setDefaultsOnInsert: true 
+              }
+            );
+            updatedMatches.push(updatedMatch);
+          }
+        }
+
+        return { updatedMatches, settledMatches };
+      });
     } catch (error) {
       console.error('Error updating matches:', error);
       throw error;

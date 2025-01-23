@@ -14,9 +14,13 @@ import { startMatchResultsJob } from './jobs/matchResultsJob';
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Add your frontend URLs
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
-startMatchResultsJob();
 
 // Basic route
 app.get('/', (req, res) => {
@@ -28,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/matches', matchRoutes);
+startMatchResultsJob();
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sportodds';
