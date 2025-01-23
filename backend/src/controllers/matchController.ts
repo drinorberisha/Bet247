@@ -153,6 +153,41 @@ export const refreshOdds = async (req: Request, res: Response) => {
   }
 };
 
+// Add new controller methods
+export const checkMatchResults = async (req: Request, res: Response) => {
+  try {
+    const pendingMatches = await Match.find({
+      status: { $in: ['live', 'upcoming'] },
+      commenceTime: { $lt: new Date() }
+    });
+
+    const updatedMatches = await matchService.checkAndUpdateMatchResults(pendingMatches);
+
+    res.json({
+      success: true,
+      updatedMatches,
+      message: `Updated ${updatedMatches.length} matches`
+    });
+  } catch (error) {
+    console.error('Error checking match results:', error);
+    res.status(500).json({ message: 'Error checking match results' });
+  }
+};
+
+export const settleMatches = async (req: Request, res: Response) => {
+  try {
+    const settledMatches = await matchService.settleMatches();
+    res.json({
+      success: true,
+      settledMatches,
+      message: `Settled ${settledMatches.length} matches`
+    });
+  } catch (error) {
+    console.error('Error settling matches:', error);
+    res.status(500).json({ message: 'Error settling matches' });
+  }
+};
+
 // Helper function to safely parse date
 const parseSafeDate = (dateString: string): Date => {
   const parsed = new Date(dateString);
@@ -201,6 +236,7 @@ const transformMatchData = (match: any) => {
         lastUpdate: new Date(bestBookmaker.last_update)
       } : null,
       status: determineMatchStatus(match.commence_time),
+      result: match.scores ? determineMatchResult(match.scores, match.home_team) : null,
       lastUpdated: new Date()
     };
   } catch (error) {
@@ -290,4 +326,18 @@ const determineMatchStatus = (commenceTime: string): 'upcoming' | 'live' | 'ende
     return 'live';
   }
   return 'ended';
+};
+
+// Add helper function to determine match result
+const determineMatchResult = (scores: any, homeTeam: string): '1' | 'X' | '2' | null => {
+  if (!scores || !scores.home || !scores.away) return null;
+
+  const homeScore = parseInt(scores.home);
+  const awayScore = parseInt(scores.away);
+
+  if (isNaN(homeScore) || isNaN(awayScore)) return null;
+
+  if (homeScore > awayScore) return '1';
+  if (homeScore < awayScore) return '2';
+  return 'X';
 }; 

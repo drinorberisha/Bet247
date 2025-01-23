@@ -15,6 +15,11 @@ const VALIDATION_RULES = {
     maxOdds: 2000,
     maxSelections: 10,
     maxPotentialWin: 20000
+  },
+  cashout: {
+    minWonSelections: 1,
+    minPendingSelections: 1,
+    minTimeBeforeMatch: 5, // minutes
   }
 };
 
@@ -72,5 +77,26 @@ export const validateBet = (req: Request, res: Response, next: NextFunction) => 
     next();
   } catch (error) {
     res.status(400).json({ message: 'Invalid bet data' });
+  }
+};
+
+export const validateCashout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { betId } = req.params;
+    
+    if (!betId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bet ID is required'
+      });
+    }
+
+    // Basic validation passed, proceed to controller
+    next();
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Validation error'
+    });
   }
 }; 

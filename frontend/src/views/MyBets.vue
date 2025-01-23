@@ -23,60 +23,69 @@
       </div>
 
       <!-- Bets List -->
-      <div class="bets-list" v-if="currentBets.length">
-        <div 
-          v-for="bet in currentBets" 
-          :key="bet.id" 
-          class="bet-card"
-          :class="{ 'won': bet.status === 'won', 'lost': bet.status === 'lost' }"
-        >
-          <div class="bet-header">
-            <span class="bet-date">{{ formatDate(bet.placedAt) }}</span>
-            <span class="bet-status" :class="bet.status">
-              {{ formatStatus(bet.status) }}
-            </span>
-          </div>
+      <div class="bets-list" v-if="!bettingStore.loading">
+        <div v-if="currentBets.length === 0" class="no-bets">
+          No {{ activeTab }} bets found
+        </div>
+        
+        <div v-else class="bet-cards">
+          <div v-for="bet in currentBets" :key="bet._id" class="bet-card">
+            <div class="bet-header">
+              <span class="bet-type">{{ bet.betType === 'multiple' ? 'Multi Bet' : 'Single Bet' }}</span>
+              <span class="bet-status" :class="bet.status">{{ formatStatus(bet.status) }}</span>
+            </div>
 
-          <div class="bet-details">
-            <div class="match-info">
-              <span class="league">{{ bet.league }}</span>
-              <div class="teams">
-                <span class="team">{{ bet.homeTeam }}</span>
-                <span class="vs">vs</span>
-                <span class="team">{{ bet.awayTeam }}</span>
+            <div class="bet-content">
+              <div v-for="(selection, index) in bet.selections" :key="index" class="selection">
+                <div class="teams">
+                  <span class="team home">{{ getHomeTeam(selection.event) }}</span>
+                  <span class="vs">vs</span>
+                  <span class="team away">{{ getAwayTeam(selection.event) }}</span>
+                </div>
+                <div class="selection-details">
+                  <div class="selection-info">
+                    <span class="pick">{{ formatSelectionType(selection.selection) }}</span>
+                    <span class="market">{{ selection.market }}</span>
+                  </div>
+                  <span class="odds">{{ selection.odds.toFixed(2) }}</span>
+                </div>
               </div>
             </div>
 
-            <div class="bet-info">
-              <div class="bet-type">{{ bet.type }}</div>
-              <div class="bet-odds">{{ bet.odds }}</div>
-              <div class="bet-amount">€{{ formatAmount(bet.amount) }}</div>
-              <div class="potential-win" v-if="bet.status === 'open'">
-                Potential Win: €{{ formatAmount(bet.potentialWin) }}
+            <div class="bet-footer">
+              <div class="stake-info">
+                <div class="stake">
+                  <span>Stake:</span>
+                  <span>${{ bet.amount.toFixed(2) }}</span>
+                </div>
+                <div class="potential-win">
+                  <span>Potential Win:</span>
+                  <span>${{ bet.potentialWin.toFixed(2) }}</span>
+                </div>
               </div>
-              <div class="win-amount" v-else-if="bet.status === 'won'">
-                Won: €{{ formatAmount(bet.winAmount) }}
+              <div class="date">
+                {{ formatDate(bet.createdAt) }}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div class="empty-state" v-else>
-        <i class="fas fa-ticket-alt"></i>
-        <p>No {{ activeTab }} bets found</p>
+      <div v-else class="loading">
+        <span>Loading bets...</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useBettingStore } from '../stores/betting';
 import Header from '../components/Header/Header.vue';
 
 const authStore = useAuthStore();
+const bettingStore = useBettingStore();
 const activeTab = ref('open');
 
 // Mock data - Replace with actual API calls
@@ -112,25 +121,53 @@ const settledBets = ref([
   // Add more mock data
 ]);
 
+onMounted(async () => {
+  await bettingStore.fetchUserBets();
+});
+
 const currentBets = computed(() => {
-  return activeTab.value === 'open' ? openBets.value : settledBets.value;
+  const bets = activeTab.value === 'open' 
+    ? bettingStore.activeBets 
+    : bettingStore.settledBets;
+  
+  // Debug log to check bet structure
+  console.log('Current bets:', bets);
+  bets.forEach(bet => {
+    console.log('Bet selections:', bet.selections);
+  });
+  
+  return bets;
 });
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    day: '2-digit',
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
     month: 'short',
+    day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
-const formatAmount = (amount: number) => {
-  return amount.toFixed(2);
+    minute: '2-digit'
+  });
 };
 
 const formatStatus = (status: string) => {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+};
+
+const getHomeTeam = (event: string) => {
+  return event.split(' vs ')[0];
+};
+
+const getAwayTeam = (event: string) => {
+  return event.split(' vs ')[1];
+};
+
+const formatSelectionType = (type: string) => {
+  switch(type) {
+    case '1': return 'Home Win';
+    case 'X': return 'Draw';
+    case '2': return 'Away Win';
+    default: return type;
+  }
 };
 </script>
 
@@ -176,98 +213,155 @@ const formatStatus = (status: string) => {
   font-size: 0.8rem;
 }
 
+.bet-cards {
+  display: grid;
+  gap: 1rem;
+}
+
 .bet-card {
-  background: var(--subheader);
-  border: 1px solid var(--leftpreborder);
+  background: var(--pointbox);
   border-radius: 8px;
   padding: 1rem;
-  margin-bottom: 1rem;
 }
 
 .bet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-.bet-date {
+.bet-type {
+  font-weight: 500;
   color: var(--textcolor);
-  font-size: 0.9rem;
 }
 
 .bet-status {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.bet-status.pending {
+  background: var(--active-color);
+  color: white;
 }
 
 .bet-status.won {
   background: var(--success);
-  color: var(--white);
+  color: white;
 }
 
 .bet-status.lost {
-  background: var(--error);
-  color: var(--white);
+  background: var(--button-one);
+  color: white;
 }
 
-.bet-status.open {
+.bet-status.cashed_out {
   background: var(--warning);
-  color: var(--black);
+  color: white;
 }
 
-.match-info {
+.bet-content {
+  border-top: 1px solid var(--leftpreborder);
+  border-bottom: 1px solid var(--leftpreborder);
+  padding: 1rem 0;
+}
+
+.selection {
   margin-bottom: 1rem;
 }
 
-.league {
-  color: var(--textcolor);
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-  display: block;
+.selection:last-child {
+  margin-bottom: 0;
 }
 
 .teams {
-  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--textcolor);
   display: flex;
-  gap: 0.5rem;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.team {
+  font-weight: 500;
 }
 
 .vs {
   color: var(--textcolor);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.selection-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
+
+.selection-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.market {
   font-size: 0.8rem;
-}
-
-.bet-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 1rem;
-  align-items: center;
-}
-
-.bet-type,
-.bet-odds,
-.bet-amount,
-.potential-win,
-.win-amount {
-  text-align: center;
-  padding: 0.5rem;
-  background: var(--header);
-  border-radius: 4px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
   color: var(--textcolor);
+  opacity: 0.8;
 }
 
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+.pick {
+  color: var(--active-color);
+  font-weight: 500;
+}
+
+.odds {
+  color: var(--active-color);
+  font-weight: 600;
+}
+
+.bet-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.stake-info {
+  display: flex;
+  gap: 2rem;
+}
+
+.stake, .potential-win {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stake span:first-child,
+.potential-win span:first-child {
+  color: var(--textcolor);
+  font-size: 0.875rem;
+}
+
+.stake span:last-child,
+.potential-win span:last-child {
+  color: var(--active-color);
+  font-weight: 500;
+}
+
+.date {
+  color: var(--textcolor);
+  font-size: 0.875rem;
+}
+
+.loading, .no-bets {
+  text-align: center;
+  color: var(--textcolor);
+  padding: 2rem;
 }
 
 @media (max-width: 768px) {
@@ -276,8 +370,15 @@ const formatStatus = (status: string) => {
     margin-bottom: 60px;
   }
 
-  .bet-info {
-    grid-template-columns: 1fr 1fr;
+  .bet-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .stake-info {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 </style> 

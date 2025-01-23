@@ -147,6 +147,30 @@ export const useMatchesStore = defineStore('matches', {
     clearMatches() {
       this.matches = [];
       this.error = null;
+    },
+
+    async checkMatchResults() {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/matches/results`);
+        
+        if (response.data.updatedMatches) {
+          // Log matches that were updated
+          console.log('Matches updated with results:', response.data.updatedMatches);
+          
+          // Refresh matches data
+          await this.fetchMatches();
+          
+          // Return the updated matches for bet settlement
+          return response.data.updatedMatches;
+        }
+      } catch (error) {
+        console.error('Error checking match results:', error);
+      }
+    },
+
+    // Helper method to determine if a match should be settled
+    isMatchSettled(match: any): boolean {
+      return match.status === 'ended' && match.result;
     }
   }
 }); 

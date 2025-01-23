@@ -9,7 +9,7 @@ import adminRoutes from './routes/adminRoutes';
 import matchRoutes from './routes/matchRoutes';
 import { SchedulerService } from './services/schedulerService';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
+import './jobs/matchResultsJob'; 
 
 const app = express();
 

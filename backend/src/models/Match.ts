@@ -32,6 +32,12 @@ export interface IMatch extends Document {
   lastUpdated: Date;
   title?: string;
   formattedCommenceTime?: string;
+  result?: '1' | 'X' | '2';
+  scores?: {
+    home: number;
+    away: number;
+  };
+  settled?: boolean;
 }
 
 const matchSchema = new Schema<IMatch>({
@@ -99,6 +105,19 @@ const matchSchema = new Schema<IMatch>({
     type: Date, 
     default: Date.now,
     index: true 
+  },
+  result: {
+    type: String,
+    enum: ['1', 'X', '2'],
+    default: null
+  },
+  scores: {
+    home: Number,
+    away: Number
+  },
+  settled: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

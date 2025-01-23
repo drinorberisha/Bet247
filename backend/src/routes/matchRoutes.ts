@@ -12,5 +12,7 @@ router.get('/sports', matchController.getSports);
 // Protected routes (require authentication)
 router.use(authenticateToken);
 router.post('/refresh-odds', matchController.refreshOdds);
+router.get('/results', matchController.checkMatchResults);
+router.post('/settle-matches', matchController.settleMatches);
 
 export default router; 

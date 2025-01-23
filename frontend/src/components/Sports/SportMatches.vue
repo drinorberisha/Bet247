@@ -172,15 +172,18 @@ const handleOddSelection = (match: any, type: string, odds: number) => {
     matchId: match._id,
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
-    type,
-    odds,
-    sportKey: match.sportKey
+    type: type,
+    odds: odds,
+    sportKey: match.sportKey,
+    market: 'Match Winner',
+    status: match.status
   });
 };
 
 const isOddSelected = (matchId: string, type: string) => {
-  const bet = bettingStore.bets.find(b => b.matchId === matchId);
-  return bet?.selections.some(s => s.type === type) ?? false;
+  return bettingStore.selections.some(s => 
+    s.matchId === matchId && s.type === type
+  );
 };
 
 // Group matches by league
