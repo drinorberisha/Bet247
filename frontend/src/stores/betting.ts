@@ -468,6 +468,7 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
+        console.log('Initiating cashout for bet:', betId);
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/bets/${betId}/cashout`,
           {},
@@ -479,12 +480,16 @@ export const useBettingStore = defineStore("betting", {
           }
         );
 
+        console.log('Cashout response:', response.data);
+
         if (response.data.success) {
           // Update local state with the cashed out bet
           const updatedBet = {
             ...response.data.bet,
-            cashoutAmount: response.data.cashoutAmount // Ensure cashoutAmount is included
+            cashoutAmount: response.data.cashoutAmount
           };
+          
+          console.log('Updated bet with cashout amount:', updatedBet);
           
           // Update the bets lists
           this.placedBets = this.placedBets.map(bet => 

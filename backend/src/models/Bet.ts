@@ -10,8 +10,9 @@ export interface IBet extends Document {
   status: 'pending' | 'won' | 'lost' | 'cancelled' | 'cashed_out';
   createdAt: Date;
   settledAt?: Date;
-  cashedOut?: {
-    amount: number;
+  cashoutAmount?: number;
+  cashoutTime?: Date;
+  cashoutDetails?: {
     timestamp: Date;
     wonSelections: mongoose.Types.ObjectId[];
     remainingSelections: mongoose.Types.ObjectId[];
@@ -68,8 +69,9 @@ const betSchema = new mongoose.Schema({
     default: Date.now
   },
   settledAt: Date,
-  cashedOut: {
-    amount: Number,
+  cashoutAmount: Number,
+  cashoutTime: Date,
+  cashoutDetails: {
     timestamp: Date,
     wonSelections: [{
       type: mongoose.Schema.Types.ObjectId,

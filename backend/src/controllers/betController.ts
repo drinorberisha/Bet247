@@ -32,7 +32,7 @@ const calculateFinalCashoutAmount = (stake: number, partialOdds: number): number
   // Basic cashout calculation
   // You can make this more sophisticated by adding margin, time factors, etc.
   const baseAmount = stake * partialOdds;
-  const cashoutPercentage = 0.75; // Offering 75% of potential win for cashout
+  const cashoutPercentage = 0.75;
   return Number((baseAmount * cashoutPercentage).toFixed(2));
 };
 
