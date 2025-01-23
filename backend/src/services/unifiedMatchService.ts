@@ -2,7 +2,6 @@ import { Match, IMatch } from '../models/Match';
 import { OddsApiService } from './oddsApiService';
 import { eventEmitter } from '../utils/eventEmitter';
 import mongoose from 'mongoose';
-import { retry } from 'async';
 
 export class UnifiedMatchService {
   private oddsApiService: OddsApiService;
@@ -124,43 +123,45 @@ export class UnifiedMatchService {
     }).sort({ commenceTime: 1 });
   }
 
-  async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
-    const operation = async (callback: Function) => {
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    delay: number = 1000
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const matches = await this.oddsApiService.getMatches(sportKey);
-        const updatedMatches: IMatch[] = [];
-        const settledMatches: IMatch[] = [];
-
-        for (const match of matches) {
-          if (this.validateMatch(match)) {
-            const updatedMatch = await Match.findOneAndUpdate(
-              { externalId: match.externalId },
-              match,
-              { 
-                upsert: true, 
-                new: true, 
-                session,
-                setDefaultsOnInsert: true 
-              }
-            );
-            updatedMatches.push(updatedMatch);
-          }
-        }
-        callback(null, { updatedMatches, settledMatches });
+        return await operation();
       } catch (error) {
-        callback(error);
+        if (attempt === maxRetries) throw error;
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
       }
-    };
+    }
+    throw new Error('Operation failed after all retries');
+  }
 
-    return new Promise((resolve, reject) => {
-      retry(
-        { times: 3, interval: 1000 },
-        operation,
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
+  async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
+    return this.retryOperation(async () => {
+      const matches = await this.oddsApiService.getMatches(sportKey);
+      const updatedMatches: IMatch[] = [];
+      const settledMatches: IMatch[] = [];
+
+      for (const match of matches) {
+        if (this.validateMatch(match)) {
+          const updatedMatch = await Match.findOneAndUpdate(
+            { externalId: match.externalId },
+            match,
+            { 
+              upsert: true, 
+              new: true, 
+              session,
+              setDefaultsOnInsert: true 
+            }
+          );
+          updatedMatches.push(updatedMatch);
         }
-      );
+      }
+
+      return { updatedMatches, settledMatches };
     });
   }
 } 
