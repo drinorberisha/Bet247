@@ -20,6 +20,17 @@
       <span>Events</span>
     </RouterLink>
 
+    <!-- Move betslip to middle position -->
+    <a href="#" class="nav-item" @click.prevent="toggleBetslip">
+      <div class="betslip-icon-wrapper">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="selection-counter" v-if="totalSelections > 0">
+          {{ totalSelections }}
+        </span>
+      </div>
+      <span>Betslip</span>
+    </a>
+
     <RouterLink
       to="/my-bets"
       class="nav-item"
@@ -29,6 +40,7 @@
       <span>My Bets</span>
     </RouterLink>
 
+    <!-- Move account to end -->
     <RouterLink
       to="/dashboard"
       class="nav-item"
@@ -39,17 +51,47 @@
       <span>Account</span>
     </RouterLink>
   </nav>
+
+  <!-- Remove the bootstrap modal and add BetSlip directly -->
+  <BetSlip v-if="isMobile" ref="betslipRef" />
 </template>
 
 <script setup lang="ts">
 import { RouterLink, useRoute } from "vue-router";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref, computed, onUnmounted } from "vue";
 import { Modal } from "bootstrap";
+import BetSlip from "../Common/BetSlip.vue"; // Update import path
+import { useBettingStore } from "../../stores/betting"; // Add this import
 
 const route = useRoute();
 const currentRoute = computed(() => route.path);
 const isMenuOpen = ref(false);
+const betslipRef = ref(null);
+const isMobile = ref(false);
 
+const bettingStore = useBettingStore();
+
+// Add computed property for total selections
+const totalSelections = computed(() => {
+  return bettingStore.currentBets?.length || 0;
+});
+
+// Check if device is mobile
+onMounted(() => {
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth < 992;
+  };
+
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
+
+  // Cleanup
+  onUnmounted(() => {
+    window.removeEventListener("resize", checkMobile);
+  });
+});
+
+// Remove betslipModal ref and related functions
 const eventsModal = ref<Modal | null>(null);
 const betsModal = ref<Modal | null>(null);
 
@@ -87,6 +129,16 @@ const openBetsModal = () => {
   }
 };
 
+const toggleBetslip = () => {
+  if (betslipRef.value) {
+    if (betslipRef.value.isVisible) {
+      betslipRef.value.closeBetslip();
+    } else {
+      betslipRef.value.openBetslip();
+    }
+  }
+};
+
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
@@ -104,7 +156,7 @@ const toggleMenu = () => {
   justify-content: space-around;
   align-items: center;
   border-top: 1px solid var(--leftpreborder);
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .nav-item {
@@ -119,6 +171,7 @@ const toggleMenu = () => {
   min-width: 64px;
   border-radius: 8px;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .nav-item i {
@@ -163,5 +216,27 @@ const toggleMenu = () => {
   .mobile-nav {
     display: none;
   }
+}
+
+.betslip-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.selection-counter {
+  position: absolute;
+  top: -8px;
+  right: -28px;
+  background: var(--active-color);
+  color: var(--black);
+  font-size: 0.7rem;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 </style>
