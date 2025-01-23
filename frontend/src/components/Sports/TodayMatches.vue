@@ -314,24 +314,25 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
 
 .sport-filters {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  justify-content: center; /* Center filters */
+  justify-content: center;
   width: 100%;
+  padding: 0.3rem;
 }
 
 .filter-btn {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.8rem 1.2rem;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
   background: var(--pointbox);
   border: 1px solid var(--leftpreborder);
   border-radius: 8px;
   color: var(--white);
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 180px;
+  min-width: 140px;
 }
 
 .filter-btn:hover {
@@ -347,8 +348,8 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
 
 .sport-icon-wrapper {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,7 +441,7 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
 
 .odds-container {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.5rem;
 }
 
 .odd-box {
@@ -469,6 +470,7 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
 
 .odd-value {
   font-size: 0.9rem;
+  color: var(--active-color);
 }
 
 .team {
@@ -521,23 +523,22 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
   }
 
   .sport-filters {
-    gap: 1rem;
-    padding: 0.5rem 0;
+    gap: 0.4rem;
   }
 
   .filter-btn {
     min-width: auto;
-    width: 50px; /* Fixed width for circular buttons */
-    height: 50px; /* Fixed height for circular buttons */
+    width: 40px;
+    height: 40px;
     padding: 0;
     border-radius: 50%;
     justify-content: center;
   }
 
   .sport-icon-wrapper {
-    width: 28px;
-    height: 28px;
-    margin: 0; /* Remove any margins */
+    width: 22px;
+    height: 22px;
+    margin: 0;
   }
 
   .sport-label,
