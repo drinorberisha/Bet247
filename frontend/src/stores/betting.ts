@@ -43,7 +43,7 @@ interface Bet {
 
 export const useBettingStore = defineStore("betting", {
   state: () => ({
-    // Current betslip selections
+    balance: 0,
     currentSelections: [] as Selection[],
     currentBets: [] as Bet[],
 
@@ -78,7 +78,10 @@ export const useBettingStore = defineStore("betting", {
 
     conflictingMatchIds(): string[] {
       const matchCounts = this.currentBets.reduce((acc, bet) => {
-        acc[bet.matchId] = (acc[bet.matchId] || 0) + 1;
+        const matchId = bet.selections[0]?.matchId;
+        if (matchId) {
+          acc[matchId] = (acc[matchId] || 0) + 1;
+        }
         return acc;
       }, {} as Record<string, number>);
 
@@ -96,7 +99,7 @@ export const useBettingStore = defineStore("betting", {
         );
       }
       // For single mode, allow betting as long as there's a stake
-      return this.currentBets.some((bet) => bet.stake > 0);
+      return this.currentBets.some((bet) => (bet.stake || 0) > 0);
     },
   },
 
@@ -108,6 +111,9 @@ export const useBettingStore = defineStore("betting", {
       type: string;
       odds: number;
       sportKey: string;
+      status: string;
+      event: string;
+      commenceTime: string;
     }) {
       // Create selection object
       const selection: Selection = {
@@ -255,7 +261,7 @@ export const useBettingStore = defineStore("betting", {
           };
         }
       } else {
-        if (!this.currentBets.some((bet) => bet.stake > 0)) {
+        if (!this.currentBets.some((bet) => (bet.stake || 0) > 0)) {
           return {
             valid: false,
             message: "Please enter stake amount",

@@ -125,17 +125,8 @@ export class UnifiedMatchService {
   }
 
   async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
-    const retryOptions = {
-      times: 3,
-      interval: 1000,
-      errorFilter: (err: any) => {
-        // Retry only on specific errors, like network issues
-        return !err.response || err.response.status >= 500;
-      }
-    };
-
-    try {
-      return await retry(retryOptions, async () => {
+    const operation = async (callback: Function) => {
+      try {
         const matches = await this.oddsApiService.getMatches(sportKey);
         const updatedMatches: IMatch[] = [];
         const settledMatches: IMatch[] = [];
@@ -155,12 +146,21 @@ export class UnifiedMatchService {
             updatedMatches.push(updatedMatch);
           }
         }
+        callback(null, { updatedMatches, settledMatches });
+      } catch (error) {
+        callback(error);
+      }
+    };
 
-        return { updatedMatches, settledMatches };
-      });
-    } catch (error) {
-      console.error('Error updating matches:', error);
-      throw error;
-    }
+    return new Promise((resolve, reject) => {
+      retry(
+        { times: 3, interval: 1000 },
+        operation,
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }
+      );
+    });
   }
 } 
