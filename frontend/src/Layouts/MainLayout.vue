@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { useBettingStore } from '../stores/betting';
+import { useBettingStore } from "../stores/betting";
 import LoginModal from "../components/Modals/LoginModal.vue";
 import SignUpModal from "../components/Modals/SignUpModal.vue";
 
@@ -37,15 +37,15 @@ const bettingStore = useBettingStore();
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .main-content {
-    padding: 0.8rem 1rem;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
   }
 }
 
 /* Safe area support */
 @supports (padding: max(0px)) {
   .main-content {
-    padding-left: max(2rem, env(safe-area-inset-left));
-    padding-right: max(2rem, env(safe-area-inset-right));
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }

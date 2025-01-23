@@ -2,7 +2,7 @@
   <header class="main-header">
     <div class="header-container">
       <!-- Hamburger Menu Button -->
-      <button 
+      <button
         class="hamburger-btn"
         :class="{ 'is-active': isMobileMenuOpen }"
         @click="toggleMobileMenu"
@@ -36,7 +36,9 @@
         <!-- Auth Buttons for Desktop -->
         <div v-if="!isAuthenticated" class="auth-buttons">
           <button class="auth-btn login" @click="openLoginModal">Login</button>
-          <button class="auth-btn signup" @click="openSignupModal">Sign Up</button>
+          <button class="auth-btn signup" @click="openSignupModal">
+            Sign Up
+          </button>
         </div>
       </nav>
 
@@ -80,16 +82,17 @@
       </div>
 
       <!-- Mobile Menu Overlay -->
-      <div class="mobile-menu-overlay" 
-           :class="{ 'is-open': isMobileMenuOpen }"
-           @click="closeMobileMenu">
-      </div>
+      <div
+        class="mobile-menu-overlay"
+        :class="{ 'is-open': isMobileMenuOpen }"
+        @click="closeMobileMenu"
+      ></div>
 
       <!-- Mobile Menu Panel -->
       <div class="mobile-menu" :class="{ 'is-open': isMobileMenuOpen }">
         <div class="mobile-menu-header">
           <span class="menu-title">Menu</span>
-          <button 
+          <button
             class="close-menu-btn"
             @click="closeMobileMenu"
             aria-label="Close menu"
@@ -122,7 +125,9 @@
         <!-- Login/Signup in Mobile Menu -->
         <div class="mobile-user-actions" v-if="!isAuthenticated">
           <button class="auth-btn login" @click="openLoginModal">Login</button>
-          <button class="auth-btn signup" @click="openSignupModal">Sign Up</button>
+          <button class="auth-btn signup" @click="openSignupModal">
+            Sign Up
+          </button>
         </div>
       </div>
 
@@ -131,7 +136,7 @@
         <button class="menu-toggle-btn" @click="toggleLeftMenu">
           <i class="fas fa-bars"></i>
         </button>
-        
+
         <div class="left-menu-panel" :class="{ 'is-open': isLeftMenuOpen }">
           <div class="left-menu-header">
             <div class="user-info">
@@ -160,10 +165,10 @@
             </button>
           </nav>
         </div>
-        
+
         <!-- Overlay for closing menu -->
-        <div 
-          class="left-menu-overlay" 
+        <div
+          class="left-menu-overlay"
           :class="{ 'is-open': isLeftMenuOpen }"
           @click="closeLeftMenu"
         ></div>
@@ -179,12 +184,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { useAuthStore } from '../../stores/auth';
-import LoginModal from '../Modals/LoginModal.vue';
-import SignUpModal from '../Modals/SignUpModal.vue';
-import { Modal } from 'bootstrap';
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useRoute } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
+import LoginModal from "../Modals/LoginModal.vue";
+import SignUpModal from "../Modals/SignUpModal.vue";
+import { Modal } from "bootstrap";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -192,23 +197,25 @@ const showUserMenu = ref(false);
 
 const currentPath = computed(() => route.path);
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-const username = computed(() => authStore.user?.username || '');
-const userBalance = computed(() => authStore.user?.balance || '0.00');
+const username = computed(() => authStore.user?.username || "");
+const userBalance = computed(() => authStore.user?.balance || "0.00");
 
 const mainNavItems = [
-  { path: '/', label: 'Sports', icon: 'fas fa-table-tennis' },
-  { path: '/casino', label: 'Casino', icon: 'icon-casino' },
-  { path: '/livecasino', label: 'Live Casino', icon: 'icon-live' },
-  { path: '/promotions', label: 'Promotions', icon: 'icon-gift' },
+  { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
+  { path: "/casino", label: "Casino", icon: "icon-casino" },
+  { path: "/livecasino", label: "Live Casino", icon: "icon-live" },
+  { path: "/promotions", label: "Promotions", icon: "icon-gift" },
 ];
 
 // Separate mobile nav items to include My Bets and Dashboard
 const mobileNavItems = computed(() => [
   ...mainNavItems,
-  ...(isAuthenticated.value ? [
-    { path: '/my-bets', label: 'My Bets', icon: 'fas fa-ticket-alt' },
-    { path: '/dashboard', label: 'Dashboard', icon: 'far fa-user-circle' },
-  ] : [])
+  ...(isAuthenticated.value
+    ? [
+        { path: "/my-bets", label: "My Bets", icon: "fas fa-ticket-alt" },
+        { path: "/dashboard", label: "Dashboard", icon: "far fa-user-circle" },
+      ]
+    : []),
 ]);
 
 const toggleUserMenu = () => {
@@ -231,9 +238,9 @@ const openSignupModal = () => {
 
 // Add balance formatter
 const formatBalance = (balance: number | string) => {
-  return Number(balance).toLocaleString('en-US', {
+  return Number(balance).toLocaleString("en-US", {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 };
 
@@ -242,18 +249,18 @@ const isMobileMenuOpen = ref(false);
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
   // Optional: prevent body scroll when menu is open
-  document.body.style.overflow = isMobileMenuOpen.value ? 'hidden' : '';
+  document.body.style.overflow = isMobileMenuOpen.value ? "hidden" : "";
 };
 
 // Close mobile menu when route changes
 watch(currentPath, () => {
   isMobileMenuOpen.value = false;
-  document.body.style.overflow = '';
+  document.body.style.overflow = "";
 });
 
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
-  document.body.style.overflow = '';
+  document.body.style.overflow = "";
 };
 
 const isProfileMenuOpen = ref(false);
@@ -274,10 +281,10 @@ const vClickOutside = {
         binding.value(event);
       }
     };
-    document.addEventListener('click', el._clickOutside);
+    document.addEventListener("click", el._clickOutside);
   },
   unmounted(el: HTMLElement) {
-    document.removeEventListener('click', el._clickOutside);
+    document.removeEventListener("click", el._clickOutside);
   },
 };
 
@@ -290,8 +297,8 @@ const showDropdown = ref(false);
 
 // Close dropdown when clicking outside
 onMounted(() => {
-  document.addEventListener('click', (e) => {
-    const dropdown = document.querySelector('.profile-dropdown');
+  document.addEventListener("click", (e) => {
+    const dropdown = document.querySelector(".profile-dropdown");
     const target = e.target as HTMLElement;
     if (dropdown && !dropdown.contains(target)) {
       showDropdown.value = false;
@@ -578,6 +585,13 @@ watch(currentPath, () => {
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 80px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .auth-btn.login {
@@ -588,6 +602,7 @@ watch(currentPath, () => {
 .auth-btn.signup {
   background: var(--pointbox);
   color: var(--white);
+  font-size: 0.85rem;
 }
 
 .auth-btn.logout {
@@ -615,6 +630,11 @@ watch(currentPath, () => {
   .hamburger-btn {
     position: relative;
     left: 0;
+  }
+
+  .mobile-user-actions .auth-btn {
+    flex: 1;
+    height: 40px;
   }
 }
 
@@ -664,7 +684,13 @@ watch(currentPath, () => {
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 80px;
-  height: 36px; /* Added fixed height for consistency */
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .auth-btn.login {
@@ -675,14 +701,15 @@ watch(currentPath, () => {
 .auth-btn.signup {
   background: var(--pointbox);
   color: var(--white);
+  font-size: 0.85rem;
 }
 
-/* Responsive adjustments */
+/* Mobile adjustments */
 @media (max-width: 768px) {
   .auth-buttons {
-    display: none; /* Hide desktop auth buttons on mobile */
+    display: none;
   }
-  
+
   .mobile-user-actions {
     display: flex;
     gap: 0.5rem;
@@ -690,7 +717,8 @@ watch(currentPath, () => {
   }
 
   .mobile-user-actions .auth-btn {
-    flex: 1; /* Make buttons take equal width on mobile */
+    flex: 1;
+    height: 40px;
   }
 }
 
@@ -793,12 +821,10 @@ watch(currentPath, () => {
   background: var(--pointbox);
 }
 .dropdown-menu li:last-child button {
-  color: #ff4d4d;  /* Red color for logout */
-
-
+  color: #ff4d4d; /* Red color for logout */
 }
 .dropdown-menu li:last-child button:hover {
-  background: rgba(255, 77, 77, 0.1);  /* Slight red tint on hover */
+  background: rgba(255, 77, 77, 0.1); /* Slight red tint on hover */
 }
 .dropdown-menu .divider {
   border-top: 1px solid var(--leftpreborder);
@@ -965,6 +991,42 @@ watch(currentPath, () => {
   /* Make left menu panel take full width on mobile */
   .left-menu-panel {
     width: 100%;
+  }
+}
+
+/* Mobile Menu Auth Buttons */
+@media (max-width: 768px) {
+  .mobile-user-actions {
+    padding: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .mobile-user-actions .auth-btn {
+    flex: 1;
+    height: 44px; /* Increased height */
+    width: 100%; /* Full width */
+    min-width: 140px; /* Minimum width */
+    font-size: 1rem; /* Slightly larger font */
+    padding: 0.75rem 1.5rem; /* More padding */
+  }
+
+  .mobile-menu {
+    width: 100%; /* Ensure menu takes full width */
+    max-width: 100vw; /* Prevent overflow */
+    padding: 0 1rem; /* Add some padding */
+  }
+}
+
+/* Ensure safe area support on mobile */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .mobile-user-actions {
+      padding: 1rem max(1rem, env(safe-area-inset-right))
+        max(1rem, env(safe-area-inset-bottom))
+        max(1rem, env(safe-area-inset-left));
+    }
   }
 }
 </style>
