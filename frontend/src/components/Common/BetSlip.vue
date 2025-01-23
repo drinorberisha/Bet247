@@ -126,9 +126,7 @@
                   <div
                     class="bet-teams"
                     :class="{
-                      conflicting: bettingStore.conflictingMatchIds.includes(
-                        bet.matchId
-                      ),
+                      conflicting: isDuplicateMatch(bet),
                     }"
                   >
                     <span class="team home">{{ bet.homeTeam }}</span>
@@ -186,25 +184,19 @@
               </div>
             </div>
 
-            <!-- Warning message only for multi mode -->
-            <div
-              v-if="bettingStore.conflictingMatchIds.length > 0"
-              class="conflict-warning"
-            >
-              Only one selection per match is allowed in multi mode
+            <!-- Keep conflict warning -->
+            <div v-if="hasConflictingSelections" class="conflict-warning">
+              Multiple selections from the same game are not allowed in Multi
+              mode
             </div>
           </div>
         </template>
       </div>
 
-      <!-- Keep place bet button -->
+      <!-- Place bet wrapper -->
       <div class="place-bet-wrapper" v-if="bets.length">
         <div v-if="betError" class="bet-error">
           {{ betError }}
-        </div>
-        <!-- Add warning message for conflicting selections -->
-        <div v-if="hasConflictingSelections" class="conflict-warning">
-          Multiple selections from the same game are not allowed in Multi mode
         </div>
         <button
           class="place-bet-button"
@@ -260,20 +252,34 @@ const updateMultiStake = (event: Event) => {
   bettingStore.updateMultiStake(Number(value));
 };
 
-// Add computed property to check for conflicting selections
+// Updated method to check if a specific match has duplicates
+const isDuplicateMatch = (currentBet: any) => {
+  if (bettingStore.activeMode !== "multi") return false;
+
+  // Count matches with same teams
+  const duplicateCount =
+    bets.value?.filter(
+      (bet) =>
+        bet.homeTeam === currentBet.homeTeam &&
+        bet.awayTeam === currentBet.awayTeam
+    ).length || 0;
+
+  return duplicateCount > 1;
+};
+
+// Update hasConflictingSelections to use the same team-based logic
 const hasConflictingSelections = computed(() => {
   if (bettingStore.activeMode !== "multi") return false;
 
-  // Create a map to count selections per match
-  const matchSelections = new Map();
+  const matchCounts = new Map();
 
   bets.value?.forEach((bet) => {
-    const count = matchSelections.get(bet.matchId) || 0;
-    matchSelections.set(bet.matchId, count + 1);
+    const matchKey = `${bet.homeTeam} vs ${bet.awayTeam}`;
+    const count = matchCounts.get(matchKey) || 0;
+    matchCounts.set(matchKey, count + 1);
   });
 
-  // Check if any match has more than one selection
-  return Array.from(matchSelections.values()).some((count) => count > 1);
+  return Array.from(matchCounts.values()).some((count) => count > 1);
 });
 
 // Update canPlaceBet computed property
@@ -827,7 +833,7 @@ defineExpose({
   }
 
   .conflict-warning {
-    margin: 0 0 0.8rem 0;
+    margin: 0.8rem 0;
   }
 
   .mobile-close-btn {
@@ -1016,13 +1022,12 @@ defineExpose({
 }
 
 .bet-teams.conflicting {
-  color: var(--button-one);
+  color: var(--button-one) !important;
 }
 
 .bet-teams.conflicting .team,
 .bet-teams.conflicting .vs {
-  color: var(--button-one);
-  font-weight: 600;
+  color: var(--button-one) !important;
 }
 
 .conflict-warning {
@@ -1030,7 +1035,7 @@ defineExpose({
   background: var(--signbet);
   padding: 0.8rem;
   border-radius: 4px;
-  margin-bottom: 1rem;
+  margin: 1rem 0;
   font-size: 0.9rem;
   text-align: center;
 }
