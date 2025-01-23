@@ -13,7 +13,7 @@
         >
           <i :class="sport.icon"></i>
           {{ sport.name }}
-          <span class="count">{{ sport.count }}</span>
+          <span class="count">{{ getLiveSportCount(sport.id) }}</span>
         </button>
       </div>
     </div>
@@ -37,7 +37,12 @@
       </div>
 
       <div class="match-list">
-        <div v-for="match in leagueMatches" :key="match._id" class="match-row">
+        <div 
+          v-for="(match, index) in leagueMatches" 
+          :key="match._id" 
+          class="match-row"
+          v-show="index < 2 || expandedLeagues[league]"
+        >
           <div class="match-info">
             <div class="match-status">
               <span class="live-time">{{ match.liveTime }}'</span>
@@ -56,13 +61,25 @@
               class="odd-box"
               @click="handleOddSelection(match, type, odd)"
               :class="{
-                selected: isOddSelected(match._id, String(type)),
+                selected: isOddSelected(match._id, String(type))
               }"
             >
               <span class="odd-label">{{ type }}</span>
               <span class="odd-value">{{ formatOdd(odd) }}</span>
             </button>
           </div>
+        </div>
+
+        <!-- See More button -->
+        <div 
+          v-if="leagueMatches.length > 2" 
+          class="see-more-container"
+          @click="toggleLeagueExpansion(league)"
+        >
+          <button class="see-more-button">
+            {{ expandedLeagues[league] ? 'Show Less' : `Show ${leagueMatches.length - 2} More Matches` }}
+            <i :class="expandedLeagues[league] ? 'icon-chevron-up' : 'icon-chevron-down'"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -71,61 +88,60 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useMatchesStore } from "../../stores/matches";
 import { useBettingStore } from "../../stores/betting";
-const hasMatches = computed(() => liveMatches.value.length > 0);
+import { LEAGUE_NAMES } from "../../config/sportsConfig";
 
+const matchesStore = useMatchesStore();
 const bettingStore = useBettingStore();
 const selectedSport = ref("all");
+const expandedLeagues = ref({});
 
 const liveSports = [
-  { id: "all", name: "All", icon: "icon-all", count: 12 },
-  { id: "football", name: "Football", icon: "icon-football", count: 8 },
-  { id: "tennis", name: "Tennis", icon: "icon-tennis", count: 4 },
-  { id: "basketball", name: "Basketball", icon: "icon-basketball", count: 6 },
+  { id: "all", name: "All", icon: "icon-all" },
+  { id: "football", name: "Football", icon: "icon-football" },
+  { id: "tennis", name: "Tennis", icon: "icon-tennis" },
+  { id: "basketball", name: "Basketball", icon: "icon-basketball" },
 ];
 
-// Mock data - replace with real API data
-const liveMatches = ref([
-  {
-    _id: "live1",
-    league: "Premier League",
-    homeTeam: "Arsenal",
-    awayTeam: "Chelsea",
-    liveTime: "32",
-    score: "1-0",
-    odds: {
-      "1": 2.1,
-      X: 3.4,
-      "2": 4.2,
-    },
-  },
-  // Add more mock matches
-]);
+// Filter live matches based on selected sport
+const liveMatches = computed(() => {
+  const matches = matchesStore.matches.filter(match => match.status === 'live');
+  if (selectedSport.value === 'all') return matches;
+  return matches.filter(match => match.sportKey.startsWith(selectedSport.value));
+});
+
+const hasMatches = computed(() => liveMatches.value.length > 0);
 
 const groupedLiveMatches = computed(() => {
-  // Group matches by league logic
   return liveMatches.value.reduce((acc: { [key: string]: any[] }, match) => {
-    if (!acc[match.league]) {
-      acc[match.league] = [];
+    const league = match.sportKey.split('_').slice(1).join('_');
+    if (!acc[league]) {
+      acc[league] = [];
     }
-    acc[match.league].push(match);
+    acc[league].push(match);
     return acc;
   }, {});
 });
 
-const formatLeagueName = (league: string) => {
-  return league;
+const getLiveSportCount = (sportId: string) => {
+  if (sportId === 'all') return liveMatches.value.length;
+  return liveMatches.value.filter(match => 
+    match.sportKey.startsWith(sportId)
+  ).length;
+};
+
+const formatLeagueName = (key: string) => {
+  return LEAGUE_NAMES[key] || key.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
 };
 
 const formatOdd = (odd: number | string) => {
   return Number(odd).toFixed(2);
 };
 
-const handleOddSelection = (
-  match: any,
-  type: string | number,
-  odd: string | number
-) => {
+const handleOddSelection = (match: any, type: string | number, odd: string | number) => {
   bettingStore.addBet({
     matchId: match._id,
     type: String(type),
@@ -138,6 +154,10 @@ const handleOddSelection = (
 
 const isOddSelected = (matchId: string, type: string) => {
   return bettingStore.isBetSelected(matchId, type);
+};
+
+const toggleLeagueExpansion = (league: string) => {
+  expandedLeagues.value[league] = !expandedLeagues.value[league];
 };
 </script>
 
