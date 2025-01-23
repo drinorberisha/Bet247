@@ -12,14 +12,16 @@ interface PlaceBetResponse {
 }
 
 interface Selection {
-  type: string;
-  odds: number;
   matchId: string;
-  sportKey: string;
   homeTeam: string;
   awayTeam: string;
+  type: string;
+  odds: number;
+  sportKey: string;
   market: string;
-  status?: string;
+  status: string;
+  event: string;
+  commenceTime: string;
 }
 
 interface Bet {
@@ -27,7 +29,6 @@ interface Bet {
   id?: string;
   betType: 'single' | 'multiple';
   selections: Selection[];
-  amount: number;
   totalOdds: number;
   potentialWin: number;
   status?: string;
@@ -63,19 +64,15 @@ export const useBettingStore = defineStore('betting', {
     multiOdds(): number {
       return this.currentSelections.reduce((total, selection) => total * selection.odds, 1);
     },
-potentialMultiWin(): number {
+    potentialMultiWin(): number {
       return this.multiStake * this.multiOdds;
-    },
-    // Alias currentBets as bets for BetSlip component compatibility
-    bets(): Bet[] {
-      return this.currentBets;
     },
     selections(): Selection[] {
       return this.currentSelections;
     },
 
     conflictingMatchIds(): string[] {
-      const matchCounts = this.bets.reduce((acc, bet) => {
+      const matchCounts = this.currentBets.reduce((acc, bet) => {
         acc[bet.matchId] = (acc[bet.matchId] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -88,13 +85,13 @@ potentialMultiWin(): number {
     canPlaceBet(): boolean {
       if (this.activeMode === "multi") {
         return (
-          this.bets.length > 1 &&
+          this.currentBets.length > 1 &&
           this.multiStake > 0 &&
           this.conflictingMatchIds.length === 0
         );
       }
       // For single mode, allow betting as long as there's a stake
-      return this.bets.some((bet) => bet.stake > 0);
+      return this.currentBets.some((bet) => bet.stake > 0);
     },
   },
 
@@ -115,7 +112,10 @@ potentialMultiWin(): number {
         type: matchData.type,
         odds: matchData.odds,
         sportKey: matchData.sportKey,
-        market: this.getMarketType(matchData.type)
+        market: this.getMarketType(matchData.type),
+        status: matchData.status,
+        event: matchData.event,
+        commenceTime: matchData.commenceTime
       };
 
       // Check if selection already exists
@@ -149,7 +149,7 @@ potentialMultiWin(): number {
       this.activeMode = mode;
 
       if (mode === "multi") {
-        this.bets = this.bets.map((bet) => ({
+        this.currentBets = this.currentBets.map((bet) => ({
           ...bet,
           selections: [bet.selections[0]],
           stake: 0,
@@ -215,7 +215,7 @@ potentialMultiWin(): number {
       const totalStake =
         this.activeMode === "multi"
           ? this.multiStake
-          : this.currentBets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+          : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
       // Check if user is authenticated
       if (!authStore.isAuthenticated) {
@@ -248,7 +248,7 @@ potentialMultiWin(): number {
           };
         }
       } else {
-        if (!this.currentBets.some((bet) => bet.amount > 0)) {
+        if (!this.currentBets.some((bet) => bet.stake > 0)) {
           return {
             valid: false,
             message: "Please enter stake amount",
@@ -283,7 +283,7 @@ potentialMultiWin(): number {
         const amount =
           this.activeMode === "multi"
             ? this.multiStake
-            : this.currentBets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+            : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
         const potentialWin = amount * totalOdds;
 
@@ -351,18 +351,17 @@ potentialMultiWin(): number {
       this.error = null;
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/bets/user`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/bets/user`, {
           headers: {
-            'Authorization': `Bearer ${authStore.token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${authStore.token}`
+          },
+          params: {
+            populate: 'selections'
           }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch bets');
-        }
-
-        const data = await response.json();
+        // With axios, we use response.data instead of response.json()
+        const data = response.data;
         this.placedBets = Array.isArray(data) ? data : [];
         
         // Filter bets into active and settled
@@ -374,8 +373,11 @@ potentialMultiWin(): number {
           ['won', 'lost', 'cancelled', 'cashed_out'].includes(bet.status || '')
         );
 
+        // Debug log to check the data
+        console.log('Fetched bets:', this.placedBets);
+
       } catch (err: any) {
-        this.error = err.message;
+        this.error = err.response?.data?.message || 'Failed to fetch bets';
         console.error('Error fetching bets:', err);
       } finally {
         this.loading = false;
@@ -436,6 +438,52 @@ potentialMultiWin(): number {
       return this.currentSelections.some(
         selection => selection.matchId === matchId && selection.type === type
       );
+    },
+
+    async cashoutBet(betId: string) {
+      const authStore = useAuthStore();
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/bets/${betId}/cashout`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.data.success) {
+          // Update local state with the cashed out bet
+          const updatedBet = response.data.bet;
+          
+          // Update the bets lists
+          this.placedBets = this.placedBets.map(bet => 
+            bet._id === betId ? updatedBet : bet
+          );
+          
+          // Move bet from active to settled
+          this.activeBets = this.activeBets.filter(bet => bet._id !== betId);
+          this.settledBets.unshift(updatedBet);
+
+          // Update user balance
+          authStore.updateBalance(response.data.newBalance);
+
+          return response.data;
+        } else {
+          throw new Error(response.data.message || 'Failed to cash out bet');
+        }
+      } catch (err: any) {
+        console.error('Cashout error:', err.response?.data || err);
+        this.error = err.response?.data?.message || 'Failed to cash out bet';
+        throw new Error(this.error);
+      } finally {
+        this.loading = false;
+      }
     },
   },
 }) as unknown as () => BettingStore;

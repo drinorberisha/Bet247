@@ -5,14 +5,17 @@ export interface ISelection extends Document {
   event: string;
   market: string;
   selection: string;
+  type?: string;
   odds: number;
   status: 'pending' | 'won' | 'lost' | 'cancelled';
   result?: string;
   settledAt?: Date;
+  matchTime?: Date;
+  commenceTime?: Date;
 }
 
 const selectionSchema = new mongoose.Schema({
-  sport: {
+  sportKey: {
     type: String,
     required: true
   },
@@ -28,6 +31,9 @@ const selectionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String
+  },
   odds: {
     type: Number,
     required: true
@@ -38,7 +44,9 @@ const selectionSchema = new mongoose.Schema({
     default: 'pending'
   },
   result: String,
-  settledAt: Date
+  settledAt: Date,
+  matchTime: Date,
+  commenceTime: Date
 });
 
 export default mongoose.model<ISelection>('Selection', selectionSchema); 

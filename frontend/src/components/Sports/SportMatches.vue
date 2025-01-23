@@ -173,10 +173,13 @@ const handleOddSelection = (match: any, type: string, odds: number) => {
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
     type: type,
+    selection: type,
     odds: odds,
     sportKey: match.sportKey,
     market: 'Match Winner',
-    status: match.status
+    status: match.status,
+    event: `${match.homeTeam} vs ${match.awayTeam}`,
+    commenceTime: match.commenceTime
   });
 };
 

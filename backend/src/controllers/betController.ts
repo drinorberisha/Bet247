@@ -1,8 +1,40 @@
 import { Request, Response } from 'express';
+import { Match } from '../models/Match';
+import User from '../models/User';
 import Bet from '../models/Bet';
 import Selection from '../models/Selection';
-import User from '../models/User';
 import mongoose from 'mongoose';
+
+const calculateCashoutAmount = (bet: any) => {
+  const selections = bet.selections;
+  const wonSelections = selections.filter((s: any) => s.status === 'won');
+  const pendingSelections = selections.filter((s: any) => s.status === 'pending');
+  const lostSelections = selections.filter((s: any) => s.status === 'lost');
+
+  // If any selection is lost, no cashout possible
+  if (lostSelections.length > 0) {
+    throw new Error('Bet contains lost selections');
+  }
+
+  // Calculate partial odds based on won selections
+  const partialOdds = wonSelections.reduce((acc: number, selection: any) => {
+    return acc * selection.odds;
+  }, 1);
+
+  return {
+    wonSelections,
+    pendingSelections,
+    partialOdds
+  };
+};
+
+const calculateFinalCashoutAmount = (stake: number, partialOdds: number): number => {
+  // Basic cashout calculation
+  // You can make this more sophisticated by adding margin, time factors, etc.
+  const baseAmount = stake * partialOdds;
+  const cashoutPercentage = 0.75; // Offering 75% of potential win for cashout
+  return Number((baseAmount * cashoutPercentage).toFixed(2));
+};
 
 export const placeBet = async (req: Request, res: Response) => {
   try {
@@ -15,7 +47,7 @@ export const placeBet = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the user again to ensure we have a fresh Mongoose document
+    // Find the user
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({
@@ -24,31 +56,69 @@ export const placeBet = async (req: Request, res: Response) => {
       });
     }
 
-    // First create the selections and get their IDs
-    const createdSelections = await Selection.create(selections);
+    // Check if user has enough balance
+    if (user.balance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient balance'
+      });
+    }
+
+    // Fetch match times for each selection
+    const selectionsWithMatchTime = await Promise.all(selections.map(async (selection) => {
+      // Extract match identifier from the event string
+      const [homeTeam, awayTeam] = selection.event.split(' vs ');
+      
+      // Find the corresponding match
+      const match = await Match.findOne({
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        sportKey: selection.sportKey
+      });
+
+      console.log('Found match:', match); // Debug log
+
+      return {
+        sportKey: selection.sportKey,
+        event: selection.event,
+        market: selection.market,
+        selection: selection.selection,
+        odds: selection.odds,
+        status: 'pending',
+        matchTime: match?.commenceTime || new Date(selection.commenceTime),
+        commenceTime: match?.commenceTime || new Date(selection.commenceTime)
+      };
+    }));
+
+    // Create the selections
+    const createdSelections = await Selection.create(selectionsWithMatchTime);
     
-    // Get the ObjectIds from the created selections
+    // Get the selection IDs
     const selectionIds = Array.isArray(createdSelections) 
       ? createdSelections.map(s => s._id)
       : [createdSelections._id];
 
-    // Create the bet with selection references
+    // Create the bet
     const bet = await Bet.create({
       user: user._id,
       betType,
+      selections: selectionIds,
       amount,
       totalOdds,
       potentialWin,
-      selections: selectionIds,
-      status: 'pending'
+      status: 'pending',
+      cashedOut: {
+        wonSelections: [],
+        remainingSelections: []
+      }
     });
 
     // Update user balance
     user.balance -= amount;
     await user.save();
 
-    // Populate bet data for response
-    const populatedBet = await Bet.findById(bet._id).populate('selections');
+    // Populate the selections in the response
+    const populatedBet = await bet.populate('selections');
 
     res.status(201).json({
       success: true,
@@ -58,24 +128,20 @@ export const placeBet = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Bet placement error:', error);
-    res.status(400).json({ 
+    console.error('Error placing bet:', error);
+    res.status(400).json({
       success: false,
-      message: error.message || 'Error placing bet' 
+      message: error.message || 'Error placing bet'
     });
   }
 };
 
 export const getUserBets = async (req: Request, res: Response) => {
   try {
-    // @ts-ignore
-    const userId = req.user.userId;
-    
-    const bets = await Bet.find({ user: userId })
+    const bets = await Bet.find({ user: req.user._id })
       .populate('selections')
-      .sort({ createdAt: -1 })
-      .limit(50);
-
+      .sort({ createdAt: -1 });
+    
     res.json(bets);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching bets' });
@@ -228,36 +294,39 @@ export const getBetStats = async (req: Request, res: Response) => {
 };
 
 export const cashoutBet = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { betId } = req.params;
+    const userId = req.user?._id;
 
-    if (!req.user) {
-      return res.status(401).json({
+    // Validate user and bet ID
+    if (!userId || !betId) {
+      return res.status(400).json({
         success: false,
-        message: 'User not authenticated'
+        message: 'Invalid request parameters'
       });
     }
 
-    // Find bet and populate selections
-    const bet = await Bet.findOne({ 
-      _id: betId,
-      user: req.user._id 
-    }).populate('selections');
+    // Find the bet and user
+    const bet = await Bet.findById(betId).populate('selections');
+    const user = await User.findById(userId);
 
-    if (!bet) {
+    if (!bet || !user) {
       return res.status(404).json({
         success: false,
-        message: 'Bet not found'
+        message: 'Bet or user not found'
+      });
+    }
+
+    // Verify bet belongs to user
+    if (bet.user.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access to bet'
       });
     }
 
     // Check if bet is eligible for cashout
-    const { isEligible, wonSelections, pendingSelections } = await bet.isEligibleForCashout();
-
-    if (!isEligible) {
+    if (bet.status !== 'pending') {
       return res.status(400).json({
         success: false,
         message: 'Bet is not eligible for cashout'
@@ -265,21 +334,14 @@ export const cashoutBet = async (req: Request, res: Response) => {
     }
 
     // Calculate cashout amount
-    const { finalAmount, partialOdds } = bet.calculateCashoutAmount(wonSelections);
+    const { wonSelections, pendingSelections, partialOdds } = calculateCashoutAmount(bet);
+    const finalAmount = calculateFinalCashoutAmount(bet.amount, partialOdds);
 
-    // Find user
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Update bet with cashout information
+    // Update bet status and details
     bet.status = 'cashed_out';
-    bet.cashedOut = {
-      amount: finalAmount,
+    bet.cashoutAmount = finalAmount;
+    bet.cashoutTime = new Date();
+    bet.cashoutDetails = {
       timestamp: new Date(),
       wonSelections: wonSelections.map(s => s._id),
       remainingSelections: pendingSelections.map(s => s._id),
@@ -289,34 +351,27 @@ export const cashoutBet = async (req: Request, res: Response) => {
     // Update user balance
     user.balance += finalAmount;
 
-    // Save changes within transaction
-    await Promise.all([
-      bet.save({ session }),
-      user.save({ session })
-    ]);
+    // Save changes
+    await bet.save();
+    await user.save();
 
-    await session.commitTransaction();
+    // Populate bet data for response
+    const populatedBet = await bet.populate('selections');
 
     res.status(200).json({
       success: true,
       message: 'Bet cashed out successfully',
-      bet: {
-        ...bet.toObject(),
-        selections: [...wonSelections, ...pendingSelections]
-      },
+      bet: populatedBet,
       cashoutAmount: finalAmount,
       newBalance: user.balance
     });
 
   } catch (error: any) {
-    await session.abortTransaction();
     console.error('Cashout error:', error);
     res.status(400).json({
       success: false,
       message: error.message || 'Error processing cashout'
     });
-  } finally {
-    session.endSession();
   }
 };
 

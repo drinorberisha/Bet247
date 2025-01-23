@@ -20,7 +20,7 @@ router.use(authenticateToken);
 router.post('/place', placeBet);
 router.get('/user', getUserBets);
 router.get('/all', getAllBets);
-router.post('/cashout/:betId', cashoutBet);
+router.post('/:betId/cashout', cashoutBet);
 router.post('/debug/settle', debugSettleBets);
 
 export default router; 

@@ -17,6 +17,17 @@ export interface IBet extends Document {
     remainingSelections: mongoose.Types.ObjectId[];
     partialOdds: number;
   };
+  isEligibleForCashout(): Promise<{
+    isEligible: boolean;
+    wonSelections: any[];
+    pendingSelections: any[];
+  }>;
+  calculateCashoutAmount(wonSelections: any[]): {
+    rawAmount: number;
+    feeAmount: number;
+    finalAmount: number;
+    partialOdds: number;
+  };
 }
 
 const betSchema = new mongoose.Schema({
@@ -32,8 +43,7 @@ const betSchema = new mongoose.Schema({
   },
   selections: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Selection',
-    required: true
+    ref: 'Selection'
   }],
   amount: {
     type: Number,
@@ -76,7 +86,10 @@ const betSchema = new mongoose.Schema({
 betSchema.methods.isEligibleForCashout = async function() {
   const CASHOUT_CUTOFF_MINUTES = 5;
   
+  console.log('Checking cashout eligibility for bet:', this._id);
+  
   const populatedBet = await this.populate('selections');
+  console.log('Populated selections:', populatedBet.selections);
   
   const selectionsByStatus = populatedBet.selections.reduce((acc: any, selection: any) => {
     if (!acc[selection.status]) {
@@ -85,19 +98,32 @@ betSchema.methods.isEligibleForCashout = async function() {
     acc[selection.status].push(selection);
     return acc;
   }, {});
-// Conditions for cashout eligibility:
-  // 1. Bet must be pending
-  // 2. Must have at least one won selection
-  // 3. All remaining selections must not have started yet
-  // 4. Must be more than CASHOUT_CUTOFF_MINUTES before next match
-  const isEligible = 
-    this.status === 'pending' &&
-    selectionsByStatus['won']?.length > 0 &&
-    selectionsByStatus['pending']?.length > 0 &&
-    selectionsByStatus['pending'].every((selection: any) => {
-      const timeUntilMatch = (new Date(selection.matchTime).getTime() - Date.now()) / (1000 * 60);
+
+  console.log('Selections by status:', selectionsByStatus);
+  
+  // Log each condition separately
+  const conditions = {
+    isPending: this.status === 'pending',
+    hasWonSelections: selectionsByStatus['won']?.length > 0,
+    hasPendingSelections: selectionsByStatus['pending']?.length > 0,
+    matchTimeCheck: selectionsByStatus['pending']?.every((selection: any) => {
+      const timeUntilMatch = selection.matchTime 
+        ? (new Date(selection.matchTime).getTime() - Date.now()) / (1000 * 60)
+        : Infinity;
+      console.log(`Selection ${selection._id} time until match:`, timeUntilMatch);
       return timeUntilMatch > CASHOUT_CUTOFF_MINUTES;
-    });
+    })
+  };
+
+  console.log('Eligibility conditions:', conditions);
+
+  const isEligible = 
+    conditions.isPending &&
+    conditions.hasWonSelections &&
+    conditions.hasPendingSelections &&
+    conditions.matchTimeCheck;
+
+  console.log('Final eligibility:', isEligible);
 
   return {
     isEligible,
@@ -124,4 +150,5 @@ betSchema.methods.calculateCashoutAmount = function(wonSelections: any[]) {
   };
 };
 
-export default mongoose.model<IBet>('Bet', betSchema); 
+const BetModel = mongoose.model<IBet>('Bet', betSchema);
+export default BetModel; 

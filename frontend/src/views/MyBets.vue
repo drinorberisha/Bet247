@@ -63,6 +63,17 @@
                   <span>${{ bet.potentialWin.toFixed(2) }}</span>
                 </div>
               </div>
+              
+              <!-- Add Cashout Button -->
+              <button 
+                v-if="isCashoutEligible(bet)"
+                @click="handleCashout(bet._id)"
+                class="cashout-button"
+                :disabled="bettingStore.loading"
+              >
+                {{ bettingStore.loading ? 'Processing...' : 'Cash Out' }}
+              </button>
+              
               <div class="date">
                 {{ formatDate(bet.createdAt) }}
               </div>
@@ -150,6 +161,7 @@ const formatDate = (date: Date) => {
 };
 
 const formatStatus = (status: string) => {
+  if (!status) return '';
   return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
 };
 
@@ -167,6 +179,37 @@ const formatSelectionType = (type: string) => {
     case 'X': return 'Draw';
     case '2': return 'Away Win';
     default: return type;
+  }
+};
+
+// Add method to check if bet is eligible for cashout
+const isCashoutEligible = (bet: any) => {
+  console.log('Checking frontend eligibility for bet:', bet);
+  
+  // Basic checks
+  const conditions = {
+    isPending: bet.status === 'pending',
+    hasWonSelections: bet.selections.some((s: any) => s.status === 'won'),
+    hasPendingSelections: bet.selections.some((s: any) => s.status === 'pending'),
+    hasMatchTime: bet.selections.every((s: any) => s.matchTime !== undefined)
+  };
+  
+  console.log('Frontend eligibility conditions:', conditions);
+  
+  return conditions.isPending && 
+         conditions.hasWonSelections && 
+         conditions.hasPendingSelections &&
+         conditions.hasMatchTime;
+};
+
+// Add cashout method
+const handleCashout = async (betId: string) => {
+  try {
+    await bettingStore.cashoutBet(betId);
+    // Refresh the bets list after successful cashout
+    await bettingStore.fetchUserBets();
+  } catch (error: any) {
+    console.error('Error during cashout:', error);
   }
 };
 </script>
@@ -325,8 +368,10 @@ const formatSelectionType = (type: string) => {
 
 .bet-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   margin-top: 1rem;
 }
 
@@ -362,6 +407,21 @@ const formatSelectionType = (type: string) => {
   text-align: center;
   color: var(--textcolor);
   padding: 2rem;
+}
+
+.cashout-button {
+  background-color: var(--warning);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.cashout-button:hover {
+  opacity: 0.9;
 }
 
 @media (max-width: 768px) {

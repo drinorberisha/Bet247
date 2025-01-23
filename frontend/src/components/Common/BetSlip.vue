@@ -225,9 +225,11 @@ import { useNotificationStore } from "../../stores/notification";
 const bettingStore = useBettingStore();
 const notificationStore = useNotificationStore();
 
-const bets = computed(() => bettingStore.bets);
+const bets = computed(() => bettingStore.currentBets || []);
 
 const getBetCount = (mode: string) => {
+  if (!bets.value) return 0;
+  
   if (mode === "multi" && bets.value.length > 1) {
     return 1;
   }
@@ -254,6 +256,8 @@ const updateMultiStake = (event: Event) => {
 };
 
 const canPlaceBet = computed(() => {
+  if (!bets.value) return false;
+  
   if (bettingStore.activeMode === "single") {
     return bets.value.some((bet) => bet.stake > 0);
   } else {
@@ -352,10 +356,12 @@ const handleTouchMove = (e: TouchEvent) => {
 };
 
 const getTotalSingleStake = computed(() => {
+  if (!bets.value) return 0;
   return bets.value.reduce((total, bet) => total + (bet.stake || 0), 0);
 });
 
 const getTotalSinglePotentialWin = computed(() => {
+  if (!bets.value) return 0;
   return bets.value.reduce((total, bet) => {
     const betWin =
       bet.stake * bet.selections.reduce((odds, s) => odds * s.odds, 1);
