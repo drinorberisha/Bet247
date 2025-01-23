@@ -2,9 +2,6 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { useAuthStore } from './auth';
 import { useMatchesStore } from './matches';
-import { defineStore } from "pinia";
-import axios from "axios";
-import { useAuthStore } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -74,7 +71,7 @@ potentialMultiWin(): number {
       return this.currentBets;
     },
     selections(): Selection[] {
-      return Number((this.currentSelections).toFixed(2));
+      return this.currentSelections;
     },
 
     conflictingMatchIds(): string[] {
@@ -110,36 +107,17 @@ potentialMultiWin(): number {
       odds: number;
       sportKey: string;
     }) {
-      // Check if this exact selection already exists
-      const existingBetIndex = this.bets.findIndex(
-        (b) =>
-          b.matchId === matchData.matchId &&
-          b.selections[0].type === matchData.type
-      );
+      // Create selection object
+      const selection: Selection = {
+        matchId: matchData.matchId,
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        type: matchData.type,
+        odds: matchData.odds,
+        sportKey: matchData.sportKey,
+        market: this.getMarketType(matchData.type)
+      };
 
-      if (existingBetIndex >= 0) {
-        // Remove the bet if clicking the same selection again
-        this.bets.splice(existingBetIndex, 1);
-        return;
-      }
-
-      if (this.activeMode === "single") {
-        // In single mode, always create a new bet card
-        this.bets.push({
-          id: crypto.randomUUID(),
-          matchId: matchData.matchId,
-          homeTeam: matchData.homeTeam,
-          awayTeam: matchData.awayTeam,
-          selections: [
-            {
-              type: matchData.type,
-              odds: matchData.odds,
-            },
-          ],
-          stake: 0,
-          sportKey: matchData.sportKey,
-        });
-    addSelection(selection: Selection) {
       // Check if selection already exists
       const existingIndex = this.currentSelections.findIndex(s => 
         s.matchId === selection.matchId && s.type === selection.type
@@ -156,7 +134,7 @@ potentialMultiWin(): number {
       // Update currentBets array for betslip
       this.currentBets = this.currentSelections.map(s => ({
         id: s.matchId,
-        betType: 'single',
+        betType: this.activeMode === 'multi' ? 'multiple' : 'single',
         selections: [s],
         amount: 0,
         totalOdds: s.odds,
@@ -165,30 +143,6 @@ potentialMultiWin(): number {
         homeTeam: s.homeTeam,
         awayTeam: s.awayTeam
       }));
-        // In multi mode, check for existing match selection
-        const existingMatchBet = this.bets.find(
-          (b) => b.matchId === matchData.matchId
-        );
-
-        if (!existingMatchBet) {
-          // Only add new selection if no existing bet for this match
-          this.bets.push({
-            id: crypto.randomUUID(),
-            matchId: matchData.matchId,
-            homeTeam: matchData.homeTeam,
-            awayTeam: matchData.awayTeam,
-            selections: [
-              {
-                type: matchData.type,
-                odds: matchData.odds,
-              },
-            ],
-            stake: 0,
-            sportKey: matchData.sportKey,
-          });
-        }
-        // If match already has a selection, do nothing (keep first selection)
-      }
     },
 
     setMode(mode: "single" | "multi") {
@@ -230,10 +184,6 @@ potentialMultiWin(): number {
       this.currentBets = [];
       this.currentSelections = [];
       this.multiStake = 0;
-    },
-
-    setMode(mode: 'single' | 'multi') {
-      this.activeMode = mode;
     },
 
     expandBetslip() {
@@ -480,6 +430,12 @@ potentialMultiWin(): number {
       } catch (error) {
         console.error('Error checking bet statuses:', error);
       }
+    },
+
+    isBetSelected(matchId: string, type: string): boolean {
+      return this.currentSelections.some(
+        selection => selection.matchId === matchId && selection.type === type
+      );
     },
   },
 }) as unknown as () => BettingStore;
