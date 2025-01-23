@@ -68,7 +68,7 @@ export const useBettingStore = defineStore("betting", {
       );
     },
     potentialMultiWin(): number {
-    potentialMultiWin(): number {
+   
       return this.multiStake * this.multiOdds;
     },
     selections(): Selection[] {
@@ -222,7 +222,6 @@ export const useBettingStore = defineStore("betting", {
         this.activeMode === "multi"
           ? this.multiStake
           : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
-          : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
       // Check if user is authenticated
       if (!authStore.isAuthenticated) {
@@ -255,7 +254,6 @@ export const useBettingStore = defineStore("betting", {
           };
         }
       } else {
-        if (!this.currentBets.some((bet) => bet.stake > 0)) {
         if (!this.currentBets.some((bet) => bet.stake > 0)) {
           return {
             valid: false,
@@ -291,7 +289,6 @@ export const useBettingStore = defineStore("betting", {
         const amount =
           this.activeMode === "multi"
             ? this.multiStake
-            : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
             : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
 
         const potentialWin = amount * totalOdds;
@@ -333,7 +330,7 @@ export const useBettingStore = defineStore("betting", {
 
         if (response.data.success) {
           authStore.updateBalance(response.data.newBalance);
-          this.clearAllBets();
+          this.clearBetSlip();
         }
 
         return response.data;
@@ -367,7 +364,7 @@ export const useBettingStore = defineStore("betting", {
           params: {
             populate: 'selections'
           }
-        );
+        });
 
         // With axios, we use response.data instead of response.json()
         const data = response.data;
@@ -498,50 +495,13 @@ export const useBettingStore = defineStore("betting", {
       }
     },
 
-    async cashoutBet(betId: string) {
-      const authStore = useAuthStore();
-      this.loading = true;
-      this.error = null;
+    updateBalance(newBalance: number) {
+      this.balance = newBalance;
+    },
 
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/bets/${betId}/cashout`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${authStore.token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (response.data.success) {
-          // Update local state with the cashed out bet
-          const updatedBet = response.data.bet;
-          
-          // Update the bets lists
-          this.placedBets = this.placedBets.map(bet => 
-            bet._id === betId ? updatedBet : bet
-          );
-          
-          // Move bet from active to settled
-          this.activeBets = this.activeBets.filter(bet => bet._id !== betId);
-          this.settledBets.unshift(updatedBet);
-
-          // Update user balance
-          authStore.updateBalance(response.data.newBalance);
-
-          return response.data;
-        } else {
-          throw new Error(response.data.message || 'Failed to cash out bet');
-        }
-      } catch (err: any) {
-        console.error('Cashout error:', err.response?.data || err);
-        this.error = err.response?.data?.message || 'Failed to cash out bet';
-        throw new Error(this.error);
-      } finally {
-        this.loading = false;
-      }
+    clearBetSlip() {
+      this.currentBets = [];
+      this.multiStake = 0;
     },
   },
 }) as unknown as () => BettingStore;
