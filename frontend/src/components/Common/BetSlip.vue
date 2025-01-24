@@ -184,8 +184,11 @@
               </div>
             </div>
 
-            <!-- Keep conflict warning -->
-            <div v-if="hasConflictingSelections" class="conflict-warning">
+            <!-- Only show conflict warning if not in SGM mode -->
+            <div
+              v-if="hasConflictingSelections && !bettingStore.isSameGameMulti"
+              class="conflict-warning"
+            >
               Multiple selections from the same game are not allowed in Multi
               mode
             </div>
@@ -252,8 +255,36 @@ const updateMultiStake = (event: Event) => {
   bettingStore.updateMultiStake(Number(value));
 };
 
-// Updated method to check if a specific match has duplicates
+// Update the hasConflictingSelections computed property
+const hasConflictingSelections = computed(() => {
+  // Don't show conflicts in SGM mode
+  if (bettingStore.isSameGameMulti) {
+    return false;
+  }
+
+  // Only check for conflicts in multi mode
+  if (bettingStore.activeMode === "multi") {
+    const matchCounts = new Map();
+
+    bets.value?.forEach((bet) => {
+      const matchKey = `${bet.homeTeam} vs ${bet.awayTeam}`;
+      const count = matchCounts.get(matchKey) || 0;
+      matchCounts.set(matchKey, count + 1);
+    });
+
+    return Array.from(matchCounts.values()).some((count) => count > 1);
+  }
+
+  return false;
+});
+
+// Update isDuplicateMatch method
 const isDuplicateMatch = (currentBet: any) => {
+  // Don't show duplicates in SGM mode
+  if (bettingStore.isSameGameMulti) {
+    return false;
+  }
+
   if (bettingStore.activeMode !== "multi") return false;
 
   // Count matches with same teams
@@ -266,21 +297,6 @@ const isDuplicateMatch = (currentBet: any) => {
 
   return duplicateCount > 1;
 };
-
-// Update hasConflictingSelections to use the same team-based logic
-const hasConflictingSelections = computed(() => {
-  if (bettingStore.activeMode !== "multi") return false;
-
-  const matchCounts = new Map();
-
-  bets.value?.forEach((bet) => {
-    const matchKey = `${bet.homeTeam} vs ${bet.awayTeam}`;
-    const count = matchCounts.get(matchKey) || 0;
-    matchCounts.set(matchKey, count + 1);
-  });
-
-  return Array.from(matchCounts.values()).some((count) => count > 1);
-});
 
 // Update canPlaceBet computed property
 const canPlaceBet = computed(() => {
@@ -994,7 +1010,7 @@ defineExpose({
   }
 }
 .betslip-content .bet-list {
-  max-height: 650px; /* Set a fixed height for the bet-list */
+  max-height: 800px; /* Set a fixed height for the bet-list */
   overflow-y: auto; /* Enable vertical scrolling if content overflows */
   padding-right: 10px; /* Add padding to prevent scrollbar overlap */
   scrollbar-width: thin; /* Makes the scrollbar thinner (for Firefox) */

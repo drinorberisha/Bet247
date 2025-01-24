@@ -474,48 +474,48 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        console.log('Initiating cashout for bet:', betId);
+        console.log("Initiating cashout for bet:", betId);
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/bets/${betId}/cashout`,
           {},
           {
             headers: {
               Authorization: `Bearer ${authStore.token}`,
-              'Content-Type': 'application/json'
-            }
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        console.log('Cashout response:', response.data);
+        console.log("Cashout response:", response.data);
 
         if (response.data.success) {
           // Update local state with the cashed out bet
           const updatedBet = {
             ...response.data.bet,
-            cashoutAmount: response.data.cashoutAmount
+            cashoutAmount: response.data.cashoutAmount,
           };
-          
-          console.log('Updated bet with cashout amount:', updatedBet);
-          
+
+          console.log("Updated bet with cashout amount:", updatedBet);
+
           // Update the bets lists
-          this.placedBets = this.placedBets.map(bet => 
+          this.placedBets = this.placedBets.map((bet) =>
             bet._id === betId ? updatedBet : bet
           );
-          
+
           // Move bet from active to settled
-          this.activeBets = this.activeBets.filter(bet => bet._id !== betId);
+          this.activeBets = this.activeBets.filter((bet) => bet._id !== betId);
           this.settledBets.unshift(updatedBet);
 
           // Update user balance
           authStore.updateBalance(response.data.newBalance);
-          
+
           return response.data;
         } else {
-          throw new Error(response.data.message || 'Failed to cash out bet');
+          throw new Error(response.data.message || "Failed to cash out bet");
         }
       } catch (err: any) {
-        console.error('Cashout error:', err.response?.data || err);
-        this.error = err.response?.data?.message || 'Failed to cash out bet';
+        console.error("Cashout error:", err.response?.data || err);
+        this.error = err.response?.data?.message || "Failed to cash out bet";
         throw new Error(this.error);
       } finally {
         this.loading = false;

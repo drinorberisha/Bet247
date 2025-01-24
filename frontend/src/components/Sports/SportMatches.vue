@@ -27,7 +27,11 @@
                 {{ formatMatchTime(match.commenceTime) }}
               </div>
             </div>
-            <div class="match-teams">
+            <div
+              class="match-teams"
+              @click="navigateToSGM(match)"
+              :class="{ clickable: true }"
+            >
               <div class="team home">{{ match.homeTeam }}</div>
               <div class="team away">{{ match.awayTeam }}</div>
             </div>
@@ -102,6 +106,7 @@ import { useMatchesStore } from "../../stores/matches";
 import { useBettingStore } from "../../stores/betting";
 import { SPORTS_CONFIG, LEAGUE_NAMES } from "../../config/sportsConfig";
 import MatchOdds from "./MatchOdds.vue";
+import { useRouter } from "vue-router";
 
 const props = defineProps<{
   sportKey: string;
@@ -114,6 +119,7 @@ const props = defineProps<{
 const matchesStore = useMatchesStore();
 const bettingStore = useBettingStore();
 const selectedStatus = ref("upcoming");
+const router = useRouter();
 
 // Get leagues for the current sport
 const getSportLeagues = (sportKey: string) => {
@@ -277,6 +283,17 @@ const hasMatches = computed(() => {
 
 // Add loading state
 const isLoading = ref(false);
+
+const navigateToSGM = (match: any) => {
+  router.push({
+    name: "SameGameMulti",
+    params: {
+      matchId: match._id || "default",
+      homeTeam: encodeURIComponent(match.homeTeam),
+      awayTeam: encodeURIComponent(match.awayTeam),
+    },
+  });
+};
 </script>
 
 <style scoped>
@@ -336,6 +353,18 @@ const isLoading = ref(false);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.match-teams:hover {
+  background-color: var(--pointbox);
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .team {

@@ -21,6 +21,7 @@ import NotFound from "./Pages/NotFound.vue";
 import AdminLayout from "./Layouts/AdminLayout.vue";
 import { useAuthStore } from "./stores/auth";
 import MyBets from "./views/MyBets.vue";
+import SameGameMulti from "./Pages/SameGameMulti.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -28,7 +29,7 @@ export const router = createRouter({
     {
       path: "/",
       component: Index,
-      meta: { title: "BET 24/7", },
+      meta: { title: "BET 24/7" },
     },
     {
       path: "/sportsbetting",
@@ -149,9 +150,17 @@ export const router = createRouter({
     {
       path: "/my-bets",
       component: MyBets,
-      meta: { 
+      meta: {
         title: "My Bets - BET 24/7",
-        requiresAuth: true  
+        requiresAuth: true,
+      },
+    },
+    {
+      path: "/same-game-multi/:matchId/:homeTeam/:awayTeam",
+      name: "SameGameMulti",
+      component: SameGameMulti,
+      meta: {
+        title: "Same Game Multi - BET 24/7",
       },
     },
 
@@ -163,32 +172,31 @@ export const router = createRouter({
       children: [
         {
           path: "",
-          redirect: "/admin/dashboard"
+          redirect: "/admin/dashboard",
         },
         {
           path: "dashboard",
           component: () => import("./Pages/Admin/AdminDashboard.vue"),
-          meta: { title: "Admin Dashboard - BET 24/7" }
+          meta: { title: "Admin Dashboard - BET 24/7" },
         },
         {
           path: "users",
           component: () => import("./Pages/Admin/UsersManagement.vue"),
-          meta: { title: "User Management - BET 24/7" }
+          meta: { title: "User Management - BET 24/7" },
         },
         {
           path: "transactions",
           component: () => import("./Pages/Admin/TransactionsManagement.vue"),
-          meta: { title: "Transactions - BET 24/7" }
+          meta: { title: "Transactions - BET 24/7" },
         },
         {
           path: "coins",
           component: () => import("./Pages/Admin/CoinsManagement.vue"),
-          meta: { 
+          meta: {
             title: "Coins Management - BET 24/7",
-
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
 
     {
@@ -204,11 +212,11 @@ export const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
-  
-  console.log('Route navigation:', {
+
+  console.log("Route navigation:", {
     to: to.path,
     userRole: authStore.user?.role,
-    isAuthenticated: authStore.isAuthenticated
+    isAuthenticated: authStore.isAuthenticated,
   });
 
   // Set page title
@@ -218,9 +226,11 @@ router.beforeEach((to, from, next) => {
 
   // Check authentication for protected routes
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('Auth required but not authenticated, staying on home page with login modal');
-    if (to.path !== '/') {
-      next('/'); // Redirect to home page first
+    console.log(
+      "Auth required but not authenticated, staying on home page with login modal"
+    );
+    if (to.path !== "/") {
+      next("/"); // Redirect to home page first
       // Wait for the next tick to ensure route change is complete
       setTimeout(() => {
         authStore.toggleLoginModal(); // Then open the login modal
@@ -230,21 +240,32 @@ router.beforeEach((to, from, next) => {
   }
 
   // Check if user is superuser/admin and trying to access regular dashboard
-  if (to.path === '/dashboard' && ['admin', 'superuser'].includes(authStore.user?.role || '')) {
-    console.log('Admin/Superuser accessing dashboard, redirecting to admin dashboard');
-    next('/admin/dashboard');
+  if (
+    to.path === "/dashboard" &&
+    ["admin", "superuser"].includes(authStore.user?.role || "")
+  ) {
+    console.log(
+      "Admin/Superuser accessing dashboard, redirecting to admin dashboard"
+    );
+    next("/admin/dashboard");
     return;
   }
 
   // Rest of your existing guards
-  if (to.meta.requiresAdmin && !['admin', 'superuser'].includes(authStore.user?.role || '')) {
-    console.log('Admin required but user is not admin/superuser');
-    next('/');
-  } else if (to.meta.requiresSuperuser && authStore.user?.role !== 'superuser') {
-    console.log('Superuser required but user is not superuser');
-    next('/admin/dashboard');
+  if (
+    to.meta.requiresAdmin &&
+    !["admin", "superuser"].includes(authStore.user?.role || "")
+  ) {
+    console.log("Admin required but user is not admin/superuser");
+    next("/");
+  } else if (
+    to.meta.requiresSuperuser &&
+    authStore.user?.role !== "superuser"
+  ) {
+    console.log("Superuser required but user is not superuser");
+    next("/admin/dashboard");
   } else {
-    console.log('Navigation allowed');
+    console.log("Navigation allowed");
     next();
   }
 });
