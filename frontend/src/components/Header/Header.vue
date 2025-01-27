@@ -2,17 +2,18 @@
   <header class="main-header">
     <div class="header-container">
       <!-- Hamburger Menu Button -->
-      <button
-        class="hamburger-btn"
-        :class="{ 'is-active': isMobileMenuOpen }"
-        @click="toggleMobileMenu"
-        aria-label="Menu"
-      >
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
-
+      <div class="hamburger-container">
+        <button
+          class="hamburger-btn"
+          :class="{ 'is-active': isMobileMenuOpen }"
+          @click="toggleMobileMenu"
+          aria-label="Menu"
+        >
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+      </div>
       <!-- Brand -->
       <div class="header-brand">
         <router-link to="/" class="brand-link">
@@ -20,7 +21,6 @@
         </router-link>
       </div>
 
-      <!-- Desktop Navigation -->
       <nav class="desktop-nav" v-if="!isMobileMenuOpen">
         <router-link
           v-for="item in mainNavItems"
@@ -91,37 +91,34 @@
       <!-- Mobile Menu Panel -->
       <div class="mobile-menu" :class="{ 'is-open': isMobileMenuOpen }">
         <div class="mobile-menu-header">
-          <span class="menu-title">Menu</span>
           <button
             class="close-menu-btn"
             @click="closeMobileMenu"
             aria-label="Close menu"
-          >
-            ×
-          </button>
+          ></button>
+          <span class="menu-title">Menu</span>
         </div>
 
         <!-- User Info in Mobile Menu -->
         <div class="mobile-user-info" v-if="isAuthenticated">
           <span class="user-email">{{ username }}</span>
+          <!-- Navigation -->
+          <nav class="mobile-nav">
+            <router-link
+              v-for="item in mainNavItems"
+              :key="item.path"
+              :to="item.path"
+              class="nav-link"
+              :class="{ active: currentPath === item.path }"
+              @click="closeMobileMenu"
+            >
+              <i :class="item.icon"></i>
+              {{ item.label }}
+            </router-link>
+          </nav>
+
           <button class="auth-btn logout" @click="handleLogout">Logout</button>
         </div>
-
-        <!-- Navigation -->
-        <nav class="mobile-nav">
-          <router-link
-            v-for="item in mainNavItems"
-            :key="item.path"
-            :to="item.path"
-            class="nav-link"
-            :class="{ active: currentPath === item.path }"
-            @click="closeMobileMenu"
-          >
-            <i :class="item.icon"></i>
-            {{ item.label }}
-          </router-link>
-        </nav>
-
         <!-- Login/Signup in Mobile Menu -->
         <div class="mobile-user-actions" v-if="!isAuthenticated">
           <button class="auth-btn login" @click="openLoginModal">Login</button>
@@ -332,7 +329,8 @@ watch(currentPath, () => {
 
 .header-container {
   display: flex;
-  align-items: space-between;
+  align-items: center;
+  justify-content: space-around;
   padding: 0.5rem 1rem;
   position: relative;
   height: 60px;
@@ -340,7 +338,13 @@ watch(currentPath, () => {
   margin: 0 auto;
 }
 
+.hamburger-container {
+  order: 1; /* Make it first in the flex order */
+  margin-right: auto; /* Push other items to the right */
+}
+
 .header-brand {
+  order: 2;
   position: relative;
   left: auto;
   transform: none;
@@ -363,8 +367,8 @@ watch(currentPath, () => {
 
 /* Hamburger Button */
 .hamburger-btn {
-  position: absolute;
-  left: 1rem;
+  position: relative; /* Change from absolute to relative */
+  left: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -382,6 +386,19 @@ watch(currentPath, () => {
   height: 2px;
   background-color: var(--white);
   transition: all 0.3s ease;
+}
+
+/* Add these new styles for the active state */
+.hamburger-btn.is-active .hamburger-line:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-btn.is-active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.is-active .hamburger-line:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
 }
 
 /* Mobile Menu Overlay */
@@ -437,6 +454,7 @@ watch(currentPath, () => {
 }
 
 .close-menu-btn {
+  display: none;
   background: none;
   border: none;
   color: var(--white);
@@ -453,6 +471,7 @@ watch(currentPath, () => {
 }
 
 .close-menu-btn:hover {
+  display: none;
   background: var(--pointbox);
 }
 
@@ -532,6 +551,7 @@ watch(currentPath, () => {
 
 /* Header Balance Styles */
 .header-balance {
+  order: 4;
   position: relative;
   right: auto;
   margin-left: 1rem;
@@ -639,6 +659,7 @@ watch(currentPath, () => {
 }
 
 .desktop-nav {
+  order: 3;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -977,12 +998,6 @@ watch(currentPath, () => {
 
 /* Update the media queries */
 @media (max-width: 768px) {
-  /* Hide the original mobile menu instead */
-  .mobile-menu,
-  .mobile-menu-overlay {
-    display: none;
-  }
-
   /* Adjust left menu button position for mobile */
   .menu-toggle-btn {
     margin-left: 0.5rem;
@@ -992,6 +1007,12 @@ watch(currentPath, () => {
   /* Make left menu panel take full width on mobile */
   .left-menu-panel {
     width: 100%;
+  }
+
+  .mobile-menu {
+    width: 100%; /* Ensure menu takes full width */
+    max-width: 100vw; /* Prevent overflow */
+    padding: 0 1rem; /* Add some padding */
   }
 }
 
