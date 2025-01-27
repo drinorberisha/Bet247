@@ -15,10 +15,7 @@ class WebSocketService {
   }
 
   private connect(wsUrl: string) {
-    if (this.isConnecting) {
-      console.log('Connection already in progress');
-      return;
-    }
+    if (this.isConnecting) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -28,40 +25,28 @@ class WebSocketService {
       }
 
       this.isConnecting = true;
-      console.log('Creating WebSocket connection');
       
-      // Add token to URL as a query parameter
-      const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
-      this.ws = new WebSocket(wsUrlWithToken);
+      // Send token in headers instead of URL
+      this.ws = new WebSocket(wsUrl);
       
+      // Set token in connection handshake
       this.ws.onopen = () => {
-        console.log('WebSocket connection opened');
-        this.reconnectAttempts = 0;
-        this.isConnecting = false;
-        
-        // Wait for auth confirmation before setting authenticated
-        this.send('ping', {});
+        this.ws?.send(JSON.stringify({
+          action: 'authenticate',
+          data: { token }
+        }));
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('Received message:', message);
-
+          
           if (message.type === 'auth' && message.success) {
-            console.log('Authentication confirmed by server');
+            console.log('Authentication confirmed');
             this.isAuthenticated = true;
+            this.reconnectAttempts = 0;
+            this.isConnecting = false;
             this.processMessageQueue();
-            
-            // Set up ping interval after authentication
-            if (this.pingInterval) {
-              clearInterval(this.pingInterval);
-            }
-            this.pingInterval = setInterval(() => {
-              if (this.ws?.readyState === WebSocket.OPEN) {
-                this.send('ping', {});
-              }
-            }, 25000) as unknown as number;
           }
 
           this.handleMessage(message);

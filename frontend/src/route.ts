@@ -41,11 +41,11 @@ export const router = createRouter({
       component: Casino,
       meta: { title: "BET 24/7" },
     },
-    {
-      path: "/livecasino",
-      component: LiveCasino,
-      meta: { title: "BET 24/7" },
-    },
+    // {
+    //   path: "/livecasino",
+    //   component: LiveCasino,
+    //   meta: { title: "BET 24/7" },
+    // },
     {
       path: "/promotions",
       component: Promotions,

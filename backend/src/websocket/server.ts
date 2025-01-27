@@ -27,89 +27,85 @@ export class WebSocketHandler {
   }
 
   private initialize() {
-    this.wss.on('connection', async (ws: WebSocketClient, request) => {
+    this.wss.on('connection', async (ws: WebSocketClient) => {
       console.log('New WebSocket connection attempt');
       
-      try {
-        // Parse the URL and get the token from query parameters
-        const { query } = parseUrl(request.url || '', true);
-        const token = query.token as string;
+      // Set initial state
+      ws.isAuthenticated = false;
+      ws.isAlive = true;
 
-        if (!token) {
-          console.log('No token provided');
-          ws.close(4001, 'No token provided');
-          return;
-        }
-
-        // Verify token and get user
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-        const user = await User.findById(decoded.userId);
-
-        if (!user) {
-          console.log('User not found');
-          ws.close(4001, 'User not found');
-          return;
-        }
-
-        // Set up initial connection state
-        ws.userId = user._id.toString();
-        ws.isAlive = true;
-        ws.isAuthenticated = true;
-        
-        // Remove any existing connection for this user
-        const existingClient = this.clients.get(ws.userId);
-        if (existingClient) {
-          console.log('Closing existing connection for user:', ws.userId);
-          existingClient.close();
-        }
-        
-        this.clients.set(ws.userId, ws);
-
-        // Send authentication success message
-        ws.send(JSON.stringify({
-          type: 'auth',
-          success: true,
-          data: {
-            userId: user._id,
-            role: user.role
-          }
-        }));
-
-        console.log('Client authenticated successfully:', ws.userId);
-
-        // Set up ping-pong heartbeat
-        ws.on('pong', () => {
-          ws.isAlive = true;
-        });
-
-        // Handle messages
-        ws.on('message', async (message: string) => {
-          try {
-            const data = JSON.parse(message);
+      // Handle authentication message
+      ws.on('message', async (message: string) => {
+        try {
+          const data = JSON.parse(message);
+          
+          if (data.action === 'authenticate') {
+            const token = data.data.token;
             
-            if (data.action === 'ping') {
-              ws.send(JSON.stringify({ type: 'pong' }));
+            if (!token) {
+              ws.send(JSON.stringify({
+                type: 'auth',
+                success: false,
+                message: 'No token provided'
+              }));
               return;
             }
 
-            await this.handleMessage(ws, data);
-          } catch (error) {
-            console.error('Message handling error:', error);
-          }
-        });
+            try {
+              // Use the same verification as REST endpoints
+              const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+              const user = await User.findById(decoded.userId);
 
-        // Handle disconnection
-        ws.on('close', () => {
-          if (ws.userId) {
-            console.log('Client disconnected normally:', ws.userId);
-            this.clients.delete(ws.userId);
-          }
-        });
+              if (!user) {
+                ws.send(JSON.stringify({
+                  type: 'auth',
+                  success: false,
+                  message: 'User not found'
+                }));
+                return;
+              }
 
-      } catch (error) {
-        console.error('WebSocket authentication error:', error);
-        ws.close(4001, 'Authentication failed');
-      }
+              // Set up authenticated connection
+              ws.userId = user._id.toString();
+              ws.isAuthenticated = true;
+
+              // Remove existing connection if any
+              const existingClient = this.clients.get(ws.userId);
+              if (existingClient) {
+                existingClient.close();
+              }
+              
+              this.clients.set(ws.userId, ws);
+
+              // Send success response
+              ws.send(JSON.stringify({
+                type: 'auth',
+                success: true,
+                data: {
+                  userId: user._id,
+                  role: user.role
+                }
+              }));
+
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'auth',
+                success: false,
+                message: 'Invalid token'
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Message handling error:', error);
+        }
+      });
+
+      // Handle disconnection
+      ws.on('close', () => {
+        if (ws.userId) {
+          this.clients.delete(ws.userId);
+        }
+      });
     });
 
     // Set up heartbeat interval

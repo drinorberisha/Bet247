@@ -203,7 +203,6 @@ const userBalance = computed(() => authStore.user?.balance || "0.00");
 const mainNavItems = [
   { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
   { path: "/casino", label: "Casino", icon: "icon-casino" },
-  { path: "/livecasino", label: "Live Casino", icon: "icon-live" },
   { path: "/promotions", label: "Promotions", icon: "icon-gift" },
 ];
 

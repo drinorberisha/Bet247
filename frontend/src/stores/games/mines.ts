@@ -40,6 +40,21 @@ export const useMinesStore = defineStore('mines', {
     setupWebSocketListeners() {
       console.log('Setting up WebSocket listeners');
       
+      wsService.on('error', (error) => {
+        const notificationStore = useNotificationStore();
+        const authStore = useAuthStore();
+        
+        if (error.message?.includes('jwt')) {
+          // Handle authentication error
+          authStore.logout();
+          notificationStore.show({
+            type: 'error',
+            message: 'Session expired. Please login again.',
+            duration: 3000
+          });
+        }
+      });
+
       wsService.on('mines:start', (data) => {
         console.log('Received start response:', data);
         if (data.success) {
