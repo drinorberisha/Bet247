@@ -3,16 +3,22 @@
     <!-- Live Matches Header -->
     <div class="live-header">
       <h2>Live Matches</h2>
-      <div class="live-filters">
+      <div class="sport-filters">
         <button
-          v-for="sport in liveSports"
+          v-for="sport in sportFilters"
           :key="sport.id"
           :class="{ active: selectedSport === sport.id }"
           @click="selectedSport = sport.id"
           class="filter-btn"
         >
-          <i :class="sport.icon"></i>
-          {{ sport.name }}
+          <div class="sport-icon-wrapper">
+            <img
+              :src="sport.image"
+              :alt="sport.label"
+              class="sport-icon-image"
+            />
+          </div>
+          <span class="sport-label">{{ sport.label }}</span>
           <span class="count">{{ getLiveSportCount(sport.id) }}</span>
         </button>
       </div>
@@ -37,9 +43,9 @@
       </div>
 
       <div class="match-list">
-        <div 
-          v-for="(match, index) in leagueMatches" 
-          :key="match._id" 
+        <div
+          v-for="(match, index) in leagueMatches"
+          :key="match._id"
           class="match-row"
           v-show="index < 2 || expandedLeagues[league]"
         >
@@ -61,7 +67,7 @@
               class="odd-box"
               @click="handleOddSelection(match, type, odd)"
               :class="{
-                selected: isOddSelected(match._id, String(type))
+                selected: isOddSelected(match._id, String(type)),
               }"
             >
               <span class="odd-label">{{ type }}</span>
@@ -71,14 +77,24 @@
         </div>
 
         <!-- See More button -->
-        <div 
-          v-if="leagueMatches.length > 2" 
+        <div
+          v-if="leagueMatches.length > 2"
           class="see-more-container"
           @click="toggleLeagueExpansion(league)"
         >
           <button class="see-more-button">
-            {{ expandedLeagues[league] ? 'Show Less' : `Show ${leagueMatches.length - 2} More Matches` }}
-            <i :class="expandedLeagues[league] ? 'icon-chevron-up' : 'icon-chevron-down'"></i>
+            {{
+              expandedLeagues[league]
+                ? "Show Less"
+                : `Show ${leagueMatches.length - 2} More Matches`
+            }}
+            <i
+              :class="
+                expandedLeagues[league]
+                  ? 'icon-chevron-up'
+                  : 'icon-chevron-down'
+              "
+            ></i>
           </button>
         </div>
       </div>
@@ -91,31 +107,59 @@ import { ref, computed } from "vue";
 import { useMatchesStore } from "../../stores/matches";
 import { useBettingStore } from "../../stores/betting";
 import { LEAGUE_NAMES } from "../../config/sportsConfig";
+import basketballImg from "../../assets/img/logo/Basketball.png";
+import footballImg from "../../assets/img/logo/football.webp";
+import tennisImg from "../../assets/img/logo/tennis.png";
+import allSportsImg from "../../assets/img/logo/allsports.svg";
 
 const matchesStore = useMatchesStore();
 const bettingStore = useBettingStore();
 const selectedSport = ref("all");
 const expandedLeagues = ref({});
 
-const liveSports = [
-  { id: "all", name: "All", icon: "icon-all" },
-  { id: "football", name: "Football", icon: "icon-football" },
-  { id: "tennis", name: "Tennis", icon: "icon-tennis" },
-  { id: "basketball", name: "Basketball", icon: "icon-basketball" },
+const sportFilters = [
+  {
+    id: "all",
+    label: "All Sports",
+    icon: "icon-all",
+    image: allSportsImg,
+  },
+  {
+    id: "soccer",
+    label: "Football",
+    icon: "icon-football",
+    image: footballImg,
+  },
+  {
+    id: "basketball",
+    label: "Basketball",
+    icon: "icon-basketball",
+    image: basketballImg,
+  },
+  {
+    id: "tennis",
+    label: "Tennis",
+    icon: "icon-tennis",
+    image: tennisImg,
+  },
 ];
 
 // Filter live matches based on selected sport
 const liveMatches = computed(() => {
-  const matches = matchesStore.matches.filter(match => match.status === 'live');
-  if (selectedSport.value === 'all') return matches;
-  return matches.filter(match => match.sportKey.startsWith(selectedSport.value));
+  const matches = matchesStore.matches.filter(
+    (match) => match.status === "live"
+  );
+  if (selectedSport.value === "all") return matches;
+  return matches.filter((match) =>
+    match.sportKey.startsWith(selectedSport.value)
+  );
 });
 
 const hasMatches = computed(() => liveMatches.value.length > 0);
 
 const groupedLiveMatches = computed(() => {
   return liveMatches.value.reduce((acc: { [key: string]: any[] }, match) => {
-    const league = match.sportKey.split('_').slice(1).join('_');
+    const league = match.sportKey.split("_").slice(1).join("_");
     if (!acc[league]) {
       acc[league] = [];
     }
@@ -125,23 +169,30 @@ const groupedLiveMatches = computed(() => {
 });
 
 const getLiveSportCount = (sportId: string) => {
-  if (sportId === 'all') return liveMatches.value.length;
-  return liveMatches.value.filter(match => 
-    match.sportKey.startsWith(sportId)
-  ).length;
+  if (sportId === "all") return liveMatches.value.length;
+  return liveMatches.value.filter((match) => match.sportKey.startsWith(sportId))
+    .length;
 };
 
 const formatLeagueName = (key: string) => {
-  return LEAGUE_NAMES[key] || key.split('_').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(' ');
+  return (
+    LEAGUE_NAMES[key] ||
+    key
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  );
 };
 
 const formatOdd = (odd: number | string) => {
   return Number(odd).toFixed(2);
 };
 
-const handleOddSelection = (match: any, type: string | number, odd: string | number) => {
+const handleOddSelection = (
+  match: any,
+  type: string | number,
+  odd: string | number
+) => {
   bettingStore.addBet({
     matchId: match._id,
     type: String(type),
@@ -165,47 +216,124 @@ const toggleLeagueExpansion = (league: string) => {
 .matches-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  min-height: calc(
-    100vh - var(--header-height) - 6rem
-  ); /* Ensure minimum height */
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+  width: 100%;
 }
 
 .live-header {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  align-items: center;
+  text-align: center;
 }
 
-.live-filters {
+.sport-filters {
   display: flex;
-  gap: 0.8rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  padding: 0.3rem;
 }
 
 .filter-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 0.8rem;
   background: var(--pointbox);
   border: 1px solid var(--leftpreborder);
-  border-radius: 4px;
+  border-radius: 8px;
   color: var(--white);
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-btn:hover {
+  background: var(--header);
+  transform: translateY(-1px);
 }
 
 .filter-btn.active {
   background: var(--preactive);
+  border-color: var(--active-color);
   color: var(--active-color);
+}
+
+.sport-icon-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sport-icon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sport-label {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .count {
   background: var(--header);
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .matches-container {
+    max-width: 400px;
+    padding: 0 0.3rem;
+    min-width: 280px;
+  }
+
+  .sport-filters {
+    gap: 0.4rem;
+  }
+
+  .filter-btn {
+    min-width: auto;
+    width: 48px; /* Increased touch target */
+    height: 48px; /* Increased touch target */
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    position: relative;
+  }
+
+  .filter-btn:active {
+    transform: scale(0.95);
+  }
+
+  .sport-icon-wrapper {
+    width: 24px; /* Slightly larger icons for mobile */
+    height: 24px;
+    margin: 0;
+    z-index: 1; /* Ensure icon stays above any effects */
+  }
+
+  .sport-label,
+  .count {
+    display: none;
+  }
 }
 
 .empty-state {

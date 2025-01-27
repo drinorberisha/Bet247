@@ -54,7 +54,11 @@
                 {{ formatMatchTime(match.commenceTime) }}
               </div>
             </div>
-            <div class="match-teams">
+            <div
+              class="match-teams"
+              @click="navigateToSGM(match)"
+              :class="{ clickable: true }"
+            >
               <div class="team home">{{ match.homeTeam }}</div>
               <div class="team away">{{ match.awayTeam }}</div>
             </div>
@@ -132,6 +136,7 @@ import basketballImg from "../../assets/img/logo/Basketball.png";
 import footballImg from "../../assets/img/logo/football.webp";
 import tennisImg from "../../assets/img/logo/tennis.png";
 import allSportsImg from "../../assets/img/logo/allsports.svg";
+import { useRouter } from "vue-router";
 
 const matchesStore = useMatchesStore();
 const bettingStore = useBettingStore();
@@ -291,6 +296,19 @@ const toggleLeagueExpansion = (league: string) => {
 };
 
 const hasMatches = computed(() => filteredMatches.value.length > 0);
+
+const router = useRouter();
+
+const navigateToSGM = (match: any) => {
+  router.push({
+    name: "SameGameMulti",
+    params: {
+      matchId: match._id || "default",
+      homeTeam: encodeURIComponent(match.homeTeam),
+      awayTeam: encodeURIComponent(match.awayTeam),
+    },
+  });
+};
 </script>
 
 <style scoped>
@@ -436,7 +454,19 @@ const hasMatches = computed(() => filteredMatches.value.length > 0);
 .match-teams {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.match-teams:hover {
+  background-color: var(--pointbox);
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .odds-container {
