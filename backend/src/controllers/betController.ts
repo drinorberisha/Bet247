@@ -39,7 +39,9 @@ const calculateFinalCashoutAmount = (stake: number, partialOdds: number): number
 export const placeBet = async (req: Request, res: Response) => {
   try {
     const { betType, amount, selections, totalOdds, potentialWin } = req.body;
-    
+    console.log('User from request:', req.user);
+    console.log('User ID being searched:', req.user.userId);
+
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -48,7 +50,7 @@ export const placeBet = async (req: Request, res: Response) => {
     }
 
     // Find the user
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({
         success: false,
