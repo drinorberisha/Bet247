@@ -28,13 +28,13 @@ export interface IMatch extends Document {
     underOdds: number;
   };
   bookmaker?: string;
-  lastUpdated?: Date;
-  tier: 'high' | 'medium' | 'low';
+  lastUpdated: Date;
+  tier?: string;
   title?: string;
   formattedCommenceTime?: string;
-  result: '1' | 'X' | '2' | null;
+  result?: '1' | 'X' | '2' | null;
   settled?: boolean;
-  isStale(): boolean;
+  isStale?: boolean;
 }
 
 const matchSchema = new Schema<IMatch>({

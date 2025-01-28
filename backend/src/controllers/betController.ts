@@ -97,8 +97,8 @@ export const placeBet = async (req: Request, res: Response) => {
     
     // Get the selection IDs
     const selectionIds = Array.isArray(createdSelections) 
-      ? createdSelections.map(s => s._id)
-      : [createdSelections._id];
+      ? createdSelections.map((selection: any) => selection._id)
+      : [(createdSelections as any)._id];
 
     // Create the bet
     const bet = await Bet.create({

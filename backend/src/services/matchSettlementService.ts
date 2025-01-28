@@ -22,7 +22,7 @@ export class MatchSettlementService {
       }
     }).session(session);
 
-    const updatedMatches = await this.matchService.checkAndUpdateMatchResults(pendingMatches, session);
+    const updatedMatches = await this.matchService.checkAndUpdateMatchResults(pendingMatches);
     let settledMatches: any[] = [];
 
     if (updatedMatches.length > 0) {

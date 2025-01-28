@@ -1,13 +1,22 @@
 import { CronJob } from 'cron';
-import { MatchService } from '../../../matchService';
+import { MatchService } from '../services/matchService';
 import { SUPPORTED_SPORTS } from '../config/constants';
 import { UnifiedMatchService } from '../services/unifiedMatchService';
 
 const matchService = new MatchService();
 
+const SPORTS_TO_UPDATE = {
+  soccer: ['soccer_epl', 'soccer_spain_la_liga'],
+  basketball: ['basketball_nba', 'basketball_euroleague'],
+  tennis: ['tennis_atp', 'tennis_wta']
+} as const;
+
+// Use Object.values to make it iterable
+const sportKeys = Object.values(SPORTS_TO_UPDATE).flat();
+
 // Update upcoming matches less frequently
 const upcomingMatchesJob = new CronJob('0 */30 * * * *', async () => { // Every 30 minutes
-  for (const sportKey of SUPPORTED_SPORTS) {
+  for (const sportKey of sportKeys) {
     try {
       await matchService.queueMatchUpdate(sportKey);
       // Add delay between sports to prevent API rate limits

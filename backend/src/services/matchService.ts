@@ -109,7 +109,7 @@ export class MatchService {
     });
 
     // If matches found in DB and not stale, use them
-    if (matches.length > 0 && !matches.some(m => m.isStale())) {
+    if (matches.length > 0 && !matches.some(m => Boolean(m.isStale))) {
       this.cache.set(sportKey, { data: matches, timestamp: now });
       return matches;
     }
@@ -209,43 +209,42 @@ export class MatchService {
     return matches;
   }
 
-  async checkAndUpdateMatchResults(matches: IMatch[]): Promise<IMatch[]> {
-    const updatedMatches: IMatch[] = [];
-
+  async checkAndUpdateMatchResults(matches: IMatch[], session?: mongoose.ClientSession) {
+    const updatedMatches = [];
+    
     for (const match of matches) {
       try {
-        if (!match.sportKey) {
-          console.error(`Match ${match._id} missing sportKey, skipping`);
-          continue;
-        }
-
         const apiMatch = await this.oddsApiService.getMatchResult(match.sportKey, match.externalId);
         
-        if (apiMatch && apiMatch.scores) {
-          const result = this.determineResult(apiMatch.scores);
+        if (apiMatch && apiMatch.home !== undefined && apiMatch.away !== undefined) {
+          const result = this.determineResult({
+            home: apiMatch.home,
+            away: apiMatch.away
+          });
           
-          if (result) {
-            const updatedMatch = await Match.findByIdAndUpdate(
-              match._id,
-              {
-                status: 'ended',
-                result: result,
-                scores: apiMatch.scores,
-                lastUpdated: new Date()
+          const updatedMatch = await Match.findByIdAndUpdate(
+            match._id,
+            {
+              status: 'ended',
+              scores: {
+                home: apiMatch.home,
+                away: apiMatch.away
               },
-              { new: true }
-            );
+              result,
+              lastUpdated: new Date()
+            },
+            { new: true, session }
+          );
 
-            if (updatedMatch) {
-              updatedMatches.push(updatedMatch);
-            }
+          if (updatedMatch) {
+            updatedMatches.push(updatedMatch);
           }
         }
       } catch (error) {
         console.error(`Error updating match ${match._id}:`, error);
       }
     }
-
+    
     return updatedMatches;
   }
 

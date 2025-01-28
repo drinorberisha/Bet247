@@ -1,6 +1,6 @@
 import axios from 'axios';
 import config from '../config/config';
-import { IMatch } from '../models/Match';
+import { IMatch, Match } from '../models/Match';
 
 const ODDS_API_HOST = 'https://api.the-odds-api.com/v4';
 
@@ -73,14 +73,19 @@ export class OddsApiService {
     }
   }
 
-  async getMatches(sportKey: string): Promise<IMatch[]> {
+  async getMatches(sportKey: string, options?: any): Promise<IMatch[]> {
     if (!this.API_KEY) {
       throw new Error('ODDS_API_KEY is not configured');
     }
 
     try {
+      const queryParams = new URLSearchParams({
+        apiKey: this.API_KEY,
+        ...(options || {})
+      });
+
       const response = await fetch(
-        `${this.BASE_URL}/sports/${sportKey}/scores/?apiKey=${this.API_KEY}`
+        `${this.BASE_URL}/sports/${sportKey}/scores/?${queryParams}`
       );
       
       if (!response.ok) {
@@ -89,6 +94,11 @@ export class OddsApiService {
       }
 
       const data = await response.json();
+      if (!Array.isArray(data)) {
+        console.error('Invalid API response format:', data);
+        return [];
+      }
+      
       return this.transformMatches(data);
     } catch (error) {
       console.error('Error fetching matches:', error);
@@ -96,20 +106,22 @@ export class OddsApiService {
     }
   }
 
-  async getUpcomingMatches(sportKey: string): Promise<Match[]> {
-    return this.getMatches(sportKey, {
+  async getUpcomingMatches(sportKey: string): Promise<IMatch[]> {
+    const matches = await this.getMatches(sportKey, {
       regions: 'eu',
       markets: 'h2h,spreads,totals',
       oddsFormat: 'decimal'
     });
+    return matches;
   }
 
-  async getLiveMatches(sportKey: string): Promise<Match[]> {
-    return this.getMatches(sportKey, {
+  async getLiveMatches(sportKey: string): Promise<IMatch[]> {
+    const matches = await this.getMatches(sportKey, {
       regions: 'eu',
       markets: 'h2h',
       oddsFormat: 'decimal'
     });
+    return matches;
   }
 
   async getMatchResult(sportKey: string, matchId: string): Promise<{ home: number; away: number } | null> {
@@ -136,25 +148,33 @@ export class OddsApiService {
   }
 
   private transformMatches(apiMatches: any[]): IMatch[] {
-    return apiMatches.map(match => ({
-      externalId: match.id,
-      sportKey: match.sport_key,
-      sportTitle: match.sport_title,
-      homeTeam: match.home_team,
-      awayTeam: match.away_team,
-      commenceTime: new Date(match.commence_time),
-      status: this.determineMatchStatus(match),
-      scores: match.scores ? {
-        home: Number(match.scores.home),
-        away: Number(match.scores.away)
-      } : undefined,
-      odds: match.odds ? {
-        homeWin: Number(match.odds.h2h?.[0]),
-        awayWin: Number(match.odds.h2h?.[1]),
-        draw: match.odds.h2h?.[2] ? Number(match.odds.h2h[2]) : undefined
-      } : undefined,
-      lastUpdated: new Date()
-    }));
+    return apiMatches.map(match => {
+      const matchData = {
+        externalId: match.id,
+        sportKey: match.sport_key,
+        sportTitle: match.sport_title,
+        homeTeam: match.home_team,
+        awayTeam: match.away_team,
+        commenceTime: new Date(match.commence_time),
+        status: this.determineMatchStatus(match.commence_time),
+        scores: match.scores ? {
+          home: Number(match.scores.home),
+          away: Number(match.scores.away)
+        } : undefined,
+        odds: match.bookmakers?.[0]?.markets?.[0]?.outcomes ? {
+          homeWin: Number(match.bookmakers[0].markets[0].outcomes[0].price),
+          awayWin: Number(match.bookmakers[0].markets[0].outcomes[1].price),
+          draw: match.bookmakers[0].markets[0].outcomes[2] ? 
+            Number(match.bookmakers[0].markets[0].outcomes[2].price) : undefined
+        } : undefined,
+        tier: 'medium', // or implement determineTier logic
+        result: null,
+        lastUpdated: new Date()
+      };
+
+      // Create a new document without saving it
+      return Match.create(matchData) as unknown as IMatch;
+    });
   }
 
   private transformScores(matchData: any): { home: number; away: number } | null {
@@ -169,5 +189,10 @@ export class OddsApiService {
     if (match.completed) return 'ended';
     if (match.in_play) return 'live';
     return 'upcoming';
+  }
+
+  private determineTier(match: any): string | null {
+    // Implementation of determineTier method
+    return null;
   }
 } 
