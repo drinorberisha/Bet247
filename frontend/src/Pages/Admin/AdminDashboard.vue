@@ -264,8 +264,12 @@ th {
   color: white;
 }
 
-/* Responsive styles */
+/* Enhanced mobile responsiveness */
 @media (max-width: 768px) {
+  .admin-dashboard {
+    padding: 10px;
+  }
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 15px;
@@ -279,15 +283,29 @@ th {
   .btn-action {
     width: 100%;
     justify-content: center;
+    padding: 12px; /* Larger touch target */
   }
 
-  /* Make table scrollable horizontally */
   .recent-activity {
     overflow-x: auto;
+    margin: 0 -10px;
+    padding: 0 10px;
   }
 
   table {
-    min-width: 600px; /* Ensure table doesn't shrink too much */
+    min-width: 600px;
+  }
+
+  .stat-card {
+    padding: 15px;
+  }
+
+  .stat-info h3 {
+    font-size: 13px;
+  }
+
+  .stat-info p {
+    font-size: 20px;
   }
 }
 

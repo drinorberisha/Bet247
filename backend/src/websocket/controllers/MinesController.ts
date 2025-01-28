@@ -40,6 +40,12 @@ export class MinesController {
   private async handleMessage(ws: WebSocketClient, data: WebSocketMessage) {
     if (!ws.userId) return;
 
+    console.log('Received WebSocket message:', {
+      action: data.action,
+      userId: ws.userId,
+      data: data.data
+    });
+
     switch (data.action) {
       case 'mines:start':
         await this.handleGameStart(ws, data.data);
@@ -51,12 +57,14 @@ export class MinesController {
         await this.handleCashout(ws, data.data);
         break;
       default:
+        console.log('Unknown action received:', data.action);
         this.sendError(ws, 'Unknown action');
     }
   }
 
   private async handleGameStart(ws: WebSocketClient, data: any) {
     try {
+      console.log('Starting game with data:', data);
       const { betAmount, minesCount } = data;
 
       // Validate bet amount and mines count
@@ -83,18 +91,22 @@ export class MinesController {
       // Deduct bet amount from user balance
       await this.db.users.updateBalance(ws.userId, -betAmount);
 
-      // Send success response
-      ws.send(JSON.stringify({
+      const response = {
         type: 'mines:start',
         success: true,
         data: {
           gameId,
           betAmount,
-          minesCount
+          minesCount,
+          message: 'Game started successfully'
         }
-      }));
+      };
+
+      console.log('Sending response to client:', response);
+      ws.send(JSON.stringify(response));
 
     } catch (error: any) {
+      console.error('Error in handleGameStart:', error);
       this.sendError(ws, error.message);
     }
   }
@@ -108,19 +120,35 @@ export class MinesController {
         throw new Error('Invalid game session');
       }
 
+      // Get the result of revealing this tile
       const result = session.game.revealTile(tileIndex);
 
+      // Send the immediate result for this tile
       ws.send(JSON.stringify({
         type: 'mines:reveal',
         success: true,
         data: {
           tileIndex,
-          ...result
+          isMine: result.isMine,
+          currentMultiplier: result.currentMultiplier,
+          currentProfit: result.currentProfit
         }
       }));
 
+      // If it was a mine, game is over - reveal all tiles and cleanup
       if (result.isMine) {
-        // Game over - cleanup
+        const gameState = session.game.getState();
+        
+        // Send full grid reveal
+        ws.send(JSON.stringify({
+          type: 'mines:gameover',
+          data: {
+            minePositions: gameState.minePositions,
+            revealedPositions: gameState.revealedPositions
+          }
+        }));
+
+        // Cleanup and save game history
         this.games.delete(gameId);
         await this.saveGameHistory(ws.userId, gameId, 'loss', 0);
       }
@@ -167,10 +195,13 @@ export class MinesController {
   }
 
   private sendError(ws: WebSocketClient, message: string) {
-    ws.send(JSON.stringify({
+    const errorResponse = {
       type: 'error',
+      success: false,
       message
-    }));
+    };
+    console.log('Sending error to client:', errorResponse);
+    ws.send(JSON.stringify(errorResponse));
   }
 
   private validateGameParams(betAmount: number, minesCount: number): boolean {

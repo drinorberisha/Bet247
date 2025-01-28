@@ -52,7 +52,7 @@ export const router = createRouter({
       meta: { title: "BET 24/7" },
     },
     {
-      path: "/dashboard",
+      path: "/profile",
       component: Dashboard,
       meta: {
         layout: DashboardLayout,

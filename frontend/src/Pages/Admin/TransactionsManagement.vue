@@ -395,19 +395,28 @@ onMounted(() => {
 
   .filter-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 15px;
+  }
+
+  .form-control {
+    padding: 12px; /* Larger touch targets */
   }
 
   .amount-range {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  /* Make table scrollable horizontally */
+  .btn {
+    width: 100%;
+    padding: 12px;
+    justify-content: center;
+  }
+
   .table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -1rem;
-    padding: 0 1rem;
+    margin: 0 -15px;
+    padding: 0 15px;
+    max-width: calc(100vw - 20px);
   }
 
   table {
@@ -416,15 +425,12 @@ onMounted(() => {
 
   .pagination-controls {
     flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .btn {
+    gap: 10px;
     width: 100%;
   }
 
-  .page-info {
-    text-align: center;
+  .pagination-controls button {
+    width: 100%;
   }
 }
 

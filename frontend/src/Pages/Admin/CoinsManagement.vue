@@ -455,7 +455,7 @@ select:disabled {
   opacity: 0.8;
 }
 
-/* Responsive styles */
+/* Enhanced mobile responsiveness */
 @media (max-width: 768px) {
   .coins-management {
     padding: 10px;
@@ -466,25 +466,20 @@ select:disabled {
   }
 
   .card-body {
-    padding: 1rem;
+    padding: 15px;
   }
 
   .form-group {
-    margin-bottom: 0.75rem;
+    margin-bottom: 15px;
   }
 
-  /* Make table scrollable horizontally */
-  .table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  table {
-    min-width: 600px;
+  .form-control {
+    padding: 12px; /* Larger touch targets */
   }
 
   .btn {
     width: 100%;
+    padding: 12px;
     justify-content: center;
   }
 
@@ -492,7 +487,17 @@ select:disabled {
   .transfer-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 15px;
+  }
+
+  .table-responsive {
+    margin: 0 -15px;
+    padding: 0 15px;
+    max-width: calc(100vw - 20px);
+  }
+
+  table {
+    min-width: 600px;
   }
 }
 
@@ -520,9 +525,14 @@ button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
   background-color: #f8f9fa;
+  color: #666;
 }
 
 button:disabled {
   background-color: #6c757d;
+}
+
+input[type="number"] {
+  color: #333;
 }
 </style> 

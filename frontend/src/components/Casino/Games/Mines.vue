@@ -17,17 +17,27 @@
       <div 
         v-for="(tile, index) in tiles" 
         :key="index"
-        class="mine-tile"
-        :class="{
-          'clickable': isGameActive && !tile.revealed,
-          'revealed': tile.revealed,
-          'mine': tile.revealed && tile.isMine,
-          'gem': tile.revealed && !tile.isMine
-        }"
+        :class="[
+          'tile',
+          { 'revealed': tile.revealed },
+          { 'mine': tile.revealed && tile.isMine },
+          { 'diamond': tile.revealed && !tile.isMine }
+        ]"
         @click="handleTileClick(index)"
       >
-        <i v-if="tile.revealed" :class="tile.isMine ? 'fas fa-bomb' : 'fas fa-gem'"></i>
-        <div v-else class="tile-content">?</div>
+        <template v-if="tile.revealed">
+          <i v-if="tile.isMine" class="fas fa-bomb"></i>
+          <i v-else class="fas fa-gem"></i>
+        </template>
+      </div>
+    </div>
+
+    <div class="game-info">
+      <div class="multiplier">
+        Multiplier: {{ currentMultiplier }}x
+      </div>
+      <div class="profit">
+        Profit: {{ currentProfit.toFixed(2) }}€
       </div>
     </div>
 
@@ -35,41 +45,34 @@
       <div class="bet-controls">
         <div class="input-group">
           <label>Bet Amount</label>
-          <div class="amount-input">
-            <input 
-              type="number" 
-              v-model="betAmount" 
-              :disabled="isGameActive"
-              min="0.1" 
-              step="0.1"
-            />
-            <span class="currency">€</span>
-          </div>
+          <input 
+            type="number" 
+            v-model="betAmount" 
+            :disabled="isGameActive"
+            min="0.1" 
+            step="0.1"
+          />
         </div>
         <div class="input-group">
           <label>Mines Count</label>
-          <div class="mines-input">
-            <input 
-              type="number" 
-              v-model="minesCount" 
-              :disabled="isGameActive"
-              min="1" 
-              max="24"
-            />
-          </div>
+          <input 
+            type="number" 
+            v-model="minesCount" 
+            :disabled="isGameActive"
+            min="1" 
+            max="24"
+          />
         </div>
       </div>
 
-      <div class="action-buttons">
-        <button 
-          :class="['game-button', isGameActive ? 'cashout-button' : 'start-button']"
-          :disabled="loading"
-          @click="handleGameAction"
-        >
-          <i :class="isGameActive ? 'fas fa-coins' : 'fas fa-play'"></i>
-          {{ isGameActive ? 'Cashout' : 'Start Game' }}
-        </button>
-      </div>
+      <button 
+        :class="['action-button', { 'cashout': isGameActive }]"
+        :disabled="loading || (isGameActive && !canCashout)"
+        @click="handleGameAction"
+      >
+        <i :class="isGameActive ? 'fas fa-coins' : 'fas fa-play'"></i>
+        {{ isGameActive ? 'Cashout' : 'Start Game' }}
+      </button>
     </div>
   </div>
 </template>
@@ -79,13 +82,13 @@ import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useMinesStore } from '../../../stores/games/mines';
 
-
 const minesStore = useMinesStore();
 const { 
   tiles, 
   betAmount, 
   minesCount, 
   currentMultiplier, 
+  currentProfit,
   loading, 
   canCashout,
   isGameActive 
@@ -98,7 +101,12 @@ onMounted(() => {
 
 // Handle tile click
 const handleTileClick = (index: number) => {
-  if (isGameActive.value && !tiles.value[index].revealed) {
+  console.log('Tile clicked:', {
+    index,
+    isGameActive: isGameActive.value,
+    isRevealed: tiles.value[index].revealed
+  });
+  if (isGameActive.value && !tiles.value[index].revealed && !loading.value) {
     minesStore.revealTile(index);
   }
 };
@@ -139,7 +147,7 @@ const nextProfit = computed(() => {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.mine-tile {
+.tile {
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -150,9 +158,10 @@ const nextProfit = computed(() => {
   font-size: 1.4rem;
   transition: all 0.2s ease;
   color: #8a8d94;
+  cursor: pointer;
 }
 
-.mine-tile.clickable:hover {
+.tile:hover:not(.revealed) {
   background: #3a3f4c;
   transform: translateY(-2px);
   cursor: pointer;
@@ -160,24 +169,22 @@ const nextProfit = computed(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.mine-tile.revealed.gem {
-  background: #2ecc71;
-  border-color: #27ae60;
-  color: white;
-  animation: reveal 0.3s ease-out;
+.tile.revealed {
+  cursor: default;
 }
 
-.mine-tile.revealed.mine {
+.tile.mine {
   background: #e74c3c;
   border-color: #c0392b;
   color: white;
   animation: reveal 0.3s ease-out;
 }
 
-.tile-content {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #6a6d74;
+.tile.diamond {
+  background: #2ecc71;
+  border-color: #27ae60;
+  color: white;
+  animation: reveal 0.3s ease-out;
 }
 
 .stats-container {
@@ -209,6 +216,13 @@ const nextProfit = computed(() => {
   color: #ffffff;
 }
 
+.game-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
 .game-controls {
   margin-top: 1.5rem;
 }
@@ -230,28 +244,23 @@ const nextProfit = computed(() => {
   font-size: 0.9rem;
 }
 
-.amount-input, .mines-input {
-  position: relative;
-  background: #242830;
+.input-group input {
+  padding: 0.5rem;
   border-radius: 8px;
-  padding: 0.5rem;
-}
-
-input {
-  width: 100%;
+  border: 1px solid #363a47;
   background: transparent;
-  border: none;
   color: white;
-  font-size: 1.1rem;
-  padding: 0.5rem;
+  width: 100%;
   outline: none;
 }
 
-.game-button {
+.action-button {
   width: 100%;
-  padding: 1rem 2rem;
-  border: none;
+  padding: 1rem;
   border-radius: 8px;
+  border: none;
+  background: #3498db;
+  color: white;
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
@@ -262,22 +271,13 @@ input {
   gap: 0.5rem;
 }
 
-.start-button {
-  background: #3498db;
-  color: white;
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.start-button:hover {
-  background: #2980b9;
-}
-
-.cashout-button {
+.action-button.cashout {
   background: #2ecc71;
-  color: white;
-}
-
-.cashout-button:hover {
-  background: #27ae60;
 }
 
 @keyframes reveal {
@@ -289,10 +289,5 @@ input {
     transform: scale(1);
     opacity: 1;
   }
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style> 
