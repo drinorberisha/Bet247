@@ -14,7 +14,6 @@
   "description": "",
   "dependencies": {
     "@types/cron": "^2.4.3",
-    "@types/ws": "^8.5.14",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -29,10 +28,11 @@
     "@types/async": "^3.2.24",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.10.5",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/node": "^20.11.19",
+    "@types/ws": "^8.5.14",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.3.3"
   }
 }
