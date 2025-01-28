@@ -14,6 +14,6 @@
     "noImplicitAny": false,
     "strictNullChecks": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../matchService.ts"],
   "exclude": ["node_modules", "dist"]
 } 

@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import {Match} from '../models/Match';
 import { OddsApiService } from '../services/oddsApiService';
-import { MatchService } from '../services/matchService';
 import { UnifiedMatchService } from '../services/unifiedMatchService';
+import { MatchService } from '../services/matchService';
 
-const oddsApiService = new OddsApiService();
 const matchService = new MatchService();
+const oddsApiService = new OddsApiService();
 const unifiedMatchService = new UnifiedMatchService();
 
 // Get all supported sports

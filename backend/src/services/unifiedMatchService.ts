@@ -1,11 +1,13 @@
 import { Match, IMatch } from '../models/Match';
 import { OddsApiService } from './oddsApiService';
 import { eventEmitter } from '../utils/eventEmitter';
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+type MatchDocument = Document<unknown, {}, IMatch> & IMatch & Required<{ _id: unknown }> & { __v: number };
 
 export class UnifiedMatchService {
   private oddsApiService: OddsApiService;
-  private cache: Map<string, {data: IMatch[], timestamp: number}> = new Map();
+  private cache: Map<string, {data: MatchDocument[], timestamp: number}> = new Map();
   private requestQueue: Map<string, Promise<void>> = new Map();
   private rateLimitDelay = 1000; // 1 second between requests
 
@@ -13,7 +15,9 @@ export class UnifiedMatchService {
     this.oddsApiService = new OddsApiService();
   }
 
-  private async updateMatchesInDb(matches: IMatch[], sportKey: string) {
+  private async updateMatchesInDb(matches: IMatch[], sportKey: string): Promise<MatchDocument[]> {
+    const savedMatches: MatchDocument[] = [];
+
     for (const match of matches) {
       if (!this.validateMatch(match)) {
         console.error(`Skipping invalid match:`, match);
@@ -21,7 +25,7 @@ export class UnifiedMatchService {
       }
 
       try {
-        await Match.findOneAndUpdate(
+        const savedMatch = await Match.findOneAndUpdate(
           { externalId: match.externalId },
           match,
           { 
@@ -30,10 +34,16 @@ export class UnifiedMatchService {
             setDefaultsOnInsert: true
           }
         );
+        
+        if (savedMatch) {
+          savedMatches.push(savedMatch);
+        }
       } catch (error) {
         console.error(`Error saving match to DB:`, error);
       }
     }
+
+    return savedMatches;
   }
 
   private validateMatch(match: any): boolean {
@@ -64,11 +74,11 @@ export class UnifiedMatchService {
 
     const requestPromise = new Promise<void>(async (resolve) => {
       try {
-        // Add rate limiting delay
         await new Promise(r => setTimeout(r, this.rateLimitDelay));
         const matches = await this.oddsApiService.getMatches(sportKey);
+        const savedMatches = await this.updateMatchesInDb(matches, sportKey);
         this.cache.set(sportKey, {
-          data: matches,
+          data: savedMatches,
           timestamp: Date.now()
         });
       } finally {
@@ -78,12 +88,10 @@ export class UnifiedMatchService {
 
     this.requestQueue.set(sportKey, requestPromise);
     await requestPromise;
-    this.requestQueue.delete(sportKey);
-
-    return this.cache.get(sportKey)?.data || [];
+    return (this.cache.get(sportKey)?.data || []);
   }
 
-  async getMatchesBySport(sportKey: string): Promise<IMatch[]> {
+  async getMatchesBySport(sportKey: string): Promise<MatchDocument[]> {
     const cached = this.cache.get(sportKey);
     const now = Date.now();
 
@@ -102,8 +110,9 @@ export class UnifiedMatchService {
     }
 
     try {
-      matches = await this.debouncedRequest(sportKey);
-      await this.updateMatchesInDb(matches, sportKey);
+      const apiMatches = await this.debouncedRequest(sportKey);
+      matches = await this.updateMatchesInDb(apiMatches, sportKey);
+      this.cache.set(sportKey, { data: matches, timestamp: now });
       return matches;
     } catch (error) {
       console.error('Error fetching matches:', error);
@@ -111,11 +120,11 @@ export class UnifiedMatchService {
     }
   }
 
-  async getLiveMatches(): Promise<IMatch[]> {
+  async getLiveMatches(): Promise<MatchDocument[]> {
     return Match.find({ status: 'live' }).sort({ lastUpdated: -1 });
   }
 
-  async getUpcomingMatches(): Promise<IMatch[]> {
+  async getUpcomingMatches(): Promise<MatchDocument[]> {
     const now = new Date();
     return Match.find({
       status: 'upcoming',
@@ -140,28 +149,27 @@ export class UnifiedMatchService {
   }
 
   async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
-    return this.retryOperation(async () => {
-      const matches = await this.oddsApiService.getMatches(sportKey);
-      const updatedMatches: IMatch[] = [];
-      const settledMatches: IMatch[] = [];
+    const matches = await this.oddsApiService.getMatches(sportKey);
+    const updatedMatches: MatchDocument[] = [];
 
-      for (const match of matches) {
-        if (this.validateMatch(match)) {
-          const updatedMatch = await Match.findOneAndUpdate(
-            { externalId: match.externalId },
-            match,
-            { 
-              upsert: true, 
-              new: true, 
-              session,
-              setDefaultsOnInsert: true 
-            }
-          );
+    for (const match of matches) {
+      if (this.validateMatch(match)) {
+        const updatedMatch = await Match.findOneAndUpdate(
+          { externalId: match.externalId },
+          match,
+          { 
+            upsert: true, 
+            new: true, 
+            session,
+            setDefaultsOnInsert: true 
+          }
+        );
+        if (updatedMatch) {
           updatedMatches.push(updatedMatch);
         }
       }
+    }
 
-      return { updatedMatches, settledMatches };
-    });
+    return { updatedMatches };
   }
 } 

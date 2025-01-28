@@ -10,23 +10,54 @@ import matchRoutes from './routes/matchRoutes';
 import { SchedulerService } from './services/schedulerService';
 import { createServer } from 'http';
 import routes from "./routes";
-import { WebSocketHandler } from './websocket/server';
+import { WebSocket, WebSocketServer } from 'ws';
+import { parse } from 'url';
+import jwt from 'jsonwebtoken';
 import { MinesController } from './websocket/controllers/MinesController';
 import { DatabaseService } from './services/DatabaseService';
-  dotenv.config({ path: path.resolve(__dirname, '../.env') });
-  import { startMatchResultsJob } from './jobs/matchResultsJob';
+import config from './config/config';
+import { startMatchResultsJob } from './jobs/matchResultsJob';
+import { webSocketService } from './websocket';
 
 const app = express();
 const server = createServer(app);
 
 // Middleware
 app.use(express.json());
+
+// Initialize WebSocket service
+webSocketService.initialize(server);
+
+// Export the WebSocket server instance
+export const wss = webSocketService.getWss();
+
+// Define allowed origins
+const allowedOrigins = [
+  'http://localhost:5173',    // Local Vue development
+  'http://localhost:3000',    // Local alternative
+  'https://bet247.vercel.app' // Production frontend
+];
+
+// CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: function(origin, callback) {
+      if (!origin || process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
@@ -57,14 +88,11 @@ mongoose
     process.exit(1);
   });
 
-// Initialize WebSocket server
-const wsHandler = new WebSocketHandler(server);
-
 // Initialize database service
 const dbService = new DatabaseService();
 
-// Initialize game controllers
-new MinesController(wsHandler, server, dbService);
+// Initialize game controllers with webSocketService instead of wss
+new MinesController(webSocketService, server, dbService);
 
 // Routes
 app.use("/api", routes);
@@ -90,4 +118,4 @@ process.on('unhandledRejection', (error: Error) => {
   console.error('Unhandled Rejection:', error);
 });
 
-export { app, wsHandler };
+export default app;

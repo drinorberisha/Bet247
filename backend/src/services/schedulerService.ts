@@ -1,5 +1,6 @@
 import { CronJob } from 'cron';
 import { MatchService } from './matchService';
+import { SUPPORTED_SPORTS } from '../config/constants';
 
 export class SchedulerService {
   private matchService: MatchService;

@@ -10,6 +10,10 @@ export class WebSocketHandler {
     this.initialize();
   }
 
+  public getWss(): WebSocketServer {
+    return this.wss;
+  }
+
   private initialize() {
     this.wss.on('connection', (ws: WebSocketClient) => {
       ws.isAlive = true;

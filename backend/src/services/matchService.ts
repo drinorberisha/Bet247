@@ -1,12 +1,14 @@
 import { Match, IMatch } from '../models/Match';
 import { OddsApiService } from './oddsApiService';
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import { eventEmitter } from '../utils/eventEmitter';
 import { LockService } from './lockService';
 
+type MatchDocument = Document<unknown, {}, IMatch> & IMatch & Required<{ _id: unknown }> & { __v: number };
+
 export class MatchService {
   private oddsApiService: OddsApiService;
-  private cache: Map<string, {data: IMatch[], timestamp: number}> = new Map();
+  private cache: Map<string, {data: MatchDocument[], timestamp: number}> = new Map();
   private CACHE_DURATION = {
     high: 5 * 60 * 1000,     // 5 minutes
     medium: 15 * 60 * 1000,  // 15 minutes
@@ -19,10 +21,11 @@ export class MatchService {
     this.oddsApiService = new OddsApiService();
   }
 
-  async getMatches(sportKey: string): Promise<IMatch[]> {
+  async getMatches(sportKey: string): Promise<MatchDocument[]> {
     try {
       const matches = await this.oddsApiService.getMatches(sportKey);
-      return matches;
+      const savedMatches = await this.updateMatchesInDb(matches, sportKey);
+      return savedMatches;
     } catch (error) {
       console.error('Error fetching matches:', error);
       throw error;
@@ -59,7 +62,9 @@ export class MatchService {
     return true;
   }
 
-  private async updateMatchesInDb(matches: IMatch[], sportKey: string) {
+  private async updateMatchesInDb(matches: IMatch[], sportKey: string): Promise<MatchDocument[]> {
+    const savedMatches: MatchDocument[] = [];
+
     for (const match of matches) {
       if (!this.validateMatch(match)) {
         console.error(`Skipping invalid match:`, match);
@@ -67,7 +72,7 @@ export class MatchService {
       }
 
       try {
-        await Match.findOneAndUpdate(
+        const savedMatch = await Match.findOneAndUpdate(
           { externalId: match.externalId },
           match,
           { 
@@ -76,13 +81,19 @@ export class MatchService {
             setDefaultsOnInsert: true
           }
         );
+        
+        if (savedMatch) {
+          savedMatches.push(savedMatch);
+        }
       } catch (error) {
         console.error(`Error saving match to DB:`, error);
       }
     }
+
+    return savedMatches;
   }
 
-  async getMatchesBySport(sportKey: string): Promise<IMatch[]> {
+  async getMatchesBySport(sportKey: string): Promise<MatchDocument[]> {
     // First try to get from cache
     const cached = this.cache.get(sportKey);
     const now = Date.now();
@@ -105,8 +116,9 @@ export class MatchService {
 
     // If no matches in DB or stale, fetch from API
     try {
-      matches = await this.debouncedRequest(sportKey);
-      await this.updateMatchesInDb(matches, sportKey);
+      const apiMatches = await this.debouncedRequest(sportKey);
+      matches = await this.updateMatchesInDb(apiMatches, sportKey);
+      this.cache.set(sportKey, { data: matches, timestamp: now });
       return matches;
     } catch (error) {
       console.error('Error fetching matches:', error);
@@ -143,10 +155,10 @@ export class MatchService {
     throw new Error('Operation failed after all retries');
   }
 
-  private async queueMatchUpdate(sportKey: string): Promise<void> {
+  public async queueMatchUpdate(sportKey: string): Promise<void> {
     const queueKey = `match_update_${sportKey}`;
     
-    if (!await LockService.acquireLock(queueKey, 30000)) { // 30 second lock
+    if (!await LockService.acquireLock(queueKey, 30000)) {
       console.log(`Update for ${sportKey} already in progress, skipping`);
       return;
     }
@@ -334,7 +346,7 @@ export class MatchService {
         await new Promise(r => setTimeout(r, this.rateLimitDelay));
         const matches = await this.oddsApiService.getMatches(sportKey);
         this.cache.set(sportKey, {
-          data: matches,
+          data: await this.updateMatchesInDb(matches, sportKey),
           timestamp: Date.now()
         });
       } finally {
@@ -344,9 +356,7 @@ export class MatchService {
 
     this.requestQueue.set(sportKey, requestPromise);
     await requestPromise;
-    this.requestQueue.delete(sportKey);
-
-    return this.cache.get(sportKey)?.data || [];
+    return (this.cache.get(sportKey)?.data || []) as MatchDocument[];
   }
 
   async checkOldMatches(matches: IMatch[]): Promise<IMatch[]> {

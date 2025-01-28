@@ -1,10 +1,10 @@
-import { WebSocketServer } from 'ws';
 import { Server } from 'http';
-import MinesGame from '../../games/mines/MinesGame';
-import { verifyToken } from '../../middleware/auth';
-import { WebSocketMessage, WebSocketClient } from '../../types/websocket';
+import { WebSocketServer } from 'ws';
+import { WebSocketHandler } from '../index';
 import { DatabaseService } from '../../services/DatabaseService';
-import { WebSocketHandler } from './WebSocketHandler';
+import MinesGame from '../../games/mines/MinesGame';
+import { authenticateToken } from '../../middleware/auth';
+import { WebSocketMessage, WebSocketClient } from '../../types/websocket';
 
 interface MinesGameSession {
   userId: string;
@@ -12,57 +12,75 @@ interface MinesGameSession {
 }
 
 export class MinesController {
-  private games: Map<string, MinesGameSession>;
-  private db: DatabaseService;
+  private activeSessions: Map<string, MinesGameSession>;
+  private wsHandler: WebSocketHandler;
+  private dbService: DatabaseService;
+  private wss: WebSocketServer;
 
-  constructor(wsHandler: WebSocketHandler, server: Server, db: DatabaseService) {
-    this.games = new Map();
-    this.db = db;
+  constructor(
+    wsHandler: WebSocketHandler,
+    server: Server,
+    dbService: DatabaseService
+  ) {
+    this.activeSessions = new Map();
+    this.wsHandler = wsHandler;
+    this.dbService = dbService;
+    this.wss = this.wsHandler.getWss();
+    this.initialize();
+  }
 
-    // Use getWss() instead of getServer()
-    const wss = wsHandler.getWss();
-    
-    wss.on('connection', (ws: WebSocketClient) => {
-      // Only handle messages if the connection is authenticated
-      if (!ws.isAuthenticated) return;
-
+  private initialize() {
+    this.wss.on('connection', (ws: WebSocketClient, request) => {
+      // Handle new connections
       ws.on('message', async (message: string) => {
         try {
-          const data: WebSocketMessage = JSON.parse(message);
-          await this.handleMessage(ws, data);
+          const parsedMessage: WebSocketMessage = JSON.parse(message);
+          await this.handleMessage(ws, parsedMessage);
         } catch (error) {
-          this.sendError(ws, 'Invalid message format');
+          console.error('Error handling message:', error);
+          ws.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
         }
+      });
+
+      ws.on('close', () => {
+        // Cleanup when connection closes
+        this.handleDisconnect(ws);
       });
     });
   }
 
-  private async handleMessage(ws: WebSocketClient, data: WebSocketMessage) {
-    if (!ws.userId) return;
+  private async handleMessage(ws: WebSocketClient, message: WebSocketMessage) {
+    if (!ws.userId) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Not authenticated' }));
+      return;
+    }
 
-    console.log('Received WebSocket message:', {
-      action: data.action,
-      userId: ws.userId,
-      data: data.data
-    });
-
-    switch (data.action) {
-      case 'mines:start':
-        await this.handleGameStart(ws, data.data);
+    switch (message.action) {
+      case 'start_game':
+        await this.handleStartGame(ws, message.data);
         break;
-      case 'mines:reveal':
-        await this.handleRevealTile(ws, data.data);
+      case 'reveal_tile':
+        await this.handleRevealTile(ws, message.data);
         break;
-      case 'mines:cashout':
-        await this.handleCashout(ws, data.data);
+      case 'cashout':
+        await this.handleCashout(ws, message.data);
         break;
       default:
-        console.log('Unknown action received:', data.action);
-        this.sendError(ws, 'Unknown action');
+        ws.send(JSON.stringify({ 
+          type: 'error', 
+          message: `Unknown action: ${message.action}` 
+        }));
     }
   }
 
-  private async handleGameStart(ws: WebSocketClient, data: any) {
+  private handleDisconnect(ws: WebSocketClient) {
+    if (ws.userId) {
+      // Cleanup any active game session
+      this.activeSessions.delete(ws.userId);
+    }
+  }
+
+  private async handleStartGame(ws: WebSocketClient, data: any) {
     try {
       console.log('Starting game with data:', data);
       const { betAmount, minesCount } = data;
@@ -73,7 +91,7 @@ export class MinesController {
       }
 
       // Check user balance
-      const user = await this.db.users.findById(ws.userId);
+      const user = await this.dbService.users.findById(ws.userId);
       if (!user || user.balance < betAmount) {
         throw new Error('Insufficient balance');
       }
@@ -83,13 +101,13 @@ export class MinesController {
       const game = new MinesGame(gameId, betAmount, minesCount);
       
       // Store game session
-      this.games.set(gameId, {
+      this.activeSessions.set(gameId, {
         userId: ws.userId,
         game
       });
 
       // Deduct bet amount from user balance
-      await this.db.users.updateBalance(ws.userId, -betAmount);
+      await this.dbService.users.updateBalance(ws.userId, -betAmount);
 
       const response = {
         type: 'mines:start',
@@ -114,7 +132,7 @@ export class MinesController {
   private async handleRevealTile(ws: WebSocketClient, data: any) {
     try {
       const { gameId, tileIndex } = data;
-      const session = this.games.get(gameId);
+      const session = this.activeSessions.get(gameId);
 
       if (!session || session.userId !== ws.userId) {
         throw new Error('Invalid game session');
@@ -149,7 +167,7 @@ export class MinesController {
         }));
 
         // Cleanup and save game history
-        this.games.delete(gameId);
+        this.activeSessions.delete(gameId);
         await this.saveGameHistory(ws.userId, gameId, 'loss', 0);
       }
 
@@ -161,7 +179,7 @@ export class MinesController {
   private async handleCashout(ws: WebSocketClient, data: any) {
     try {
       const { gameId } = data;
-      const session = this.games.get(gameId);
+      const session = this.activeSessions.get(gameId);
 
       if (!session || session.userId !== ws.userId) {
         throw new Error('Invalid game session');
@@ -170,15 +188,15 @@ export class MinesController {
       const winAmount = session.game.cashout();
       
       // Update user balance
-      await this.db.users.updateBalance(ws.userId, winAmount);
+      await this.dbService.users.updateBalance(ws.userId, winAmount);
       
       // Save game history
       await this.saveGameHistory(ws.userId, gameId, 'win', winAmount);
 
       // Cleanup game session
-      this.games.delete(gameId);
+      this.activeSessions.delete(gameId);
 
-      const user = await this.db.users.findById(ws.userId);
+      const user = await this.dbService.users.findById(ws.userId);
 
       ws.send(JSON.stringify({
         type: 'mines:cashout',
@@ -224,7 +242,7 @@ export class MinesController {
     result: 'win' | 'loss',
     amount: number
   ) {
-    await this.db.gameHistory.create({
+    await this.dbService.gameHistory.create({
       userId,
       gameId,
       gameType: 'mines',

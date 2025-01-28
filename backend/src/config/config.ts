@@ -8,7 +8,9 @@ export const config = {
   oddsApiKey: process.env.ODDS_API_KEY,
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/sportodds',
   port: process.env.PORT || 5000,
-  jwtSecret: process.env.JWT_SECRET
+  jwtSecret: process.env.JWT_SECRET,
+  allowedOrigins: (process.env.FRONTEND_URLS || '').split(','),
+  isDevelopment: process.env.NODE_ENV === 'development'
 };
 
 // Validate required environment variables

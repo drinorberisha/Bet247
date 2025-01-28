@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import config from '../config/config';
 
 interface JwtPayload {
   userId: string;
@@ -15,33 +16,29 @@ declare global {
   }
 }
 
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyToken = (token: string): any => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
-    req.user = user;
-    // @ts-ignore
-    req.user.userId = user._id;
-
-    console.log('Auth middleware - User ID:', user._id);
-    console.log('Auth middleware - User role:', user.role);
-    
-    next();
+    return jwt.verify(token, config.jwtSecret!);
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(401).json({ message: 'Please authenticate' });
+    return null;
   }
+};
+
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
+
+  req.user = decoded;
+  next();
 };
 
 export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
@@ -97,5 +94,6 @@ export const requireSuperuser = async (req: Request, res: Response, next: NextFu
 export default {
   authenticateToken,
   requireAdmin,
-  requireSuperuser
+  requireSuperuser,
+  verifyToken
 };

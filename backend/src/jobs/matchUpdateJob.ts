@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { MatchService } from '../services/matchService';
+import { MatchService } from '../../../matchService';
 import { SUPPORTED_SPORTS } from '../config/constants';
 
 const matchService = new MatchService();

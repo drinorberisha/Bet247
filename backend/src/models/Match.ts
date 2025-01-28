@@ -8,9 +8,9 @@ export interface IMatch extends Document {
   awayTeam: string;
   commenceTime: Date;
   odds: {
-    homeWin: number | null;
-    draw: number | null;
-    awayWin: number | null;
+    homeWin: number;
+    draw: number;
+    awayWin: number;
   };
   spreads: Array<{
     name: string;
@@ -32,12 +32,13 @@ export interface IMatch extends Document {
   lastUpdated: Date;
   title?: string;
   formattedCommenceTime?: string;
-  result?: '1' | 'X' | '2';
+  result: '1' | 'X' | '2' | null;
   scores?: {
     home: number;
     away: number;
   };
   settled?: boolean;
+  isStale(): boolean;
 }
 
 const matchSchema = new Schema<IMatch>({
@@ -70,9 +71,9 @@ const matchSchema = new Schema<IMatch>({
     index: true 
   },
   odds: {
-    homeWin: { type: Number, default: null },
-    draw: { type: Number, default: null },
-    awayWin: { type: Number, default: null }
+    homeWin: { type: Number, required: true },
+    draw: { type: Number, required: true },
+    awayWin: { type: Number, required: true }
   },
   spreads: [{
     name: { type: String, required: true },
