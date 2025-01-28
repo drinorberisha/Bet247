@@ -151,6 +151,7 @@ export class UnifiedMatchService {
   async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
     const matches = await this.oddsApiService.getMatches(sportKey);
     const updatedMatches: MatchDocument[] = [];
+    const settledMatches: MatchDocument[] = [];
 
     for (const match of matches) {
       if (this.validateMatch(match)) {
@@ -166,10 +167,13 @@ export class UnifiedMatchService {
         );
         if (updatedMatch) {
           updatedMatches.push(updatedMatch);
+          if (updatedMatch.status === 'ended') {
+            settledMatches.push(updatedMatch);
+          }
         }
       }
     }
 
-    return { updatedMatches };
+    return { updatedMatches, settledMatches };
   }
 } 

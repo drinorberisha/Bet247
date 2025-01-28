@@ -1,5 +1,5 @@
 import { Match } from '../models/Match';
-import { MatchService } from '../../../matchService';
+import { MatchService } from './matchService';
 import mongoose from 'mongoose';
 import { eventEmitter } from '../utils/eventEmitter';
 

@@ -1,6 +1,7 @@
 import { CronJob } from 'cron';
 import { MatchService } from '../../../matchService';
 import { SUPPORTED_SPORTS } from '../config/constants';
+import { UnifiedMatchService } from '../services/unifiedMatchService';
 
 const matchService = new MatchService();
 
@@ -45,4 +46,19 @@ export const startMatchUpdateJobs = () => {
   upcomingMatchesJob.start();
   liveMatchesJob.start();
   cleanupJob.start();
+};
+
+export const updateMatches = async () => {
+  const matchService = new UnifiedMatchService();
+  
+  for (const sport in SUPPORTED_SPORTS) {
+    const leagues = SUPPORTED_SPORTS[sport as keyof typeof SUPPORTED_SPORTS];
+    for (const league of leagues) {
+      try {
+        await matchService.updateMatches(league);
+      } catch (error) {
+        console.error(`Error updating matches for ${league}:`, error);
+      }
+    }
+  }
 };
