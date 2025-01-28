@@ -7,36 +7,32 @@ export interface IMatch extends Document {
   homeTeam: string;
   awayTeam: string;
   commenceTime: Date;
-  odds: {
-    homeWin: number;
-    draw: number;
-    awayWin: number;
-  };
-  spreads: Array<{
-    name: string;
-    price: number;
-    point: number;
-  }> | null;
-  totals: Array<{
-    name: string;
-    price: number;
-    point: number;
-  }> | null;
-  bookmaker: {
-    key: string;
-    title: string;
-    lastUpdate: Date;
-  } | null;
   status: 'upcoming' | 'live' | 'ended';
-  tier: 'high' | 'medium' | 'low';
-  lastUpdated: Date;
-  title?: string;
-  formattedCommenceTime?: string;
-  result: '1' | 'X' | '2' | null;
   scores?: {
     home: number;
     away: number;
   };
+  odds?: {
+    homeWin: number;
+    awayWin: number;
+    draw?: number;
+  };
+  spreads?: {
+    points: number;
+    homeOdds: number;
+    awayOdds: number;
+  };
+  totals?: {
+    points: number;
+    overOdds: number;
+    underOdds: number;
+  };
+  bookmaker?: string;
+  lastUpdated?: Date;
+  tier: 'high' | 'medium' | 'low';
+  title?: string;
+  formattedCommenceTime?: string;
+  result: '1' | 'X' | '2' | null;
   settled?: boolean;
   isStale(): boolean;
 }

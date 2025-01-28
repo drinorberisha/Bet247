@@ -3,7 +3,8 @@ import { BET_LIMITS, BetType } from '../config/constants';
 
 interface BetSelection {
   odds: number;
-  // add other selection properties as needed
+  matchId: string;
+  pick: string;
 }
 
 interface BetRequest {
@@ -15,29 +16,31 @@ interface BetRequest {
 export const validateBet = (req: Request<{}, {}, BetRequest>, res: Response, next: NextFunction) => {
   const { type, amount, selections } = req.body;
 
-  // Validate selections array first
   if (!Array.isArray(selections) || selections.length === 0) {
     return res.status(400).json({ message: 'At least one selection is required' });
   }
 
   const limits = BET_LIMITS[type];
 
-  // Type-specific validations
-  if (type === 'SINGLE' || type === 'MULTIPLE') {
-    // Validate amount
+  if (!limits) {
+    return res.status(400).json({ message: 'Invalid bet type' });
+  }
+
+  // Common validations for all bet types
+  if ('minAmount' in limits && 'maxAmount' in limits) {
     if (amount < limits.minAmount || amount > limits.maxAmount) {
       return res.status(400).json({
         message: `Amount must be between ${limits.minAmount} and ${limits.maxAmount}`
       });
     }
+  }
 
-    // Validate selections count for multiple bets
-    if (type === 'MULTIPLE' && 'maxSelections' in limits) {
-      if (selections.length > limits.maxSelections) {
-        return res.status(400).json({
-          message: `Maximum ${limits.maxSelections} selections allowed for multiple bets`
-        });
-      }
+  // Type-specific validations
+  if (type === 'MULTIPLE' && 'maxSelections' in limits) {
+    if (selections.length > limits.maxSelections) {
+      return res.status(400).json({
+        message: `Maximum ${limits.maxSelections} selections allowed for multiple bets`
+      });
     }
   }
 

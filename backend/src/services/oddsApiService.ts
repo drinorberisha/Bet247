@@ -113,13 +113,18 @@ export class OddsApiService {
   }
 
   async getMatchResult(sportKey: string, matchId: string): Promise<{ home: number; away: number } | null> {
+    if (!this.API_KEY) {
+      throw new Error('ODDS_API_KEY is not configured');
+    }
+
     try {
       const response = await fetch(
         `${this.BASE_URL}/sports/${sportKey}/scores/${matchId}?apiKey=${this.API_KEY}`
       );
       
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -140,17 +145,23 @@ export class OddsApiService {
       commenceTime: new Date(match.commence_time),
       status: this.determineMatchStatus(match),
       scores: match.scores ? {
-        home: match.scores.home,
-        away: match.scores.away
-      } : undefined
+        home: Number(match.scores.home),
+        away: Number(match.scores.away)
+      } : undefined,
+      odds: match.odds ? {
+        homeWin: Number(match.odds.h2h?.[0]),
+        awayWin: Number(match.odds.h2h?.[1]),
+        draw: match.odds.h2h?.[2] ? Number(match.odds.h2h[2]) : undefined
+      } : undefined,
+      lastUpdated: new Date()
     }));
   }
 
   private transformScores(matchData: any): { home: number; away: number } | null {
     if (!matchData.scores) return null;
     return {
-      home: matchData.scores.home,
-      away: matchData.scores.away
+      home: Number(matchData.scores.home),
+      away: Number(matchData.scores.away)
     };
   }
 
