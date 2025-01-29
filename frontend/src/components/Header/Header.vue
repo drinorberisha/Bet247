@@ -144,16 +144,12 @@
 
           <nav class="left-menu-nav">
             <router-link to="/profile" class="menu-item">
-              <i class="fas fa-columns"></i>
-              <span>Dashboard</span>
+              <i class="fas fa-user"></i>
+              <span>My Profile</span>
             </router-link>
             <router-link to="/my-bets" class="menu-item">
               <i class="fas fa-ticket-alt"></i>
               <span>My Bets</span>
-            </router-link>
-            <router-link to="/profile" class="menu-item">
-              <i class="fas fa-user"></i>
-              <span>My Profile</span>
             </router-link>
             <div class="menu-divider"></div>
             <button @click="handleLogout" class="menu-item logout">
