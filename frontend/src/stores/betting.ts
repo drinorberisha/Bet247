@@ -374,6 +374,14 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
+        // Add token check
+        if (!authStore.token) {
+          console.log('No auth token found');
+          return;
+        }
+
+        console.log('Fetching bets with token:', authStore.token);
+        
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/bets/user`,
           {
@@ -386,24 +394,34 @@ export const useBettingStore = defineStore("betting", {
           }
         );
 
-        // With axios, we use response.data instead of response.json()
+        // Log the raw response
+        console.log('Raw API response:', response);
+
         const data = response.data;
+        console.log('Parsed data:', data);
+
         this.placedBets = Array.isArray(data) ? data : [];
+        console.log('Placed bets after assignment:', this.placedBets);
 
         // Filter bets into active and settled
         this.activeBets = this.placedBets.filter((bet) =>
           ["pending"].includes(bet.status || "")
         );
+        console.log('Active bets:', this.activeBets);
 
         this.settledBets = this.placedBets.filter((bet) =>
           ["won", "lost", "cancelled", "cashed_out"].includes(bet.status || "")
         );
+        console.log('Settled bets:', this.settledBets);
 
-        // Debug log to check the data
-        console.log("Fetched bets:", this.placedBets);
       } catch (err: any) {
+        console.error('Detailed fetch error:', {
+          error: err,
+          response: err.response,
+          status: err.response?.status,
+          data: err.response?.data
+        });
         this.error = err.response?.data?.message || "Failed to fetch bets";
-        console.error("Error fetching bets:", err);
       } finally {
         this.loading = false;
       }

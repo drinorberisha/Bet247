@@ -140,7 +140,7 @@ export const placeBet = async (req: Request, res: Response) => {
 
 export const getUserBets = async (req: Request, res: Response) => {
   try {
-    const bets = await Bet.find({ user: req.user._id })
+    const bets = await Bet.find({ user: req.user.userId })
       .populate('selections')
       .sort({ createdAt: -1 });
     
