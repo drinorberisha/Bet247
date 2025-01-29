@@ -159,10 +159,23 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import axios from "axios";
+
+interface User {
+  _id: string;
+  username: string;
+  balance: number;
+}
+
+interface TransactionForm {
+  userId: string;
+  amount: number;
+  type: 'add' | 'remove';
+}
 
 const authStore = useAuthStore();
 const loading = ref(false);
-const users = ref([]);
+const users = ref<User[]>([]);
 const recentTransactions = ref([]);
 
 const generateForm = ref({
@@ -174,6 +187,13 @@ const transferForm = ref({
   fromUserId: '',
   toUserId: '',
   amount: null as number | null
+});
+
+const selectedUser = ref<User | null>(null);
+const transactionForm = ref<TransactionForm>({
+  userId: '',
+  amount: 0,
+  type: 'add'
 });
 
 const isAdminOrSuperuser = computed(() => {
@@ -206,21 +226,17 @@ const formatDate = (date: string) => {
 
 const fetchUsers = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/users`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/admin/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+        },
       }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch users');
-    }
-
-    const data = await response.json();
-    users.value = data;
-    console.log('Fetched users:', data); // Debug log to check the response
+    );
+    users.value = response.data;
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error("Error fetching users:", error);
   }
 };
 
@@ -322,6 +338,29 @@ const currentUserName = computed(() => {
   const currentUser = users.value.find(u => u._id === authStore.user?._id);
   return currentUser?.username || 'Current User';
 });
+
+const handleTransaction = async () => {
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_API_URL}/admin/manage-coins`,
+      transactionForm.value,
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+        },
+      }
+    );
+    await fetchUsers();
+    selectedUser.value = null;
+    transactionForm.value = {
+      userId: '',
+      amount: 0,
+      type: 'add'
+    };
+  } catch (error) {
+    console.error("Error processing transaction:", error);
+  }
+};
 
 onMounted(() => {
   transferForm.value.fromUserId = authStore.user?._id || '';

@@ -137,6 +137,7 @@ import footballImg from "../../assets/img/logo/football.webp";
 import tennisImg from "../../assets/img/logo/tennis.png";
 import allSportsImg from "../../assets/img/logo/allsports.svg";
 import { useRouter } from "vue-router";
+import type { Match } from "../../types";
 
 const matchesStore = useMatchesStore();
 const bettingStore = useBettingStore();
@@ -253,14 +254,11 @@ const formatMatchTime = (time: string) => {
   });
 };
 
-const formatLeagueName = (key: string) => {
-  return (
-    LEAGUE_NAMES[key] ||
-    key
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  );
+const formatLeagueName = (key: string): string => {
+  return LEAGUE_NAMES[key] || key
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const formatOdd = (odd: number) => {

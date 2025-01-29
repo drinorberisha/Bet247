@@ -1,4 +1,5 @@
-export const SPORTS_CONFIG = {
+// Define the type for sports configuration
+export const SPORTS_CONFIG: Record<string, string[]> = {
   soccer: [
     // Top 5 Leagues
     'soccer_epl',           // Premier League
@@ -55,7 +56,7 @@ export const SPORTS_CONFIG = {
 };
 
 // Export league name mappings for consistent formatting
-export const LEAGUE_NAMES = {
+export const LEAGUE_NAMES: Record<string, string> = {
   // Soccer - Top 5 Leagues
   'soccer_epl': 'Premier League',
   'soccer_spain_la_liga': 'La Liga',
@@ -87,22 +88,13 @@ export const LEAGUE_NAMES = {
   'basketball_nba': 'NBA',
   'basketball_euroleague': 'EuroLeague',
   
-  // Baseball
-  'baseball_mlb': 'MLB',
-  'baseball_npb': 'NPB',
-  'baseball_kbo': 'KBO League',
-  
   // Tennis
   'tennis_atp_singles': 'ATP Singles',
   'tennis_wta_singles': 'WTA Singles',
-  
-  // Cricket
-  // 'cricket_ipl': 'IPL',
-  // 'cricket_test_match': 'Test Cricket',
-  
-  // // Ice Hockey
-  // 'icehockey_nhl': 'NHL',
-  // 'icehockey_khl': 'KHL',
-  // 'icehockey_shl': 'SHL',
-  // 'icehockey_liiga': 'Liiga'
-}; 
+};
+
+// Type for supported sports
+export type SupportedSport = keyof typeof SPORTS_CONFIG;
+
+// Type for league keys
+export type LeagueKey = keyof typeof LEAGUE_NAMES; 

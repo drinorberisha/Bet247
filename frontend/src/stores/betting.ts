@@ -2,59 +2,51 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
 import { useMatchesStore } from "./matches";
+import type { Selection, Bet, PlaceBetResponse } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-interface PlaceBetResponse {
-  success: boolean;
-  newBalance: number;
-  message?: string;
+// Define the store's state interface
+interface BettingState {
+  balance: number;
+  currentSelections: Selection[];
+  currentBets: Bet[];
+  placedBets: Bet[];
+  activeBets: Bet[];
+  settledBets: Bet[];
+  loading: boolean;
+  error: string | null;
+  activeMode: "single" | "multi";
+  multiStake: number;
+  isBetslipExpanded: boolean;
+  isBetslipClosed: boolean;
+  isMobile: boolean;
 }
 
-interface Selection {
-  matchId: string;
-  homeTeam: string;
-  awayTeam: string;
-  type: string;
-  odds: number;
-  sportKey: string;
-  market: string;
-  status: string;
-  event: string;
-  commenceTime: string;
-}
-
-interface Bet {
-  _id?: string;
-  id?: string;
-  betType: "single" | "multiple";
-  selections: Selection[];
-  totalOdds: number;
-  potentialWin: number;
-  status?: string;
-  createdAt?: Date;
-  settledAt?: Date;
-  cashoutAmount?: number;
-  amount: number;
-  stake?: number;
-  homeTeam?: string;
-  awayTeam?: string;
+// Define the store type with its actions
+interface BettingStore {
+  state: BettingState;
+  addSelection: (matchData: Omit<Selection, 'market'>) => void;
+  setMode: (mode: "single" | "multi") => void;
+  updateStake: (betId: string, stake: number) => void;
+  updateMultiStake: (stake: number) => void;
+  removeBet: (betId: string) => void;
+  clearAllBets: () => void;
+  placeBet: () => Promise<PlaceBetResponse>;
+  // ... add other action types here
 }
 
 export const useBettingStore = defineStore("betting", {
-  state: () => ({
+  state: (): BettingState => ({
     balance: 0,
     currentSelections: [] as Selection[],
     currentBets: [] as Bet[],
-
-    // Historical bets from DB
     placedBets: [] as Bet[],
     activeBets: [] as Bet[],
     settledBets: [] as Bet[],
-
     loading: false,
-    error: null as string | null,
-    activeMode: "single" as "single" | "multi",
+    error: null,
+    activeMode: "single",
     multiStake: 0,
     isBetslipExpanded: true,
     isBetslipClosed: false,
@@ -62,7 +54,6 @@ export const useBettingStore = defineStore("betting", {
   }),
 
   getters: {
-    // Use currentSelections for betslip calculations
     multiOdds(): number {
       return this.currentSelections.reduce(
         (total, selection) => total * selection.odds,
@@ -98,52 +89,28 @@ export const useBettingStore = defineStore("betting", {
           this.conflictingMatchIds.length === 0
         );
       }
-      // For single mode, allow betting as long as there's a stake
       return this.currentBets.some((bet) => (bet.stake || 0) > 0);
     },
   },
 
   actions: {
-    addSelection(matchData: {
-      matchId: string;
-      homeTeam: string;
-      awayTeam: string;
-      type: string;
-      odds: number;
-      sportKey: string;
-      status: string;
-      event: string;
-      commenceTime: string;
-    }) {
-      // Create selection object
+    addSelection(matchData: Omit<Selection, 'market'>) {
       const selection: Selection = {
-        matchId: matchData.matchId,
-        homeTeam: matchData.homeTeam,
-        awayTeam: matchData.awayTeam,
-        type: matchData.type,
-        odds: matchData.odds,
-        sportKey: matchData.sportKey,
+        ...matchData,
         market: this.getMarketType(matchData.type),
-        status: matchData.status,
-        event: matchData.event,
-        commenceTime: matchData.commenceTime,
       };
 
-      // Check if selection already exists
       const existingIndex = this.currentSelections.findIndex(
         (s) => s.matchId === selection.matchId && s.type === selection.type
       );
 
       if (existingIndex !== -1) {
-        // Remove if already selected
         this.currentSelections.splice(existingIndex, 1);
       } else {
-        // Add new selection
         this.currentSelections.push(selection);
       }
 
-      // Update currentBets array for betslip
-      this.currentBets = this.currentSelections.map((s) => ({
+      this.currentBets = this.currentSelections.map((s): Bet => ({
         id: s.matchId,
         betType: this.activeMode === "multi" ? "multiple" : "single",
         selections: [s],
@@ -158,7 +125,6 @@ export const useBettingStore = defineStore("betting", {
 
     setMode(mode: "single" | "multi") {
       this.activeMode = mode;
-
       if (mode === "multi") {
         this.currentBets = this.currentBets.map((bet) => ({
           ...bet,
@@ -166,7 +132,6 @@ export const useBettingStore = defineStore("betting", {
           stake: 0,
         }));
       }
-
       this.multiStake = 0;
     },
 
@@ -274,11 +239,6 @@ export const useBettingStore = defineStore("betting", {
 
     async placeBet(): Promise<PlaceBetResponse> {
       const authStore = useAuthStore();
-
-      if (!authStore.token) {
-        throw new Error("Authentication required");
-      }
-
       this.loading = true;
       this.error = null;
 
@@ -550,3 +510,6 @@ export const useBettingStore = defineStore("betting", {
     },
   },
 }) as unknown as () => BettingStore;
+
+// Define the store type
+interface BettingStore extends ReturnType<typeof useBettingStore> {}

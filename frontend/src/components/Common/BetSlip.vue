@@ -221,9 +221,12 @@
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useBettingStore } from "../../stores/betting";
 import { useNotificationStore } from "../../stores/notification";
+import { useAuthStore } from "../../stores/auth";
+import type { Bet, Selection } from "../../types";
 
 const bettingStore = useBettingStore();
 const notificationStore = useNotificationStore();
+const authStore = useAuthStore();
 
 const bets = computed(() => bettingStore.currentBets || []);
 

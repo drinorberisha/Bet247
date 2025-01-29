@@ -104,7 +104,8 @@
 import { ref, onMounted, watch, computed } from "vue";
 import { useMatchesStore } from "../../stores/matches";
 import { useBettingStore } from "../../stores/betting";
-import { SPORTS_CONFIG, LEAGUE_NAMES } from "../../config/sportsConfig";
+import { SPORTS_CONFIG, LEAGUE_NAMES, type SupportedSport } from "../../config/sportsConfig";
+import type { Match } from "../../types";
 import MatchOdds from "./MatchOdds.vue";
 import { useRouter } from "vue-router";
 
@@ -122,9 +123,8 @@ const selectedStatus = ref("upcoming");
 const router = useRouter();
 
 // Get leagues for the current sport
-const getSportLeagues = (sportKey: string) => {
-  // Map the sport keys to match the configuration
-  const sportKeyMap = {
+const getSportLeagues = (sportKey: string): string[] => {
+  const sportKeyMap: Record<string, SupportedSport> = {
     tennis: "tennis",
     icehockey: "icehockey",
     baseball: "baseball",
@@ -140,7 +140,7 @@ const getSportLeagues = (sportKey: string) => {
     "using config key:",
     configKey
   );
-  return SPORTS_CONFIG[configKey] || [sportKey];
+  return SPORTS_CONFIG[configKey as SupportedSport] || [sportKey];
 };
 
 // Updated computed property with null checks
@@ -253,14 +253,11 @@ const formatMatchTime = (time: string) => {
 };
 
 // Format league names using SPORTS_CONFIG structure
-const formatLeagueName = (key: string) => {
-  return (
-    LEAGUE_NAMES[key] ||
-    key
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  );
+const formatLeagueName = (key: string): string => {
+  return LEAGUE_NAMES[key] || key
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const formatOdd = (odd: number) => {
