@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "build:ignore-ts": "vite build --emptyOutDir",
+    "build": "vite build --emptyOutDir",
+    "build:with-types": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
