@@ -115,7 +115,7 @@ const fetchDashboardData = async () => {
     error.value = '';
     
     const apiUrl = `${import.meta.env.VITE_API_URL}/admin/dashboard`;
-    console.log('Fetching dashboard data from:', apiUrl); // Debug log
+    console.log('Fetching dashboard data from:', apiUrl); // Debug logg
     
     const response = await fetch(apiUrl, {
       headers: {
