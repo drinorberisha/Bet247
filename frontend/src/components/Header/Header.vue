@@ -143,7 +143,7 @@
           </div>
 
           <nav class="left-menu-nav">
-            <router-link to="/dashboard" class="menu-item">
+            <router-link to="/profile" class="menu-item">
               <i class="fas fa-columns"></i>
               <span>Dashboard</span>
             </router-link>
@@ -182,13 +182,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
 import LoginModal from "../Modals/LoginModal.vue";
 import SignUpModal from "../Modals/SignUpModal.vue";
 import { Modal } from "bootstrap";
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const showUserMenu = ref(false);
 
@@ -232,9 +233,18 @@ const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value;
 };
 
-const handleLogout = () => {
-  authStore.logout();
-  showUserMenu.value = false;
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+    // Close any open menus
+    isMobileMenuOpen.value = false;
+    showDropdown.value = false;
+    
+    // Redirect to home page
+    router.push('/');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
 };
 
 // Modal handling
