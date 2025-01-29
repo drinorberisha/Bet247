@@ -221,6 +221,7 @@ onMounted(() => {
   padding: 20px;
   max-width: 100%;
   overflow-x: hidden;
+  background: var(--body-color);
 }
 
 .page-header {
@@ -230,21 +231,27 @@ onMounted(() => {
 .page-header h1 {
   margin: 0;
   font-size: 2rem;
+  color: var(--white);
 }
 
 .page-header p {
-  color: #666;
+  color: var(--textcolor);
   margin-top: 0.5rem;
 }
 
 .card {
-  background: white;
+  background: var(--header);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--leftpreborder);
+  margin-bottom: 1rem;
 }
 
 .card-body {
   padding: 1.5rem;
+  background: var(--header);
+  border-radius: 0 0 8px 8px;
+  color: var(--white);
 }
 
 .filter-grid {
@@ -261,13 +268,16 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--textcolor);
 }
 
 .form-control {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 .amount-range {
@@ -279,18 +289,19 @@ onMounted(() => {
 .table {
   width: 100%;
   border-collapse: collapse;
-}
-
-.table th,
-.table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #eee;
-  text-align: left;
+  background: var(--header);
 }
 
 .table th {
-  font-weight: 600;
-  color: #666;
+  background: var(--header);
+  color: var(--textcolor);
+  border-bottom: 1px solid var(--leftpreborder);
+}
+
+.table td {
+  background: var(--header);
+  color: var(--white);
+  border-bottom: 1px solid var(--leftpreborder);
 }
 
 .badge {
@@ -300,23 +311,23 @@ onMounted(() => {
 }
 
 .badge.transfer {
-  background: #007bff;
-  color: white;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 .badge.system_generation {
-  background: #28a745;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .badge.bet_placement {
-  background: #ffc107;
-  color: #000;
+  background: var(--button-one);
+  color: var(--white);
 }
 
 .badge.bet_win {
-  background: #17a2b8;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .pagination-controls {
@@ -329,14 +340,14 @@ onMounted(() => {
 
 .page-info {
   font-size: 0.875rem;
-  color: #666;
+  color: var(--textcolor);
 }
 
 .spinner {
   width: 2rem;
   height: 2rem;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
+  border: 3px solid var(--leftpreborder);
+  border-top: 3px solid var(--active-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -349,42 +360,44 @@ onMounted(() => {
 
 .btn {
   padding: 0.5rem 1rem;
-  border: none;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
 }
 
 .btn-primary {
-  background: #007bff;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 .btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mb-4 {
-  margin-bottom: 1.5rem;
+  background: var(--pointbox);
+  color: var(--textcolor);
 }
 
 .text-center {
   text-align: center;
+  color: var(--white);
 }
 
-.py-4 {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+/* Loading and error states */
+.loading, .error {
+  color: var(--textcolor);
+}
+
+/* Date inputs specific styling */
+input[type="date"] {
+  background: var(--pointbox);
+  color: var(--white);
+  border: 1px solid var(--leftpreborder);
 }
 
 /* Responsive styles */
@@ -399,7 +412,7 @@ onMounted(() => {
   }
 
   .form-control {
-    padding: 12px; /* Larger touch targets */
+    padding: 12px;
   }
 
   .amount-range {
@@ -456,5 +469,10 @@ onMounted(() => {
     max-width: 100%;
     overflow-x: hidden;
   }
+}
+
+.filters.card {
+  background: var(--header);
+  border: 1px solid var(--leftpreborder);
 }
 </style> 

@@ -197,15 +197,29 @@ const isAuthenticated = computed(() => authStore.isAuthenticated);
 const username = computed(() => authStore.user?.username || "");
 const userBalance = computed(() => authStore.user?.balance || "0.00");
 
-const mainNavItems = [
-  { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
-  { path: "/casino", label: "Casino", icon: "icon-casino" },
-  { path: "/promotions", label: "Promotions", icon: "icon-gift" },
+// Add admin nav items
+const adminNavItems = [
+  { path: '/admin/dashboard', label: 'Dashboard', icon: 'fas fa-columns' },
+  { path: '/admin/users', label: 'Users', icon: 'fas fa-users' },
+  { path: '/admin/transactions', label: 'Transactions', icon: 'fas fa-exchange-alt' },
+  { path: '/admin/coins', label: 'Coin Management', icon: 'fas fa-coins' },
 ];
+
+// Update mainNavItems computation to include admin items when appropriate
+const mainNavItems = computed(() => {
+  const isAdmin = authStore.user?.role === 'admin' || authStore.user?.role === 'superuser';
+  const baseItems = [
+    { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
+    { path: "/casino", label: "Casino", icon: "icon-casino" },
+    { path: "/promotions", label: "Promotions", icon: "icon-gift" },
+  ];
+  
+  return isAdmin ? [...adminNavItems] : baseItems;
+});
 
 // Separate mobile nav items to include My Bets and Dashboard
 const mobileNavItems = computed(() => [
-  ...mainNavItems,
+  ...mainNavItems.value,
   ...(isAuthenticated.value
     ? [
         { path: "/my-bets", label: "My Bets", icon: "fas fa-ticket-alt" },

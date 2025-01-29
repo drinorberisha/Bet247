@@ -1,90 +1,92 @@
 <template>
-  <div class="admin-dashboard">
-    <div v-if="loading" class="loading">
-      Loading dashboard data...
-    </div>
-    <div v-else-if="error" class="error">
-      {{ error }}
-    </div>
-    <template v-else>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <i class="fas fa-users"></i>
-          <div class="stat-info">
-            <h3>Total Users</h3>
-            <p>{{ stats?.totalUsers || 0 }}</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-coins"></i>
-          <div class="stat-info">
-            <h3>Total Coins</h3>
-            <p>{{ stats?.totalCoins || 0 }}</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-exchange-alt"></i>
-          <div class="stat-info">
-            <h3>Transactions Today</h3>
-            <p>{{ stats?.transactionsToday || 0 }}</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="quick-actions">
-        <h2>Quick Actions</h2>
-        <div class="action-buttons">
-          <button @click="router.push('/admin/coins')" v-if="isSuperuser" class="btn-action">
-            <i class="fas fa-coins"></i>
-            Generate Coins
-          </button>
-          <button @click="router.push('/admin/users')" class="btn-action">
+    <div class="admin-dashboard">
+      <div v-if="loading" class="loading">
+        Loading dashboard data...
+      </div>
+      <div v-else-if="error" class="error">
+        {{ error }}
+      </div>
+      <template v-else>
+        <div class="stats-grid">
+          <div class="stat-card">
             <i class="fas fa-users"></i>
-            Manage Users
-          </button>
-          <button @click="router.push('/admin/transactions')" class="btn-action">
+            <div class="stat-info">
+              <h3>Total Users</h3>
+              <p>{{ stats?.totalUsers || 0 }}</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-coins"></i>
+            <div class="stat-info">
+              <h3>Total Coins</h3>
+              <p>{{ stats?.totalCoins || 0 }}</p>
+            </div>
+          </div>
+          <div class="stat-card">
             <i class="fas fa-exchange-alt"></i>
-            View Transactions
-          </button>
+            <div class="stat-info">
+              <h3>Transactions Today</h3>
+              <p>{{ stats?.transactionsToday || 0 }}</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="recent-activity">
-        <h2>Recent Activity</h2>
-        <table v-if="recentTransactions.length">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>From</th>
-              <th>To</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="transaction in recentTransactions" :key="transaction._id">
-              <td>{{ formatDate(transaction.createdAt) }}</td>
-              <td>
-                <span :class="['badge', transaction.type]">
-                  {{ transaction.type }}
-                </span>
-              </td>
-              <td>{{ transaction.amount }}</td>
-              <td>{{ transaction.from?.username || 'System' }}</td>
-              <td>{{ transaction.to?.username }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else>No recent transactions</p>
-      </div>
-    </template>
-  </div>
+        <div class="quick-actions">
+          <h2>Quick Actions</h2>
+          <div class="action-buttons">
+            <button @click="router.push('/admin/coins')" v-if="isSuperuser" class="btn-action">
+              <i class="fas fa-coins"></i>
+              Generate Coins
+            </button>
+            <button @click="router.push('/admin/users')" class="btn-action">
+              <i class="fas fa-users"></i>
+              Manage Users
+            </button>
+            <button @click="router.push('/admin/transactions')" class="btn-action">
+              <i class="fas fa-exchange-alt"></i>
+              View Transactions
+            </button>
+          </div>
+        </div>
+
+        <div class="recent-activity">
+          <h2>Recent Activity</h2>
+          <table v-if="recentTransactions.length">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>From</th>
+                <th>To</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="transaction in recentTransactions" :key="transaction._id">
+                <td>{{ formatDate(transaction.createdAt) }}</td>
+                <td>
+                  <span :class="['badge', transaction.type]">
+                    {{ transaction.type }}
+                  </span>
+                </td>
+                <td>{{ transaction.amount }}</td>
+                <td>{{ transaction.from?.username || 'System' }}</td>
+                <td>{{ transaction.to?.username }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else>No recent transactions</p>
+        </div>
+      </template>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import Header from "../../components/Header/Header.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -152,11 +154,29 @@ const fetchDashboardData = async () => {
 onMounted(() => {
   fetchDashboardData();
 });
+
+// Add admin navigation items
+const adminNavItems = [
+  { path: '/admin/dashboard', label: 'Dashboard', icon: 'fas fa-columns' },
+  { path: '/admin/users', label: 'Users', icon: 'fas fa-users' },
+  { path: '/admin/transactions', label: 'Transactions', icon: 'fas fa-exchange-alt' },
+  { path: '/admin/coins', label: 'Coin Management', icon: 'fas fa-coins' },
+];
 </script>
 
 <style scoped>
+.main-layout {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--body-color);
+  display: flex;
+  flex-direction: column;
+}
+
 .admin-dashboard {
   padding: 20px;
+  flex: 1;
+  background: var(--body-color);
 }
 
 .stats-grid {
@@ -167,38 +187,45 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: white;
+  background: var(--header);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   gap: 15px;
+  border: 1px solid var(--leftpreborder);
 }
 
 .stat-card i {
   font-size: 24px;
-  color: #007bff;
+  color: var(--active-color);
 }
 
 .stat-info h3 {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--textcolor);
 }
 
 .stat-info p {
   margin: 5px 0 0;
   font-size: 24px;
   font-weight: bold;
+  color: var(--white);
 }
 
 .quick-actions {
-  background: white;
+  background: var(--header);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin-bottom: 30px;
+  border: 1px solid var(--leftpreborder);
+}
+
+.quick-actions h2 {
+  color: var(--white);
 }
 
 .action-buttons {
@@ -212,23 +239,25 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  border: none;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
-  background: #007bff;
-  color: white;
+  background: var(--pointbox);
+  color: var(--white);
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .btn-action:hover {
-  background: #0056b3;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .recent-activity {
-  background: white;
+  background: var(--header);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--leftpreborder);
 }
 
 table {
@@ -245,7 +274,11 @@ th, td {
 
 th {
   font-weight: 600;
-  color: #666;
+  color: var(--textcolor);
+}
+
+td {
+  color: var(--white);
 }
 
 .badge {
@@ -255,13 +288,13 @@ th {
 }
 
 .badge.system_generation {
-  background: #28a745;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .badge.transfer {
-  background: #007bff;
-  color: white;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 /* Enhanced mobile responsiveness */

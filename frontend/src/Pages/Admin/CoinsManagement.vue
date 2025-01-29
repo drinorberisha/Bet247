@@ -372,6 +372,7 @@ onMounted(() => {
 <style scoped>
 .coins-management {
   padding: 20px;
+  background: var(--body-color);
 }
 
 .page-header {
@@ -381,27 +382,29 @@ onMounted(() => {
 .page-header h1 {
   margin: 0;
   font-size: 2rem;
+  color: var(--white);
 }
 
 .page-header p {
-  color: #666;
+  color: var(--textcolor);
   margin-top: 0.5rem;
 }
 
 .card {
-  background: white;
+  background: var(--header);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--leftpreborder);
+  margin-bottom: 20px;
 }
 
 .card-header {
   padding: 1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--leftpreborder);
 }
 
 .card-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
+  color: var(--white);
 }
 
 .card-body {
@@ -416,13 +419,20 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--textcolor);
 }
 
 .form-control {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
+  background: var(--pointbox);
+  color: var(--white);
+}
+
+.form-control:focus {
+  border-color: var(--active-color);
 }
 
 .btn {
@@ -436,12 +446,12 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: #007bff;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .btn-primary:hover {
-  background: #0056b3;
+  background: var(--active-color-hover);
 }
 
 .btn:disabled {
@@ -479,13 +489,23 @@ onMounted(() => {
 
 .table th {
   font-weight: 600;
-  color: #666;
+  color: var(--textcolor);
+}
+
+.table td {
+  color: var(--white);
 }
 
 .current-balance {
   margin: 0.5rem 0 0 0;
   font-size: 1rem;
-  color: #666;
+  color: var(--textcolor);
+}
+
+select {
+  background: var(--pointbox);
+  color: var(--white);
+  border: 1px solid var(--leftpreborder);
 }
 
 select:disabled {
@@ -541,9 +561,9 @@ select:disabled {
 }
 
 .permission-notice {
-  color: #856404;
-  background-color: #fff3cd;
-  border: 1px solid #ffeeba;
+  color: var(--textcolor);
+  background: var(--pointbox);
+  border: 1px solid var(--leftpreborder);
   padding: 8px 12px;
   border-radius: 4px;
   margin-top: 10px;
@@ -563,15 +583,16 @@ select:disabled,
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  background-color: #f8f9fa;
-  color: #666;
+  background-color: var(--pointbox);
+  color: var(--textcolor);
 }
 
 button:disabled {
-  background-color: #6c757d;
+  background-color: var(--pointbox);
 }
 
 input[type="number"] {
-  color: #333;
+  color: var(--white);
+  background: var(--pointbox);
 }
 </style> 

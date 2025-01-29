@@ -208,10 +208,8 @@ onMounted(() => {
 
 <style scoped>
 .users-management {
-  background: white;
-  border-radius: 8px;
+  background: var(--body-color);
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -221,6 +219,10 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header h2 {
+  color: var(--white);
 }
 
 .actions {
@@ -237,21 +239,24 @@ onMounted(() => {
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #666;
+  color: var(--textcolor);
 }
 
 .search input {
   padding: 8px 8px 8px 35px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
   width: 200px;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 select {
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
-  background: white;
+  background: var(--pointbox);
+  color: var(--white);
 }
 
 table {
@@ -262,12 +267,14 @@ table {
 th, td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--leftpreborder);
+  color: var(--white);
 }
 
 th {
-  background: #f8f9fa;
+  background: var(--pointbox);
   font-weight: 600;
+  color: var(--textcolor);
 }
 
 .status-badge {
@@ -277,31 +284,34 @@ th {
 }
 
 .status-badge.active {
-  background: #28a745;
-  color: white;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .status-badge.suspended {
-  background: #dc3545;
-  color: white;
+  background: var(--button-one);
+  color: var(--white);
 }
 
 .btn-action {
   padding: 6px 12px;
-  border: none;
+  border: 1px solid var(--leftpreborder);
   border-radius: 4px;
-  background: #f8f9fa;
+  background: var(--pointbox);
   cursor: pointer;
+  color: var(--white);
 }
 
 .btn-action:hover {
-  background: #e9ecef;
+  background: var(--active-color);
+  color: var(--black);
 }
 
 .table-container {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  background: var(--header);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--leftpreborder);
 }
 
 @media (max-width: 768px) {
