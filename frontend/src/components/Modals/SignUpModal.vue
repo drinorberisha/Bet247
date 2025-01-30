@@ -14,9 +14,9 @@
             type="button"
             class="btn-close"
             @click="authStore.toggleSignupModal"
-          >×</button>
+          ></button>
         </div>
-        
+
         <div class="modal-body">
           <form @submit.prevent="handleRegister">
             <div class="form-group">
@@ -61,7 +61,7 @@
                   required
                   class="form-input"
                 />
-                <i 
+                <i
                   class="fa password-toggle"
                   :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"
                   @click="showPassword = !showPassword"
@@ -81,7 +81,7 @@
                   required
                   class="form-input"
                 />
-                <i 
+                <i
                   class="fa password-toggle"
                   :class="showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'"
                   @click="showConfirmPassword = !showConfirmPassword"
@@ -100,7 +100,7 @@
           </form>
 
           <div class="login-link">
-            Already have an account? 
+            Already have an account?
             <a href="#" @click.prevent="switchToLogin">Login</a>
           </div>
         </div>
@@ -110,76 +110,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
-import { useRouter } from 'vue-router'
-import { useNotificationStore } from '../../stores/notification'
+import { ref } from "vue";
+import { useAuthStore } from "../../stores/auth";
+import { useRouter } from "vue-router";
+import { useNotificationStore } from "../../stores/notification";
 
-const router = useRouter()
-const authStore = useAuthStore()
-const notificationStore = useNotificationStore()
+const router = useRouter();
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
-const loading = ref(false)
-const error = ref('')
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+const loading = ref(false);
+const error = ref("");
 
 const registerForm = ref({
-  username: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-})
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 
 const handleRegister = async () => {
   try {
     if (registerForm.value.password !== registerForm.value.confirmPassword) {
-      error.value = 'Passwords do not match'
-      return
+      error.value = "Passwords do not match";
+      return;
     }
 
-    loading.value = true
-    error.value = ''
+    loading.value = true;
+    error.value = "";
 
     await authStore.register({
       username: registerForm.value.username,
       email: registerForm.value.email,
-      password: registerForm.value.password
-    })
+      password: registerForm.value.password,
+    });
 
     notificationStore.show({
-      type: 'success',
-      title: 'Registration Successful',
-      message: 'Welcome to SportOdds!',
+      type: "success",
+      title: "Registration Successful",
+      message: "Welcome to SportOdds!",
       duration: 5000,
-      position: 'top-right'
-    })
+      position: "top-right",
+    });
 
-    if (authStore.user?.role === 'superuser' || authStore.user?.role === 'admin') {
-      await router.push('/admin/dashboard')
+    if (
+      authStore.user?.role === "superuser" ||
+      authStore.user?.role === "admin"
+    ) {
+      await router.push("/admin/dashboard");
     } else {
-      await router.push('/')
+      await router.push("/");
     }
-
   } catch (err: any) {
-    error.value = err.message || 'Failed to register. Please try again.'
-    
+    error.value = err.message || "Failed to register. Please try again.";
+
     notificationStore.show({
-      type: 'error',
-      title: 'Registration Failed',
+      type: "error",
+      title: "Registration Failed",
       message: error.value,
       duration: 5000,
-      position: 'top-right'
-    })
+      position: "top-right",
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const switchToLogin = () => {
-  authStore.toggleSignupModal()
-  authStore.toggleLoginModal()
-}
+  authStore.toggleSignupModal();
+  authStore.toggleLoginModal();
+};
 </script>
 
 <style scoped>

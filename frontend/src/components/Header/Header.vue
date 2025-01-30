@@ -196,21 +196,26 @@ const userBalance = computed(() => authStore.user?.balance || "0.00");
 
 // Add admin nav items
 const adminNavItems = [
-  { path: '/admin/dashboard', label: 'Dashboard', icon: 'fas fa-columns' },
-  { path: '/admin/users', label: 'Users', icon: 'fas fa-users' },
-  { path: '/admin/transactions', label: 'Transactions', icon: 'fas fa-exchange-alt' },
-  { path: '/admin/coins', label: 'Coin Management', icon: 'fas fa-coins' },
+  { path: "/admin/dashboard", label: "Dashboard", icon: "fas fa-columns" },
+  { path: "/admin/users", label: "Users", icon: "fas fa-users" },
+  {
+    path: "/admin/transactions",
+    label: "Transactions",
+    icon: "fas fa-exchange-alt",
+  },
+  { path: "/admin/coins", label: "Coin Management", icon: "fas fa-coins" },
 ];
 
 // Update mainNavItems computation to include admin items when appropriate
 const mainNavItems = computed(() => {
-  const isAdmin = authStore.user?.role === 'admin' || authStore.user?.role === 'superuser';
+  const isAdmin =
+    authStore.user?.role === "admin" || authStore.user?.role === "superuser";
   const baseItems = [
     { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
     { path: "/casino", label: "Casino", icon: "icon-casino" },
     { path: "/promotions", label: "Promotions", icon: "icon-gift" },
   ];
-  
+
   return isAdmin ? [...adminNavItems] : baseItems;
 });
 
@@ -235,11 +240,11 @@ const handleLogout = async () => {
     // Close any open menus
     isMobileMenuOpen.value = false;
     showDropdown.value = false;
-    
+
     // Redirect to home page
-    router.push('/');
+    router.push("/");
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
   }
 };
 
@@ -398,7 +403,7 @@ watch(currentPath, () => {
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 1001;
+  z-index: 1250; /* Increased z-index to be above mobile menu */
 }
 
 .hamburger-line {
@@ -427,9 +432,9 @@ watch(currentPath, () => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 1150; /* Increased z-index to be between menu and betslip */
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
@@ -445,14 +450,15 @@ watch(currentPath, () => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 280px;
-  height: 100%;
+  width: 100%; /* Changed from 280px to 100% */
+  height: 100vh;
   background: var(--header);
-  z-index: 1000;
+  z-index: 1200; /* Increased z-index to be higher than betslip */
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
+  padding: 0; /* Remove default padding */
 }
 
 .mobile-menu.is-open {

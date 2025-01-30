@@ -793,7 +793,7 @@ defineExpose({
     margin: 0;
     height: calc(100vh - 120px);
     background: var(--subheader);
-    z-index: 1000;
+    z-index: 2;
     transform: translateY(100%);
     transition: transform 0.3s ease;
     border-radius: 0;
