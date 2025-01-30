@@ -6,7 +6,7 @@
         :key="sport.id"
         class="sport-button"
         :class="{ active: currentTab === sport.tab }"
-        @click="switchTab(sport.tab)"
+        @click="switchTab(sport.tab, sport.shouldNavigate)"
       >
         <div class="sport-icon">
           <i :class="sport.icon"></i>
@@ -23,28 +23,69 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useTabStore } from "../../stores/tab";
+import { useRouter } from "vue-router";
 
 const tabStore = useTabStore();
+const router = useRouter();
 
 const sports = [
-  { id: 1, name: "Home", tab: "home", icon: "icon-home", count: 0 },
-  { id: 2, name: "Live", tab: "live", icon: "icon-live", count: 12 },
-  { id: 3, name: "Today", tab: "today", icon: "icon-calendar", count: 24 },
-  { id: 4, name: "Football", tab: "football", icon: "icon-football", count: 8 },
-  { id: 5, name: "Tennis", tab: "tennis", icon: "icon-tennis", count: 4 },
+  {
+    id: 1,
+    name: "Home",
+    tab: "home",
+    icon: "icon-home",
+    count: 0,
+    shouldNavigate: true,
+  },
+  {
+    id: 2,
+    name: "Live",
+    tab: "live",
+    icon: "icon-live",
+    count: 12,
+    shouldNavigate: false,
+  },
+  {
+    id: 3,
+    name: "Today",
+    tab: "today",
+    icon: "icon-calendar",
+    count: 24,
+    shouldNavigate: false,
+  },
+  {
+    id: 4,
+    name: "Football",
+    tab: "football",
+    icon: "icon-football",
+    count: 8,
+    shouldNavigate: false,
+  },
+  {
+    id: 5,
+    name: "Tennis",
+    tab: "tennis",
+    icon: "icon-tennis",
+    count: 4,
+    shouldNavigate: false,
+  },
   {
     id: 6,
     name: "Basketball",
     tab: "basketball",
     icon: "icon-basketball",
     count: 6,
+    shouldNavigate: false,
   },
 ];
 
 const currentTab = computed(() => tabStore.currentTab);
 
-const switchTab = (tab: string) => {
+const switchTab = (tab: string, shouldNavigate: boolean = false) => {
   tabStore.setCurrentTab(tab);
+  if (shouldNavigate) {
+    router.push("/");
+  }
 };
 </script>
 

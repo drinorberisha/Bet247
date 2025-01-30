@@ -1,10 +1,10 @@
 <template>
   <main class="promotion-container">
     <h1 class="promotion-title">Special Bonuses & Promotions</h1>
-    
+
     <div class="promotions-grid">
       <div v-for="bonus in bonuses" :key="bonus.id" class="bonus-card">
-        <img :src="bonus.image" :alt="bonus.title" class="bonus-image">
+        <img :src="bonus.image" :alt="bonus.title" class="bonus-image" />
         <div class="bonus-content">
           <h2 class="bonus-title">{{ bonus.title }}</h2>
           <p class="bonus-period">{{ bonus.period }}</p>
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 interface Bonus {
   id: number;
@@ -36,9 +36,10 @@ const bonuses = ref<Bonus[]>([
     id: 1,
     title: "Christmas Special",
     period: "December 20 - December 31",
-    description: "Celebrate the holidays with our special Christmas bonus package!",
+    description:
+      "Celebrate the holidays with our special Christmas bonus package!",
     value: "$500",
-    image: "/images/christmas-bonus.jpg"
+    image: "/images/christmas-bonus.jpg",
   },
   {
     id: 2,
@@ -46,7 +47,7 @@ const bonuses = ref<Bonus[]>([
     period: "January 1 - January 15",
     description: "Start your year right with our New Year bonus boost!",
     value: "$300",
-    image: "/images/new-year-bonus.jpg"
+    image: "/images/new-year-bonus.jpg",
   },
   {
     id: 3,
@@ -54,8 +55,8 @@ const bonuses = ref<Bonus[]>([
     period: "February 13 - February 15",
     description: "Share the love with our Valentine's Day bonus package!",
     value: "$200",
-    image: "/images/valentine-bonus.jpg"
-  }
+    image: "/images/valentine-bonus.jpg",
+  },
 ]);
 
 const claimBonus = (bonusId: number) => {
@@ -159,7 +160,7 @@ const claimBonus = (bonusId: number) => {
   .promotion-title {
     font-size: 2rem;
   }
-  
+
   .promotions-grid {
     grid-template-columns: 1fr;
   }

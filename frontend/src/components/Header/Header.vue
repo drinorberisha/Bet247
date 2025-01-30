@@ -22,16 +22,33 @@
       </div>
 
       <nav class="desktop-nav" v-if="!isMobileMenuOpen">
-        <router-link
+        <div
           v-for="item in mainNavItems"
-          :key="item.path"
-          :to="item.path"
-          class="nav-link"
-          :class="{ active: currentPath === item.path }"
+          :key="item.tab || item.path"
+          class="nav-item"
         >
-          <i :class="item.icon"></i>
-          {{ item.label }}
-        </router-link>
+          <!-- For items with path (Casino, Promotions) -->
+          <router-link
+            v-if="item.path"
+            :to="item.path"
+            class="nav-link"
+            :class="{ active: currentPath === item.path }"
+          >
+            <i :class="item.icon"></i>
+            {{ item.label }}
+          </router-link>
+
+          <!-- For Sports (with submenu) -->
+          <button
+            v-else
+            class="nav-link"
+            :class="{ active: tabStore.currentTab === 'home' }"
+            @click="handleTabClick('home')"
+          >
+            <i :class="item.icon"></i>
+            {{ item.label }}
+          </button>
+        </div>
 
         <!-- Auth Buttons for Desktop -->
         <div v-if="!isAuthenticated" class="auth-buttons">
@@ -104,17 +121,54 @@
           <span class="user-email">{{ username }}</span>
           <!-- Navigation -->
           <nav class="mobile-nav">
-            <router-link
+            <div
               v-for="item in mainNavItems"
-              :key="item.path"
-              :to="item.path"
-              class="nav-link"
-              :class="{ active: currentPath === item.path }"
-              @click="closeMobileMenu"
+              :key="item.tab || item.path"
+              class="nav-item"
             >
-              <i :class="item.icon"></i>
-              {{ item.label }}
-            </router-link>
+              <router-link
+                v-if="item.path"
+                :to="item.path"
+                class="nav-link"
+                :class="{ active: currentPath === item.path }"
+                @click="closeMobileMenu"
+              >
+                <i :class="item.icon"></i>
+                {{ item.label }}
+              </router-link>
+
+              <template v-else>
+                <!-- Existing mobile submenu code for Sports -->
+                <button
+                  class="nav-link submenu-trigger"
+                  :class="{
+                    active:
+                      currentPath === item.path || isSubmenuOpen(item.label),
+                  }"
+                  @click="toggleSubmenu(item.label)"
+                >
+                  <i :class="item.icon"></i>
+                  {{ item.label }}
+                  <i
+                    class="fas fa-chevron-down submenu-arrow"
+                    :class="{ rotated: isSubmenuOpen(item.label) }"
+                  ></i>
+                </button>
+
+                <div class="mobile-submenu" v-show="isSubmenuOpen(item.label)">
+                  <button
+                    v-for="subItem in item.submenu"
+                    :key="subItem.tab"
+                    class="submenu-link"
+                    :class="{ active: tabStore.currentTab === subItem.tab }"
+                    @click="handleMobileTabClick(subItem.tab)"
+                  >
+                    <i :class="subItem.icon"></i>
+                    {{ subItem.label }}
+                  </button>
+                </div>
+              </template>
+            </div>
           </nav>
 
           <button class="auth-btn logout" @click="handleLogout">Logout</button>
@@ -180,6 +234,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
+import { useTabStore } from "../../stores/tab"; // Add this import
 import LoginModal from "../Modals/LoginModal.vue";
 import SignUpModal from "../Modals/SignUpModal.vue";
 import { Modal } from "bootstrap";
@@ -187,6 +242,7 @@ import { Modal } from "bootstrap";
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const tabStore = useTabStore(); // Add this
 const showUserMenu = ref(false);
 
 const currentPath = computed(() => route.path);
@@ -211,7 +267,22 @@ const mainNavItems = computed(() => {
   const isAdmin =
     authStore.user?.role === "admin" || authStore.user?.role === "superuser";
   const baseItems = [
-    { path: "/", label: "Sports", icon: "fas fa-table-tennis" },
+    {
+      tab: "sports",
+      label: "Sports",
+      icon: "fas fa-table-tennis",
+      submenu: [
+        { tab: "live", label: "Live", icon: "fas fa-play" },
+        { tab: "today", label: "Today", icon: "icon-calendar" },
+        { tab: "football", label: "Football", icon: "fas fa-futbol" },
+        {
+          tab: "basketball",
+          label: "Basketball",
+          icon: "fas fa-basketball-ball",
+        },
+        { tab: "tennis", label: "Tennis", icon: "fas fa-table-tennis" },
+      ],
+    },
     { path: "/casino", label: "Casino", icon: "icon-casino" },
     { path: "/promotions", label: "Promotions", icon: "icon-gift" },
   ];
@@ -341,6 +412,41 @@ const closeLeftMenu = () => {
 watch(currentPath, () => {
   closeLeftMenu();
 });
+
+// Add submenu state management
+const openSubmenus = ref<string[]>([]);
+
+const toggleSubmenu = (label: string) => {
+  if (openSubmenus.value.includes(label)) {
+    openSubmenus.value = openSubmenus.value.filter((item) => item !== label);
+  } else {
+    openSubmenus.value.push(label);
+  }
+};
+
+const isSubmenuOpen = (label: string) => {
+  return openSubmenus.value.includes(label);
+};
+
+// Add tab handling function
+const handleTabClick = async (tab: string, shouldNavigate: boolean = false) => {
+  if (shouldNavigate || route.path !== "/") {
+    await router.push("/");
+  }
+  tabStore.setCurrentTab(tab);
+};
+
+// Optional: Update mobile menu handler to use the same logic
+const handleMobileTabClick = async (
+  tab: string,
+  shouldNavigate: boolean = false
+) => {
+  if (shouldNavigate || route.path !== "/") {
+    await router.push("/");
+  }
+  tabStore.setCurrentTab(tab);
+  closeMobileMenu();
+};
 </script>
 
 <style scoped>
@@ -1075,6 +1181,116 @@ watch(currentPath, () => {
         max(1rem, env(safe-area-inset-bottom))
         max(1rem, env(safe-area-inset-left));
     }
+  }
+}
+
+/* Add new styles for submenu */
+.nav-item-with-submenu {
+  position: relative;
+}
+
+.submenu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--white);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.submenu-arrow {
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.submenu-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--header);
+  border: 1px solid var(--leftpreborder);
+  border-radius: 4px;
+  min-width: 200px;
+  z-index: 1000;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Update submenu-link styles to match parent nav-link */
+.submenu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--white);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.submenu-link:hover,
+.submenu-link.active {
+  background: var(--pointbox);
+  color: var(--active-color);
+}
+
+/* Mobile submenu styles */
+.mobile-submenu {
+  background: var(--pointbox);
+  margin: 0.5rem 0;
+  border-radius: 4px;
+}
+
+.mobile-submenu .submenu-link {
+  padding: 1rem 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .submenu {
+    position: static;
+    border: none;
+    background: transparent;
+  }
+
+  .mobile-submenu {
+    padding-left: 1rem;
+  }
+}
+
+/* Update desktop nav styles */
+@media (min-width: 769px) {
+  .nav-item-with-submenu .submenu,
+  .submenu-trigger .submenu-arrow {
+    display: none;
+  }
+
+  .nav-item-with-submenu {
+    position: static;
+  }
+}
+
+/* Keep mobile submenu styles */
+@media (max-width: 768px) {
+  .nav-item-with-submenu,
+  .submenu,
+  .submenu-arrow {
+    display: block;
   }
 }
 </style>
