@@ -13,11 +13,10 @@ import routes from "./routes";
 import { WebSocket, WebSocketServer } from 'ws';
 import { parse } from 'url';
 import jwt from 'jsonwebtoken';
-import { MinesController } from './websocket/controllers/MinesController';
 import { DatabaseService } from './services/DatabaseService';
 import config from './config/config';
 import { startMatchResultsJob } from './jobs/matchResultsJob';
-import { webSocketService } from './websocket';
+import minesRoutes from "./routes/casino/minesRoutes";
 
 const app = express();
 const server = createServer(app);
@@ -25,11 +24,7 @@ const server = createServer(app);
 // Middleware
 app.use(express.json());
 
-// Initialize WebSocket service
-webSocketService.initialize(server);
 
-// Export the WebSocket server instance
-export const wss = webSocketService.getWss();
 
 // Define allowed origins
 const allowedOrigins = [
@@ -71,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/matches', matchRoutes);
+app.use('/api/casino/mines', minesRoutes);
 startMatchResultsJob();
 
 // Connect to MongoDB
@@ -91,8 +87,6 @@ mongoose
 // Initialize database service
 const dbService = new DatabaseService();
 
-// Initialize game controllers with webSocketService instead of wss
-new MinesController(webSocketService, server, dbService);
 
 // Routes
 app.use("/api", routes);
