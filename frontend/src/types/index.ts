@@ -73,6 +73,18 @@ interface Bet {
   awayTeam?: string;
 }
 
+export const SGM_LIMITS = {
+  minSelections: 2,
+  maxSelections: 8,
+  minAmount: 0.5,
+  maxAmount: 1000,
+  incompatibleMarkets: [
+    ['h2h', 'h2h_3_way'],  // Can't combine regular match winner with 3-way
+    ['totals', 'btts'],    // Can't combine over/under with both teams to score
+    ['h2h_3_way', 'btts'], // Can't combine 3-way with both teams to score
+  ]
+} as const;
+
 // Transaction related interfaces
 interface Transaction {
   _id: string;

@@ -15,27 +15,28 @@ const SPORTS_TO_UPDATE = {
 const sportKeys = Object.values(SPORTS_TO_UPDATE).flat();
 
 // Update upcoming matches less frequently
-const upcomingMatchesJob = new CronJob('0 */30 * * * *', async () => { // Every 30 minutes
+const upcomingMatchesJob = new CronJob('0 */30 * * * *', async () => {
   for (const sportKey of sportKeys) {
     try {
       await matchService.queueMatchUpdate(sportKey);
-      // Add delay between sports to prevent API rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Increased delay between sports to prevent API rate limits
+      await new Promise(resolve => setTimeout(resolve, 5000));
     } catch (error) {
       console.error(`Error updating upcoming matches for ${sportKey}:`, error);
     }
   }
 });
 
-// Update live matches more frequently
-const liveMatchesJob = new CronJob('*/2 * * * *', async () => { // Every 2 minutes
+// Update live matches less frequently
+const liveMatchesJob = new CronJob('*/5 * * * *', async () => { // Changed from 2 to 5 minutes
   try {
     const liveMatches = await matchService.getLiveMatches();
     const sportKeys = [...new Set(liveMatches.map(m => m.sportKey))];
 
     for (const sportKey of sportKeys) {
       await matchService.queueMatchUpdate(sportKey);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Increased delay between updates
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
   } catch (error) {
     console.error('Error updating live matches:', error);

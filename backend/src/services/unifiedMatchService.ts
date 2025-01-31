@@ -17,30 +17,56 @@ export class UnifiedMatchService {
 
   private async updateMatchesInDb(matches: IMatch[], sportKey: string): Promise<MatchDocument[]> {
     const savedMatches: MatchDocument[] = [];
+    const session = await mongoose.startSession();
 
-    for (const match of matches) {
-      if (!this.validateMatch(match)) {
-        console.error(`Skipping invalid match:`, match);
-        continue;
-      }
-
-      try {
-        const savedMatch = await Match.findOneAndUpdate(
-          { externalId: match.externalId },
-          match,
-          { 
-            upsert: true,
-            new: true,
-            setDefaultsOnInsert: true
+    try {
+      await session.withTransaction(async () => {
+        for (const match of matches) {
+          if (!this.validateMatch(match)) {
+            console.error(`Skipping invalid match:`, match);
+            continue;
           }
-        );
-        
-        if (savedMatch) {
-          savedMatches.push(savedMatch);
+
+          try {
+            const savedMatch = await Match.findOneAndUpdate(
+              { externalId: match.externalId },
+              match,
+              { 
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true,
+                session
+              }
+            );
+            
+            if (savedMatch) {
+              savedMatches.push(savedMatch);
+            }
+          } catch (error: any) {
+            if (error.code === 112) { // WriteConflict error
+              await new Promise(resolve => setTimeout(resolve, 100));
+              // Retry the operation
+              const retryMatch = await Match.findOneAndUpdate(
+                { externalId: match.externalId },
+                match,
+                { 
+                  upsert: true,
+                  new: true,
+                  setDefaultsOnInsert: true,
+                  session
+                }
+              );
+              if (retryMatch) {
+                savedMatches.push(retryMatch);
+              }
+            } else {
+              console.error(`Error saving match to DB:`, error);
+            }
+          }
         }
-      } catch (error) {
-        console.error(`Error saving match to DB:`, error);
-      }
+      });
+    } finally {
+      await session.endSession();
     }
 
     return savedMatches;

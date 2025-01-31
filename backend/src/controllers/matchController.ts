@@ -3,6 +3,7 @@ import {Match} from '../models/Match';
 import { OddsApiService } from '../services/oddsApiService';
 import { UnifiedMatchService } from '../services/unifiedMatchService';
 import { MatchService } from '../services/matchService';
+import { SUPPORTED_SPORTS } from '../config/constants';
 
 const matchService = new MatchService();
 const oddsApiService = new OddsApiService();
@@ -24,6 +25,19 @@ export const getSports = async (req: Request, res: Response) => {
 export const getMatches = async (req: Request, res: Response) => {
   try {
     const { sportKey } = req.params;
+
+    // Check if the sportKey is in our supported leagues
+    const isSupportedLeague = Object.values(SUPPORTED_SPORTS).some(leagues => 
+      leagues.includes(sportKey)
+    );
+
+    if (!isSupportedLeague) {
+      return res.status(400).json({
+        success: false,
+        message: `Sport ${sportKey} is not supported. Only leagues defined in SUPPORTED_SPORTS are available.`
+      });
+    }
+
     const matches = await unifiedMatchService.getMatchesBySport(sportKey);
     res.json({ 
       success: true, 
@@ -33,7 +47,7 @@ export const getMatches = async (req: Request, res: Response) => {
     console.error('Error in getMatches:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Error fetching matches' 
+      message: 'Failed to fetch matches' 
     });
   }
 };
@@ -42,28 +56,48 @@ export const getMatches = async (req: Request, res: Response) => {
 export const getMatchById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    
     const match = await Match.findById(id);
     
     if (!match) {
-      return res.status(404).json({ message: 'Match not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Match not found' 
+      });
     }
 
-    // If match is found but might be stale, refresh its odds
-    if (isOddsStale(match)) {
-      const freshMatches = await matchService.getMatches(match.sportKey);
-      const updatedMatch = freshMatches.find(m => m.id === match.externalId);
-      
-      if (updatedMatch) {
-        const transformedMatch = transformMatchData(updatedMatch);
-        await Match.findByIdAndUpdate(id, transformedMatch, { new: true });
-        return res.json(transformedMatch);
+    // Transform match data to include markets
+    const transformedMatch = {
+      ...match.toObject(),
+      markets: {
+        'Match Winner': [
+          { name: 'Home', price: match.odds.homeWin },
+          { name: 'Draw', price: match.odds.draw },
+          { name: 'Away', price: match.odds.awayWin }
+        ],
+        'Over/Under': match.odds.totals?.map(total => ({
+          name: total.name,
+          price: total.price,
+          point: total.point
+        })) || [],
+        'Handicap': match.odds.spreads?.map(spread => ({
+          name: spread.name,
+          price: spread.price,
+          point: spread.point
+        })) || []
       }
-    }
-    
-    res.json(match);
+    };
+
+    res.json({
+      success: true,
+      match: transformedMatch
+    });
   } catch (error) {
-    console.error('Error fetching match:', error);
-    res.status(500).json({ message: 'Error fetching match' });
+    console.error('Error in getMatchById:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching match details' 
+    });
   }
 };
 
@@ -191,11 +225,33 @@ const transformMatchData = (match: any) => {
 
 // Helper function to get the best bookmaker (most markets or most recent update)
 const getBestBookmaker = (bookmakers: any[] | undefined) => {
-  if (!bookmakers || bookmakers.length === 0) {
-    return null;
+  // Add null check and empty array handling
+  if (!bookmakers || !Array.isArray(bookmakers) || bookmakers.length === 0) {
+    console.warn('No valid bookmakers data received');
+    return {
+      key: 'default',
+      title: 'Default',
+      markets: [],
+      last_update: new Date().toISOString()
+    };
   }
 
-  return bookmakers.sort((a, b) => {
+  // Filter out invalid bookmakers first
+  const validBookmakers = bookmakers.filter(b => 
+    b && typeof b === 'object' && Array.isArray(b.markets)
+  );
+
+  if (validBookmakers.length === 0) {
+    console.warn('No valid bookmakers after filtering');
+    return {
+      key: 'default',
+      title: 'Default',
+      markets: [],
+      last_update: new Date().toISOString()
+    };
+  }
+
+  return validBookmakers.sort((a, b) => {
     // First, compare by number of markets
     const marketDiff = (b.markets?.length || 0) - (a.markets?.length || 0);
     if (marketDiff !== 0) return marketDiff;
@@ -336,10 +392,30 @@ export const getMatchesLegacy = async (req: Request, res: Response) => {
 
 export const getLiveMatches = async (req: Request, res: Response) => {
   try {
-    const matches = await unifiedMatchService.getLiveMatches();
-    res.json({ success: true, matches });
+    const { sportKey } = req.params;
+
+    // Check if the sportKey is in our supported leagues
+    const isSupportedLeague = Object.values(SUPPORTED_SPORTS).some(leagues => 
+      leagues.includes(sportKey)
+    );
+
+    if (!isSupportedLeague) {
+      return res.status(400).json({
+        success: false,
+        message: `Sport ${sportKey} is not supported. Only leagues defined in SUPPORTED_SPORTS are available.`
+      });
+    }
+
+    const matches = await oddsApiService.getLiveMatches(sportKey);
+    res.json({
+      success: true,
+      data: matches
+    });
   } catch (error) {
-    console.error('Error fetching live matches:', error);
-    res.status(500).json({ message: 'Error fetching live matches' });
+    console.error('Error in getLiveMatches:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch live matches'
+    });
   }
 }; 

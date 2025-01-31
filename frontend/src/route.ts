@@ -157,7 +157,7 @@ export const router = createRouter({
       },
     },
     {
-      path: "/same-game-multi/:matchId/:homeTeam/:awayTeam",
+      path: '/same-game-multi/:matchId',
       name: "SameGameMulti",
       component: SameGameMulti,
       meta: {

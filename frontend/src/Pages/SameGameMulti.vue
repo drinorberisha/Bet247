@@ -5,417 +5,36 @@
     <!-- Main Content -->
     <div class="main-content">
       <div class="same-game-multi-content">
-        <div class="match-header">
-          <h2>Same Game Multi</h2>
-          <div class="teams">
-            <span class="team home">{{ homeTeam }}</span>
-            <span class="vs">vs</span>
-            <span class="team away">{{ awayTeam }}</span>
-          </div>
+        <div v-if="loading" class="loading-state">
+          Loading match details...
         </div>
-
-        <div class="betting-options">
-          <div class="market-section">
-            <h3>Match Result</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'match_result', '1'),
-                  disabled: isDisabled('match_result', '1'),
-                }"
-                :disabled="isDisabled('match_result', '1')"
-                @click="
-                  handleOddSelection(
-                    'match_result',
-                    '1',
-                    2.1,
-                    'Match Result',
-                    'Home Win'
-                  )
-                "
-              >
-                <span>{{ homeTeam }}</span>
-                <span class="odd-value">2.10</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'match_result', 'X'),
-                  disabled: isDisabled('match_result', 'X'),
-                }"
-                :disabled="isDisabled('match_result', 'X')"
-                @click="
-                  handleOddSelection(
-                    'match_result',
-                    'X',
-                    3.4,
-                    'Match Result',
-                    'Draw'
-                  )
-                "
-              >
-                <span>Draw</span>
-                <span class="odd-value">3.40</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'match_result', '2'),
-                  disabled: isDisabled('match_result', '2'),
-                }"
-                :disabled="isDisabled('match_result', '2')"
-                @click="
-                  handleOddSelection(
-                    'match_result',
-                    '2',
-                    3.2,
-                    'Match Result',
-                    'Away Win'
-                  )
-                "
-              >
-                <span>{{ awayTeam }}</span>
-                <span class="odd-value">3.20</span>
-              </button>
-            </div>
+        <div v-else-if="error" class="error-state">
+          {{ error }}
+        </div>
+        <div v-else>
+          <div class="match-header">
+            <h2>{{ homeTeam }} vs {{ awayTeam }}</h2>
+            <div class="match-time">{{ formatTime(commenceTime) }}</div>
           </div>
 
-          <div class="market-section">
-            <h3>Both Teams to Score</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'btts', 'yes'),
-                  disabled: isDisabled('btts', 'yes'),
-                }"
-                :disabled="isDisabled('btts', 'yes')"
-                @click="
-                  handleOddSelection(
-                    'btts',
-                    'yes',
-                    1.85,
-                    'Both Teams to Score',
-                    'Yes'
-                  )
-                "
-              >
-                <span>Yes</span>
-                <span class="odd-value">1.85</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'btts', 'no'),
-                  disabled: isDisabled('btts', 'no'),
-                }"
-                :disabled="isDisabled('btts', 'no')"
-                @click="
-                  handleOddSelection(
-                    'btts',
-                    'no',
-                    1.95,
-                    'Both Teams to Score',
-                    'No'
-                  )
-                "
-              >
-                <span>No</span>
-                <span class="odd-value">1.95</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Total Goals</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'total_goals', 'over_2.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'total_goals',
-                    'over_2.5',
-                    1.75,
-                    'Total Goals',
-                    'Over 2.5'
-                  )
-                "
-              >
-                <span>Over 2.5</span>
-                <span class="odd-value">1.75</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'total_goals', 'under_2.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'total_goals',
-                    'under_2.5',
-                    2.05,
-                    'Total Goals',
-                    'Under 2.5'
-                  )
-                "
-              >
-                <span>Under 2.5</span>
-                <span class="odd-value">2.05</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>First Goalscorer</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(
-                    matchId,
-                    'first_goalscorer',
-                    'no_goal'
-                  ),
-                }"
-                @click="
-                  handleOddSelection(
-                    'first_goalscorer',
-                    'no_goal',
-                    12.0,
-                    'First Goalscorer',
-                    'No Goalscorer'
-                  )
-                "
-              >
-                <span>No Goalscorer</span>
-                <span class="odd-value">12.00</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'first_goalscorer', 'home'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'first_goalscorer',
-                    'home',
-                    2.2,
-                    'First Goalscorer',
-                    `${homeTeam} First`
-                  )
-                "
-              >
-                <span>{{ homeTeam }} First</span>
-                <span class="odd-value">2.20</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'first_goalscorer', 'away'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'first_goalscorer',
-                    'away',
-                    2.5,
-                    'First Goalscorer',
-                    `${awayTeam} First`
-                  )
-                "
-              >
-                <span>{{ awayTeam }} First</span>
-                <span class="odd-value">2.50</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Half Time Result</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{ selected: isOddSelected(matchId, 'half_time', '1') }"
-                @click="
-                  handleOddSelection(
-                    'half_time',
-                    '1',
-                    2.75,
-                    'Half Time Result',
-                    'Home Win'
-                  )
-                "
-              >
-                <span>{{ homeTeam }}</span>
-                <span class="odd-value">2.75</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{ selected: isOddSelected(matchId, 'half_time', 'X') }"
-                @click="
-                  handleOddSelection(
-                    'half_time',
-                    'X',
-                    2.1,
-                    'Half Time Result',
-                    'Draw'
-                  )
-                "
-              >
-                <span>Draw</span>
-                <span class="odd-value">2.10</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{ selected: isOddSelected(matchId, 'half_time', '2') }"
-                @click="
-                  handleOddSelection(
-                    'half_time',
-                    '2',
-                    3.8,
-                    'Half Time Result',
-                    'Away Win'
-                  )
-                "
-              >
-                <span>{{ awayTeam }}</span>
-                <span class="odd-value">3.80</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Correct Score</h3>
-            <div class="odds-grid">
-              <button
-                v-for="(score, index) in correctScores"
-                :key="index"
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'correct_score', score.type),
-                }"
-                @click="
-                  handleOddSelection(
-                    'correct_score',
-                    score.type,
-                    score.odds,
-                    'Correct Score',
-                    score.label
-                  )
-                "
-              >
-                <span>{{ score.label }}</span>
-                <span class="odd-value">{{ formatOdd(score.odds) }}</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Total Corners</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'corners', 'over_9.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'corners',
-                    'over_9.5',
-                    1.85,
-                    'Total Corners',
-                    'Over 9.5'
-                  )
-                "
-              >
-                <span>Over 9.5</span>
-                <span class="odd-value">1.85</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'corners', 'under_9.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'corners',
-                    'under_9.5',
-                    1.95,
-                    'Total Corners',
-                    'Under 9.5'
-                  )
-                "
-              >
-                <span>Under 9.5</span>
-                <span class="odd-value">1.95</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Cards</h3>
-            <div class="odds-grid">
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'cards', 'over_3.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'cards',
-                    'over_3.5',
-                    1.9,
-                    'Total Cards',
-                    'Over 3.5'
-                  )
-                "
-              >
-                <span>Over 3.5 Cards</span>
-                <span class="odd-value">1.90</span>
-              </button>
-              <button
-                class="odd-btn"
-                :class="{
-                  selected: isOddSelected(matchId, 'cards', 'under_3.5'),
-                }"
-                @click="
-                  handleOddSelection(
-                    'cards',
-                    'under_3.5',
-                    1.9,
-                    'Total Cards',
-                    'Under 3.5'
-                  )
-                "
-              >
-                <span>Under 3.5 Cards</span>
-                <span class="odd-value">1.90</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="market-section">
-            <h3>Team Specials</h3>
-            <div class="odds-grid">
-              <button class="odd-btn">
-                <span>{{ homeTeam }} Clean Sheet</span>
-                <span class="odd-value">3.20</span>
-              </button>
-              <button class="odd-btn">
-                <span>{{ awayTeam }} Clean Sheet</span>
-                <span class="odd-value">3.50</span>
-              </button>
-              <button class="odd-btn">
-                <span>{{ homeTeam }} To Score 2+</span>
-                <span class="odd-value">2.40</span>
-              </button>
-              <button class="odd-btn">
-                <span>{{ awayTeam }} To Score 2+</span>
-                <span class="odd-value">2.60</span>
-              </button>
+          <div class="markets-container">
+            <div v-for="(market, marketKey) in markets" :key="marketKey" class="market-section">
+              <h3>{{ market.name }}</h3>
+              <div class="odds-grid">
+                <button
+                  v-for="outcome in market.outcomes"
+                  :key="outcome.name"
+                  class="odd-button"
+                  :class="{
+                    selected: isOddSelected(matchId, marketKey, outcome.name),
+                    disabled: isIncompatibleMarket(marketKey)
+                  }"
+                  @click="handleOddClick(marketKey, outcome.name, outcome.price)"
+                >
+                  <span class="selection-name">{{ outcome.name }}</span>
+                  <span class="odds">{{ formatOdd(outcome.price) }}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -431,90 +50,91 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from "vue-router";
-import { computed, ref } from "vue";
-import { useBettingStore } from "../stores/betting";
-import BetSlip from "../components/Common/BetSlip.vue";
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useBettingStore } from '../stores/betting';
+import { useMatchesStore } from '../stores/matches';
+import BetSlip from '../components/Common/BetSlip.vue';
+import { formatMatchTime } from '../utils/dateUtils';
+import { SGM_LIMITS } from '../types';
 import FooterMobile from "../components/Footer/FooterMobile.vue";
 import Header from "../components/Header/Header.vue";
 
 const route = useRoute();
 const bettingStore = useBettingStore();
+const matchesStore = useMatchesStore();
 
-const homeTeam = computed(() =>
-  decodeURIComponent(route.params.homeTeam as string)
-);
-const awayTeam = computed(() =>
-  decodeURIComponent(route.params.awayTeam as string)
-);
-const matchId = computed(() => route.params.matchId as string);
+const matchId = ref(route.params.matchId as string);
+const homeTeam = ref('');
+const awayTeam = ref('');
+const commenceTime = ref('');
+const markets = ref({});
+const loading = ref(true);
+const error = ref('');
 
-// Correct Score options
-const correctScores = ref([
-  { label: "1-0", type: "1_0", odds: 7.5 },
-  { label: "2-0", type: "2_0", odds: 9.0 },
-  { label: "2-1", type: "2_1", odds: 8.5 },
-  { label: "0-0", type: "0_0", odds: 10.0 },
-  { label: "1-1", type: "1_1", odds: 6.5 },
-  { label: "2-2", type: "2_2", odds: 12.0 },
-]);
+const formatTime = (time: string) => {
+  if (!time) return '';
+  return new Date(time).toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
 
-// Add function to check if any selection in a market is selected
-const isMarketSelected = (market: string, excludeType?: string) => {
-  return bettingStore.selections.some(
-    (s) =>
-      s.matchId === matchId.value &&
-      s.type.startsWith(market) &&
-      (!excludeType || !s.type.endsWith(excludeType))
+const formatOdd = (odd: number) => odd.toFixed(2);
+
+const isOddSelected = (matchId: string, market: string, type: string) => {
+  return bettingStore.currentSelections.some(
+    (s) => s.matchId === matchId && s.type === `${market}_${type}`
   );
 };
 
-// Add function to check if button should be disabled
-const isDisabled = (market: string, type: string) => {
-  // If this specific option is selected, it shouldn't be disabled
-  if (isOddSelected(matchId.value, market, type)) {
-    return false;
-  }
-  // If any other option in this market is selected, disable this one
-  return isMarketSelected(market, type);
+const isIncompatibleMarket = (marketKey: string) => {
+  const currentMarkets = bettingStore.currentSelections.map(s => s.market);
+  return bettingStore.hasIncompatibleMarkets && 
+         currentMarkets.includes(marketKey);
 };
 
-const handleOddSelection = (
-  market: string,
-  type: string,
-  odds: number,
-  marketName: string,
-  selectionName: string
-) => {
-  // If the button is disabled, don't allow selection
-  if (isDisabled(market, type)) {
-    return;
-  }
-
+const handleOddClick = (market: string, type: string, odds: number) => {
   bettingStore.addSelection({
     matchId: matchId.value,
     homeTeam: homeTeam.value,
     awayTeam: awayTeam.value,
     type: `${market}_${type}`,
-    selection: selectionName,
+    selection: type,
     odds: odds,
     sportKey: "soccer",
-    market: marketName,
+    market: market,
     status: "upcoming",
     event: `${homeTeam.value} vs ${awayTeam.value}`,
-    commenceTime: new Date().toISOString(),
+    commenceTime: commenceTime.value,
   });
 };
 
-const isOddSelected = (matchId: string, market: string, type: string) => {
-  return bettingStore.selections.some(
-    (s) => s.matchId === matchId && s.type === `${market}_${type}`
-  );
-};
+onMounted(async () => {
+  if (!matchId.value) {
+    error.value = 'Invalid match ID';
+    loading.value = false;
+    return;
+  }
 
-const formatOdd = (odd: number) => {
-  return odd.toFixed(2);
-};
+  try {
+    loading.value = true;
+    const match = await matchesStore.fetchMatchById(matchId.value);
+    if (match) {
+      homeTeam.value = match.homeTeam;
+      awayTeam.value = match.awayTeam;
+      commenceTime.value = match.commenceTime;
+      markets.value = match.markets || {};
+    } else {
+      error.value = 'Match not found';
+    }
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load match details';
+    console.error('Error loading match:', err);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <style scoped>

@@ -134,6 +134,43 @@ export const useMatchesStore = defineStore('matches', {
     // Helper method to determine if a match should be settled
     isMatchSettled(match: any): boolean {
       return match.status === 'ended' && match.result;
+    },
+
+    async fetchMatchById(matchId: string) {
+      const authStore = useAuthStore();
+      
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await axios.get(`${API_URL}/matches/matches/${matchId}`, {
+          headers: {
+            'Authorization': `Bearer ${authStore.token}`
+          }
+        });
+
+        if (response.data && response.data.success) {
+          // Find and update the match in the local state if it exists
+          const matchIndex = this.matches.findIndex(m => m._id === matchId);
+          if (matchIndex !== -1) {
+            this.matches[matchIndex] = response.data.match;
+          }
+          return response.data.match;
+        } else {
+          throw new Error('Match not found');
+        }
+      } catch (error: any) {
+        console.error('Error fetching match:', error);
+        if (error.response?.status === 401) {
+          this.error = 'Please log in to view match details';
+          authStore.logout();
+        } else {
+          this.error = error.message || 'Failed to load match details';
+        }
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }); 

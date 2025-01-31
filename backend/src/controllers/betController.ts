@@ -38,9 +38,7 @@ const calculateFinalCashoutAmount = (stake: number, partialOdds: number): number
 
 export const placeBet = async (req: Request, res: Response) => {
   try {
-    const { betType, amount, selections, totalOdds, potentialWin } = req.body;
-    console.log('User from request:', req.user);
-    console.log('User ID being searched:', req.user.userId);
+    const { betType, amount, selections, totalOdds, potentialWin, isSGM } = req.body;
 
     if (!req.user) {
       return res.status(401).json({
@@ -49,7 +47,6 @@ export const placeBet = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the user
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({
@@ -58,7 +55,6 @@ export const placeBet = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user has enough balance
     if (user.balance < amount) {
       return res.status(400).json({
         success: false,
@@ -66,74 +62,83 @@ export const placeBet = async (req: Request, res: Response) => {
       });
     }
 
-    // Fetch match times for each selection
-    const selectionsWithMatchTime = await Promise.all(selections.map(async (selection) => {
-      // Extract match identifier from the event string
-      const [homeTeam, awayTeam] = selection.event.split(' vs ');
-      
-      // Find the corresponding match
+    // For SGM bets, we need to verify the odds are still valid
+    if (isSGM) {
       const match = await Match.findOne({
-        homeTeam: homeTeam,
-        awayTeam: awayTeam,
-        sportKey: selection.sportKey
+        homeTeam: selections[0].homeTeam,
+        awayTeam: selections[0].awayTeam
       });
 
-      console.log('Found match:', match); // Debug log
+      if (!match) {
+        return res.status(404).json({
+          success: false,
+          message: 'Match not found'
+        });
+      }
 
-      return {
+      // Verify each selection's odds against current market odds
+      for (const selection of selections) {
+        const marketOdds = match.sgmMarkets?.[selection.market]?.outcomes.find(
+          o => o.name === selection.selection
+        )?.price;
+
+        if (!marketOdds || Math.abs(marketOdds - selection.odds) > 0.01) {
+          return res.status(400).json({
+            success: false,
+            message: 'Odds have changed, please refresh and try again'
+          });
+        }
+      }
+    }
+
+    // Create selections
+    const selectionDocs = await Promise.all(selections.map(async (selection) => {
+      return new Selection({
         sportKey: selection.sportKey,
         event: selection.event,
         market: selection.market,
         selection: selection.selection,
         odds: selection.odds,
         status: 'pending',
-        matchTime: match?.commenceTime || new Date(selection.commenceTime),
-        commenceTime: match?.commenceTime || new Date(selection.commenceTime)
-      };
+        matchTime: new Date(selection.commenceTime)
+      }).save();
     }));
 
-    // Create the selections
-    const createdSelections = await Selection.create(selectionsWithMatchTime);
-    
-    // Get the selection IDs
-    const selectionIds = Array.isArray(createdSelections) 
-      ? createdSelections.map((selection: any) => selection._id)
-      : [(createdSelections as any)._id];
-
-    // Create the bet
-    const bet = await Bet.create({
-      user: user._id,
-      betType,
-      selections: selectionIds,
+    // Create bet
+    const bet = new Bet({
+      userId: user._id,
+      type: isSGM ? 'sgm' : betType,
       amount,
       totalOdds,
       potentialWin,
       status: 'pending',
-      cashedOut: {
-        wonSelections: [],
-        remainingSelections: []
-      }
+      selections: selectionDocs.map(doc => doc._id),
+      isSGM: !!isSGM
     });
+
+    await bet.save();
 
     // Update user balance
     user.balance -= amount;
     await user.save();
 
-    // Populate the selections in the response
-    const populatedBet = await bet.populate('selections');
-
-    res.status(201).json({
+    res.json({
       success: true,
       message: 'Bet placed successfully',
-      bet: populatedBet,
-      newBalance: user.balance
+      bet: {
+        id: bet._id,
+        amount,
+        totalOdds,
+        potentialWin,
+        selections: selectionDocs
+      }
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error placing bet:', error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
-      message: error.message || 'Error placing bet'
+      message: 'Error placing bet'
     });
   }
 };

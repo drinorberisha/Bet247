@@ -79,41 +79,7 @@ const availableSports = [
     iconClass: "icon-basketball",
     tableClass: "basketball-table",
   },
-  {
-    key: "icehockey",
-    title: "Ice Hockey",
-    tabId: "icehockey",
-    iconClass: "icon-hockey",
-    tableClass: "hockey-table",
-  },
-  {
-    key: "handball",
-    title: "Handball",
-    tabId: "handball",
-    iconClass: "icon-handball",
-    tableClass: "handball-table",
-  },
-  {
-    key: "american-football",
-    title: "American Football",
-    tabId: "american",
-    iconClass: "icon-football-american",
-    tableClass: "american-table",
-  },
-  {
-    key: "baseball",
-    title: "Baseball",
-    tabId: "baseball",
-    iconClass: "icon-baseball",
-    tableClass: "baseball-table",
-  },
-  {
-    key: "horse-racing",
-    title: "Horse Racing",
-    tabId: "horseracing",
-    iconClass: "icon-horse",
-    tableClass: "horse-table",
-  },
+ 
 ];
 
 // Computed properties for current sport

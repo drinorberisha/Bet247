@@ -104,7 +104,7 @@
 import { ref, onMounted, watch, computed } from "vue";
 import { useMatchesStore } from "../../stores/matches";
 import { useBettingStore } from "../../stores/betting";
-import { SPORTS_CONFIG, LEAGUE_NAMES, type SupportedSport } from "../../config/sportsConfig";
+import { SPORTS_CONFIG, LEAGUE_NAMES, type SupportedSport, getLeaguesForSport } from "../../config/sportsConfig";
 import type { Match } from "../../types";
 import MatchOdds from "./MatchOdds.vue";
 import { useRouter } from "vue-router";
@@ -124,23 +124,7 @@ const router = useRouter();
 
 // Get leagues for the current sport
 const getSportLeagues = (sportKey: string): string[] => {
-  const sportKeyMap: Record<string, SupportedSport> = {
-    tennis: "tennis",
-    icehockey: "icehockey",
-    baseball: "baseball",
-    soccer: "soccer",
-    basketball: "basketball",
-    cricket: "cricket",
-  };
-
-  const configKey = sportKeyMap[sportKey] || sportKey;
-  console.log(
-    "Getting leagues for sport:",
-    sportKey,
-    "using config key:",
-    configKey
-  );
-  return SPORTS_CONFIG[configKey as SupportedSport] || [sportKey];
+  return getLeaguesForSport(sportKey as SupportedSport) || [];
 };
 
 // Updated computed property with null checks

@@ -1,5 +1,46 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+interface ISGMMarkets {
+  matchWinner: {
+    key: string;
+    outcomes: [{
+      name: string;
+      price: number;
+    }]
+  };
+  bothTeamsToScore: {
+    key: string;
+    outcomes: [{
+      name: string;
+      price: number;
+    }]
+  };
+  overUnder: [{
+    key: string;
+    outcomes: [{
+      name: string;
+      price: number;
+      point: number;
+    }]
+  }];
+  h2h3Way: {
+    key: string;
+    outcomes: [{
+      name: string;
+      price: number;
+    }]
+  };
+}
+
+interface Market {
+  key: string;
+  outcomes: {
+    name: string;
+    price: number;
+    point?: number;
+  }[];
+}
+
 export interface IMatch extends Document {
   externalId: string;
   sportKey: string;
@@ -8,14 +49,15 @@ export interface IMatch extends Document {
   awayTeam: string;
   commenceTime: Date;
   status: 'upcoming' | 'live' | 'ended';
+  odds?: {
+    homeWin: number;
+    draw?: number;
+    awayWin: number;
+  };
+  sgmMarkets?: ISGMMarkets;
   scores?: {
     home: number;
     away: number;
-  };
-  odds?: {
-    homeWin: number;
-    awayWin: number;
-    draw?: number;
   };
   spreads?: {
     points: number;
@@ -92,11 +134,10 @@ const matchSchema = new Schema<IMatch>({
     default: 'upcoming',
     index: true
   },
-  tier: { 
-    type: String, 
-    required: true, 
-    enum: ['high', 'medium', 'low'],
-    index: true 
+  tier: {
+    type: String,
+    enum: ['tier1', 'tier2', 'tier3'],
+    required: true
   },
   lastUpdated: { 
     type: Date, 
@@ -115,6 +156,37 @@ const matchSchema = new Schema<IMatch>({
   settled: {
     type: Boolean,
     default: false
+  },
+  sgmMarkets: {
+    matchWinner: {
+      key: String,
+      outcomes: [{
+        name: String,
+        price: Number
+      }]
+    },
+    bothTeamsToScore: {
+      key: String,
+      outcomes: [{
+        name: String,
+        price: Number
+      }]
+    },
+    overUnder: [{
+      key: String,
+      outcomes: [{
+        name: String,
+        price: Number,
+        point: Number
+      }]
+    }],
+    h2h3Way: {
+      key: String,
+      outcomes: [{
+        name: String,
+        price: Number
+      }]
+    }
   }
 }, {
   timestamps: true

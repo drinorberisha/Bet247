@@ -1,8 +1,9 @@
-import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
 import { useMatchesStore } from "./matches";
+import { SGM_LIMITS } from '../types';
 import type { Selection, Bet, PlaceBetResponse } from '../types';
+import { defineStore } from "pinia";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,7 +17,7 @@ interface BettingState {
   settledBets: Bet[];
   loading: boolean;
   error: string | null;
-  activeMode: "single" | "multi";
+  activeMode: "single" | "multi" | "sgm";
   multiStake: number;
   isBetslipExpanded: boolean;
   isBetslipClosed: boolean;
@@ -27,12 +28,14 @@ interface BettingState {
 interface BettingStore {
   state: BettingState;
   addSelection: (matchData: Omit<Selection, 'market'>) => void;
-  setMode: (mode: "single" | "multi") => void;
+  setMode: (mode: "single" | "multi" | "sgm") => void;
   updateStake: (betId: string, stake: number) => void;
   updateMultiStake: (stake: number) => void;
   removeBet: (betId: string) => void;
   clearAllBets: () => void;
   placeBet: () => Promise<PlaceBetResponse>;
+  addSGMSelection: (matchData: Omit<Selection, 'market'>) => void;
+  placeSGMBet: () => Promise<PlaceBetResponse>;
   // ... add other action types here
 }
 
@@ -91,6 +94,46 @@ export const useBettingStore = defineStore("betting", {
       }
       return this.currentBets.some((bet) => (bet.stake || 0) > 0);
     },
+
+    isSGM(): boolean {
+      return this.activeMode === 'sgm';
+    },
+
+    sgmOdds(): number {
+      if (!this.isSGM) return 0;
+      return this.currentSelections.reduce(
+        (total, selection) => total * selection.odds,
+        1
+      );
+    },
+
+    potentialSGMWin(): number {
+      if (!this.isSGM) return 0;
+      return this.multiStake * this.sgmOdds;
+    },
+
+    canPlaceSGMBet(): boolean {
+      if (!this.isSGM) return false;
+      return (
+        this.currentSelections.length >= 2 &&
+        this.multiStake > 0 &&
+        !this.hasIncompatibleMarkets
+      );
+    },
+
+    hasIncompatibleMarkets(): boolean {
+      const markets = this.currentSelections.map(s => s.market);
+      return SGM_LIMITS.incompatibleMarkets.some(
+        incompatiblePair =>
+          incompatiblePair.every(market => markets.includes(market))
+      );
+    },
+
+    isFromSGMPage(): boolean {
+      if (!this.currentSelections.length) return false;
+      const firstMatchId = this.currentSelections[0]?.matchId;
+      return this.currentSelections.every(s => s.matchId === firstMatchId);
+    }
   },
 
   actions: {
@@ -110,20 +153,28 @@ export const useBettingStore = defineStore("betting", {
         this.currentSelections.push(selection);
       }
 
-      this.currentBets = this.currentSelections.map((s): Bet => ({
-        id: s.matchId,
-        betType: this.activeMode === "multi" ? "multiple" : "single",
-        selections: [s],
+      // Group selections from the same match into one bet
+      const groupedSelections = new Map<string, Selection[]>();
+      
+      this.currentSelections.forEach(s => {
+        const existing = groupedSelections.get(s.matchId) || [];
+        groupedSelections.set(s.matchId, [...existing, s]);
+      });
+
+      this.currentBets = Array.from(groupedSelections.entries()).map(([matchId, selections]): Bet => ({
+        id: matchId,
+        betType: 'single',
+        selections: selections,
         amount: 0,
-        totalOdds: s.odds,
+        totalOdds: selections.reduce((total, s) => total * s.odds, 1),
         potentialWin: 0,
         stake: 0,
-        homeTeam: s.homeTeam,
-        awayTeam: s.awayTeam,
+        homeTeam: selections[0].homeTeam,
+        awayTeam: selections[0].awayTeam,
       }));
     },
 
-    setMode(mode: "single" | "multi") {
+    setMode(mode: "single" | "multi" | "sgm") {
       this.activeMode = mode;
       if (mode === "multi") {
         this.currentBets = this.currentBets.map((bet) => ({
@@ -243,21 +294,33 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        // For single bets, only process bets with stakes > 0
-        const betsToPlace =
-          this.activeMode === "multi"
-            ? this.currentBets
-            : this.currentBets.filter((bet) => (bet.stake || 0) > 0);
+        const bets = this.currentBets.map(bet => ({
+          betType: bet.selections.length > 1 ? 'sgm' : 'single',
+          amount: bet.stake,
+          totalOdds: bet.totalOdds,
+          potentialWin: bet.stake * bet.totalOdds,
+          isSGM: bet.selections.length > 1,
+          selections: bet.selections.map(selection => ({
+            matchId: selection.matchId,
+            selection: selection.type,
+            odds: selection.odds,
+            sportKey: selection.sportKey,
+            event: `${selection.homeTeam} vs ${selection.awayTeam}`,
+            market: selection.market,
+            homeTeam: selection.homeTeam,
+            awayTeam: selection.awayTeam,
+          }))
+        }));
 
         const totalOdds =
           this.activeMode === "multi"
             ? this.multiOdds
-            : betsToPlace[0]?.selections[0]?.odds || 0;
+            : bets[0]?.selections[0]?.odds || 0;
 
         const amount =
           this.activeMode === "multi"
             ? this.multiStake
-            : betsToPlace.reduce((sum, bet) => sum + (bet.stake || 0), 0);
+            : bets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
 
         const potentialWin = amount * totalOdds;
 
@@ -266,7 +329,7 @@ export const useBettingStore = defineStore("betting", {
           amount,
           totalOdds,
           potentialWin,
-          selections: betsToPlace.flatMap((bet) =>
+          selections: bets.flatMap((bet) =>
             bet.selections.map((selection) => ({
               matchId: selection.matchId,
               selection: selection.type,
@@ -297,7 +360,7 @@ export const useBettingStore = defineStore("betting", {
 
           // Only clear placed bets in single mode
           if (this.activeMode === "single") {
-            const placedBetIds = betsToPlace.map((bet) => bet.id);
+            const placedBetIds = bets.map((bet) => bet.id);
             this.currentBets = this.currentBets.filter(
               (bet) => !placedBetIds.includes(bet.id)
             );
@@ -508,6 +571,112 @@ export const useBettingStore = defineStore("betting", {
       this.currentBets = [];
       this.multiStake = 0;
     },
+
+    addSGMSelection(matchData: Omit<Selection, 'market'>) {
+      const selection: Selection = {
+        ...matchData,
+        market: this.getMarketType(matchData.type),
+      };
+
+      // For SGM, we allow multiple selections from same match
+      // but not from the same market type
+      const existingIndex = this.currentSelections.findIndex(
+        (s) => s.matchId === selection.matchId && s.type === selection.type
+      );
+
+      if (existingIndex !== -1) {
+        this.currentSelections.splice(existingIndex, 1);
+      } else {
+        this.currentSelections.push(selection);
+      }
+
+      // For SGM, we create a single bet with multiple selections
+      this.currentBets = [{
+        id: selection.matchId,
+        betType: 'sgm',
+        selections: this.currentSelections,
+        amount: 0,
+        totalOdds: this.sgmOdds,
+        potentialWin: 0,
+        stake: this.multiStake,
+        homeTeam: selection.homeTeam,
+        awayTeam: selection.awayTeam,
+      }];
+    },
+
+    addRegularSelection(selection: Selection) {
+      const existingIndex = this.currentSelections.findIndex(
+        (s) => s.matchId === selection.matchId && s.type === selection.type
+      );
+
+      if (existingIndex !== -1) {
+        this.currentSelections.splice(existingIndex, 1);
+      } else {
+        this.currentSelections.push(selection);
+      }
+
+      this.currentBets = this.currentSelections.map((s): Bet => ({
+        id: s.matchId,
+        betType: this.activeMode === "multi" ? "multiple" : "single",
+        selections: [s],
+        amount: 0,
+        totalOdds: s.odds,
+        potentialWin: 0,
+        stake: 0,
+        homeTeam: s.homeTeam,
+        awayTeam: s.awayTeam,
+      }));
+    },
+    async placeSGMBet(): Promise<PlaceBetResponse> {
+      const authStore = useAuthStore();
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const payload = {
+          betType: 'sgm',
+          amount: this.multiStake,
+          totalOdds: this.sgmOdds,
+          potentialWin: this.potentialSGMWin,
+          isSGM: true,
+          selections: this.currentSelections.map(selection => ({
+            matchId: selection.matchId,
+            selection: selection.type,
+            odds: selection.odds,
+            sportKey: selection.sportKey,
+            event: `${selection.homeTeam} vs ${selection.awayTeam}`,
+            market: selection.market,
+            sport: selection.sportKey.split(":")[0],
+            homeTeam: selection.homeTeam,
+            awayTeam: selection.awayTeam,
+          }))
+        };
+
+        const response = await axios.post<PlaceBetResponse>(
+          `${API_URL}/bets/place`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data.success) {
+          authStore.updateBalance(response.data.newBalance);
+          this.clearBetSlip();
+        }
+
+        return response.data;
+      } catch (error: any) {
+        console.error("SGM bet placement error:", error.response?.data || error);
+        this.error = error.response?.data?.message || "Failed to place SGM bet";
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    }
   },
 }) as unknown as () => BettingStore;
 

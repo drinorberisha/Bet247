@@ -158,23 +158,49 @@ export class MatchService {
   public async queueMatchUpdate(sportKey: string): Promise<void> {
     const queueKey = `match_update_${sportKey}`;
     
-    if (!await LockService.acquireLock(queueKey, 30000)) {
-      console.log(`Update for ${sportKey} already in progress, skipping`);
-      return;
-    }
-
-    try {
-      await this.updateMatches(sportKey);
-    } finally {
-      await LockService.releaseLock(queueKey);
+    // Add exponential backoff for lock acquisition
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      if (await LockService.acquireLock(queueKey, 30000)) {
+        try {
+          await this.updateMatches(sportKey);
+          break;
+        } finally {
+          await LockService.releaseLock(queueKey);
+        }
+      } else {
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retryCount++;
+      }
     }
   }
 
-  async updateMatches(sportKey: string, session?: mongoose.ClientSession) {
-    return this.retryOperation(async () => {
-      const matches = await this.oddsApiService.getMatches(sportKey);
-      // ... rest of your update logic ...
-    });
+  async updateMatches(sportKey: string): Promise<void> {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const matches = await this.oddsApiService.getMatches(sportKey);
+        for (const match of matches) {
+          await this.retryOperation(async () => {
+            await Match.findOneAndUpdate(
+              { externalId: match.externalId },
+              match,
+              { 
+                upsert: true,
+                new: true,
+                session,
+                setDefaultsOnInsert: true 
+              }
+            );
+          }, 3, 100);
+        }
+      });
+    } finally {
+      session.endSession();
+    }
   }
 
   private determineStatus(commenceTime: string): 'upcoming' | 'live' | 'ended' {

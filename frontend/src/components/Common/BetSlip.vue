@@ -17,20 +17,18 @@
       </div>
 
       <div class="betslip-header">
-        <div class="header-tabs">
-          <button
-            v-for="mode in ['single', 'multi']"
-            :key="mode"
-            :class="[
-              'tab-button',
-              { active: bettingStore.activeMode === mode },
-            ]"
-            @click="bettingStore.setMode(mode)"
+        <div class="betslip-tabs">
+          <button 
+            :class="['tab', { active: bettingStore.activeMode === 'single' }]"
+            @click="bettingStore.setMode('single')"
           >
-            {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
-            <span class="bet-count" v-if="getBetCount(mode)">
-              {{ getBetCount(mode) }}
-            </span>
+            Single
+          </button>
+          <button 
+            :class="['tab', { active: bettingStore.activeMode === 'multi' }]"
+            @click="bettingStore.setMode('multi')"
+          >
+            Multi
           </button>
         </div>
         <button
@@ -50,70 +48,48 @@
         </div>
 
         <template v-else>
-          <!-- Single Mode -->
-          <div v-if="bettingStore.activeMode === 'single'" class="bet-list">
-            <div v-for="bet in bets" :key="bet.id" class="bet-card">
+          <!-- Single Mode (including SGM) -->
+          <div v-if="bettingStore.activeMode === 'single'" class="single-content">
+            <div v-for="bet in groupedBets" :key="bet.id" class="bet-card">
               <div class="bet-header">
                 <div class="bet-teams">
                   <span class="team home">{{ bet.homeTeam }}</span>
                   <span class="vs">vs</span>
                   <span class="team away">{{ bet.awayTeam }}</span>
                 </div>
-                <button
-                  class="remove-bet"
-                  @click="bettingStore.removeBet(bet.id)"
-                >
-                  &times;
-                </button>
+                <button class="remove-bet" @click="bettingStore.removeBet(bet.id)">×</button>
               </div>
 
-              <div class="selections-list">
-                <div
-                  v-for="(selection, index) in bet.selections"
-                  :key="index"
-                  class="selection-item"
-                >
+              <!-- Show multiple selections if it's an SGM bet -->
+              <template v-if="bet.selections.length > 1">
+                <div v-for="selection in bet.selections" :key="selection.type" class="selection-item">
                   <span class="selection-type">{{ selection.type }}</span>
-                  <span class="selection-odds">{{
-                    formatOdds(selection.odds)
-                  }}</span>
+                  <span class="selection-odds">{{ formatOdds(selection.odds) }}</span>
                 </div>
-              </div>
+                <div class="total-odds">
+                  Total Odds: {{ formatOdds(calculateTotalOdds(bet.selections)) }}
+                </div>
+              </template>
+              <!-- Show single selection for regular bets -->
+              <template v-else>
+                <div class="selection-item">
+                  <span class="selection-type">{{ bet.selections[0]?.type }}</span>
+                  <span class="selection-odds">{{ formatOdds(bet.selections[0]?.odds) }}</span>
+                </div>
+              </template>
 
-              <div class="stake-container">
-                <div class="stake-header">
-                  <label>Stake</label>
-                  <button class="clear-stake" @click="clearSingleStake(bet.id)">
-                    <i class="icon-trash-2"></i>
-                  </button>
-                </div>
-                <div class="stake-input">
-                  <input
-                    type="number"
-                    v-model="bet.stake"
-                    placeholder="Enter stake"
-                    @input="updateSingleStake($event, bet.id)"
-                  />
-                  <span class="currency">$</span>
-                </div>
+              <div class="stake-input">
+                <input
+                  type="number"
+                  v-model="bet.stake"
+                  placeholder="Enter stake"
+                  @input="updateSingleStake($event, bet.id)"
+                />
+                <span class="currency">$</span>
               </div>
 
               <div class="potential-win" v-if="bet.stake">
-                Potential Win: ${{ calculateSingleWin(bet) }}
-              </div>
-            </div>
-            <div class="single-summary" v-if="bets.length">
-              <div class="summary-row">
-                <span class="summary-label">Total Stake</span>
-                <span class="summary-value"
-                  >${{ formatOdds(getTotalSingleStake) }}</span
-                >
-              </div>
-              <div class="summary-row">
-                <span class="summary-label">Total Potential Win</span>
-                <span class="summary-value"
-                  >${{ formatOdds(getTotalSinglePotentialWin) }}</span
-                >
+                Potential Win: ${{ calculatePotentialWin(bet) }}
               </div>
             </div>
           </div>
@@ -305,6 +281,10 @@ const isDuplicateMatch = (currentBet: any) => {
 const canPlaceBet = computed(() => {
   if (!bets.value) return false;
 
+  if (bettingStore.isSGM) {
+    return bettingStore.canPlaceSGMBet;
+  }
+
   if (bettingStore.activeMode === "single") {
     return bets.value.some((bet) => bet.stake > 0);
   } else {
@@ -333,7 +313,11 @@ const placeBet = async () => {
     isPlacingBet.value = true;
     betError.value = "";
 
-    await bettingStore.placeBet();
+    if (bettingStore.isSGM) {
+      await bettingStore.placeSGMBet();
+    } else {
+      await bettingStore.placeBet();
+    }
 
     // Show success notification
     notificationStore.show({
@@ -454,6 +438,34 @@ defineExpose({
   openBetslip,
   closeBetslip,
 });
+
+// Group selections from the same match into one bet
+const groupedBets = computed(() => {
+  if (!bettingStore.currentBets) return [];
+  
+  // If coming from SGM page, group all selections into one bet
+  if (bettingStore.isSGM) {
+    return [{
+      id: bettingStore.currentSelections[0]?.matchId,
+      homeTeam: bettingStore.currentSelections[0]?.homeTeam,
+      awayTeam: bettingStore.currentSelections[0]?.awayTeam,
+      selections: bettingStore.currentSelections,
+      stake: bettingStore.multiStake,
+      totalOdds: calculateTotalOdds(bettingStore.currentSelections)
+    }];
+  }
+  
+  return bettingStore.currentBets;
+});
+
+const calculateTotalOdds = (selections: any[]) => {
+  return selections.reduce((total, selection) => total * selection.odds, 1);
+};
+
+const calculatePotentialWin = (bet: any) => {
+  const totalOdds = calculateTotalOdds(bet.selections);
+  return (bet.stake * totalOdds).toFixed(2);
+};
 </script>
 
 <style scoped>
@@ -533,12 +545,12 @@ defineExpose({
   border-bottom: 2px solid var(--active-color);
 }
 
-.header-tabs {
+.betslip-tabs {
   display: flex;
   gap: 1rem;
 }
 
-.tab-button {
+.tab {
   background: none;
   border: none;
   color: var(--textcolor);
@@ -548,11 +560,11 @@ defineExpose({
   transition: all 0.3s ease;
 }
 
-.tab-button.active {
+.tab.active {
   color: var(--active-color);
 }
 
-.tab-button .bet-count {
+.tab .bet-count {
   position: absolute;
   top: -8px;
   right: -28px;
