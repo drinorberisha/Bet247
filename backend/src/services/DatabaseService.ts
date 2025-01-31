@@ -8,9 +8,22 @@ class DatabaseService {
       return await User.findById(userId);
     },
     updateBalance: async (userId: string, amount: number) => {
+      console.log('[DB-SERVICE] Updating balance:', {
+        userId,
+        amount,
+        amountType: typeof amount
+      });
+
+      // Ensure amount is a number
+      const numericAmount = Number(amount);
+      
+      if (isNaN(numericAmount)) {
+        throw new Error('Invalid amount type for balance update');
+      }
+
       return await User.findByIdAndUpdate(
         userId,
-        { $inc: { balance: amount } },
+        { $inc: { balance: numericAmount } },
         { new: true }
       );
     }

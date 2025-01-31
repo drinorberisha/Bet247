@@ -7,16 +7,37 @@ const dbService = new DatabaseService();
 export const startGame = async (req: Request, res: Response) => {
   try {
     const { betAmount } = req.body;
+    // @ts-ignore - add type ignore since we know the middleware adds this
     const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'User not authenticated' 
+      });
+    }
+
+    // Add logging to debug the betAmount
+    console.log('[KENO-CONTROLLER] Starting game:', {
+      userId,
+      betAmount,
+      betAmountType: typeof betAmount
+    });
 
     // Validate user and bet amount
     const user = await dbService.users.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
     }
     
     if (user.balance < betAmount) {
-      return res.status(400).json({ message: 'Insufficient balance' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Insufficient balance' 
+      });
     }
 
     // Create a new game record
@@ -34,17 +55,31 @@ export const startGame = async (req: Request, res: Response) => {
       }
     });
 
+    // Log before balance update
+    console.log('[KENO-CONTROLLER] Before balance update:', {
+      currentBalance: user.balance,
+      betAmount,
+      newBalance: user.balance - betAmount
+    });
+
     // Deduct bet amount from user balance
-    await dbService.users.updateBalance(userId, -betAmount);
+    const updatedUser = await dbService.users.updateBalance(userId, -betAmount);
+
+    // Log after balance update
+    console.log('[KENO-CONTROLLER] After balance update:', {
+      previousBalance: user.balance,
+      betAmount,
+      newBalance: updatedUser?.balance
+    });
     
     res.json({ 
       success: true,
       gameId: game.gameId,
-      newBalance: user.balance - betAmount
+      newBalance: updatedUser?.balance
     });
 
   } catch (error) {
-    console.error('Error starting keno game:', error);
+    console.error('[KENO-CONTROLLER] Error starting game:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error starting game' 
@@ -55,7 +90,15 @@ export const startGame = async (req: Request, res: Response) => {
 export const cashoutGame = async (req: Request, res: Response) => {
   try {
     const { gameId, winAmount } = req.body;
-    const userId = req.user?.id;
+    // @ts-ignore - add type ignore since we know the middleware adds this
+    const userId = req.user?.userId;  // Changed from req.user?.id to req.user?.userId
+
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'User not authenticated' 
+      });
+    }
 
     // Validate the game exists and belongs to the user
     const game = await CasinoGame.findOne({ gameId, userId });

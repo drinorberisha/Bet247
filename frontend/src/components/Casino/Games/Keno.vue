@@ -33,7 +33,7 @@
 
     <div class="keno-grid">
       <button
-        v-for="n in 80"
+        v-for="n in 40"
         :key="n"
         :class="[
           'number-tile',
@@ -79,7 +79,7 @@
         <button 
           class="main-btn"
           @click="handleGameAction"
-          :disabled="!canPlay || kenoStore.loading"
+          :disabled="!canPlay || kenoStore.loading || kenoStore.isGameActive"
         >
           {{ gameActionText }}
         </button>
@@ -127,16 +127,11 @@ const canPlay = computed(() => {
 
 const gameActionText = computed(() => {
   if (loading.value) return 'Processing...';
-  if (isGameActive.value) return 'Cashout';
   return 'Play';
 });
 
 const handleGameAction = async () => {
-  if (isGameActive.value) {
-    await kenoStore.cashoutGame();
-  } else {
-    await kenoStore.startGame();
-  }
+  await kenoStore.startGame();
 };
 
 const handleNumberSelect = (number: number) => {

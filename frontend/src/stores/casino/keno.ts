@@ -14,6 +14,7 @@ interface KenoState {
   loading: boolean;
   error: string | null;
   currentMultiplier: number;
+  currentGameId: string | null;
 }
 
 export const useKenoStore = defineStore('keno', {
@@ -26,7 +27,8 @@ export const useKenoStore = defineStore('keno', {
     isGameActive: false,
     loading: false,
     error: null,
-    currentMultiplier: 1
+    currentMultiplier: 1,
+    currentGameId: null
   }),
 
   actions: {
@@ -43,17 +45,27 @@ export const useKenoStore = defineStore('keno', {
         return;
       }
 
+      const currentBalance = authStore.userBalance;
+      console.log('[KENO] Starting new game', {
+        betAmount: this.betAmount,
+        selectedNumbers: this.selectedNumbers,
+        currentBalance
+      });
+
+      // Validate balance
+      if (currentBalance < this.betAmount) {
+        this.error = 'Insufficient balance';
+        return;
+      }
+
       this.loading = true;
       this.error = null;
-
-      console.log('[KENO-STORE] Starting game with bet:', this.betAmount);
-      console.log('[KENO-STORE] Auth token:', authStore.token ? 'Present' : 'Missing');
 
       try {
         const response = await axios.post(
           `${API_URL}/casino/keno/start`,
           {
-            betAmount: this.betAmount,
+            betAmount: this.betAmount
           },
           {
             headers: {
@@ -63,23 +75,33 @@ export const useKenoStore = defineStore('keno', {
           }
         );
 
-        console.log('[KENO-STORE] Game started:', response.data);
         if (response.data.success) {
+          // Update balance after bet is placed
+          const newBalance = currentBalance - this.betAmount;
+          console.log('[KENO] Game started successfully', {
+            gameId: response.data.gameId,
+            previousBalance: currentBalance,
+            deductedAmount: this.betAmount,
+            newBalance,
+            betAmount: this.betAmount
+          });
+          
+          this.currentGameId = response.data.gameId;
           this.isGameActive = true;
-          // Draw numbers animation
+          authStore.updateBalance(newBalance);
+          
+          // Draw numbers and calculate winnings
           await this.drawNumbers();
-          // Calculate winnings
-          this.calculateWinnings();
-          // Update user's balance
-          authStore.updateBalance(response.data.newBalance);
+          await this.calculateWinnings();
         }
 
       } catch (error: any) {
-        console.error('Error starting keno game:', error.response?.data || error);
+        console.error('[KENO] Error starting game:', {
+          error: error.response?.data || error,
+          betAmount: this.betAmount,
+          selectedNumbers: this.selectedNumbers
+        });
         this.error = error.response?.data?.message || 'Failed to start game';
-        if (error.response?.status === 401) {
-          authStore.logout();
-        }
       } finally {
         this.loading = false;
       }
@@ -93,7 +115,7 @@ export const useKenoStore = defineStore('keno', {
       // Generate 20 unique random numbers between 1 and 80
       const numbers = new Set<number>();
       while (numbers.size < 20) {
-        numbers.add(Math.floor(Math.random() * 80) + 1);
+        numbers.add(Math.floor(Math.random() * 40) + 1);
       }
       
       // Animate drawing numbers
@@ -108,9 +130,11 @@ export const useKenoStore = defineStore('keno', {
       }
     },
 
-    calculateWinnings() {
+    async calculateWinnings() {
       const matchCount = this.matches.length;
       const selectionCount = this.selectedNumbers.length;
+      const authStore = useAuthStore();
+      const currentBalance = authStore.userBalance;
       
       // Multiplier table based on selections and matches
       const multiplierTable = {
@@ -129,39 +153,72 @@ export const useKenoStore = defineStore('keno', {
       const multipliers = multiplierTable[selectionCount as keyof typeof multiplierTable] || {};
       this.currentMultiplier = multipliers[matchCount as keyof typeof multipliers] || 0;
       this.winAmount = this.betAmount * this.currentMultiplier;
-    },
 
-    async cashoutGame() {
-      if (!this.isGameActive || this.winAmount <= 0) return;
+      console.log('[KENO] Game Result:', {
+        selectedNumbers: this.selectedNumbers,
+        drawnNumbers: this.drawnNumbers,
+        matches: this.matches,
+        matchCount,
+        multiplier: this.currentMultiplier,
+        betAmount: this.betAmount,
+        winAmount: this.winAmount
+      });
 
-      const authStore = useAuthStore();
-      this.loading = true;
-      this.error = null;
+      // If there's a win, process it immediately
+      if (this.winAmount > 0) {
+        this.loading = true;
+        this.error = null;
 
-      try {
-        const response = await axios.post(
-          `${API_URL}/casino/keno/cashout`,
-          {
-            winAmount: this.winAmount
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${authStore.token}`
+        console.log('[KENO] Processing win...', {
+          gameId: this.currentGameId,
+          winAmount: this.winAmount,
+          currentBalance
+        });
+
+        try {
+          const response = await axios.post(
+            `${API_URL}/casino/keno/cashout`,
+            {
+              gameId: this.currentGameId,
+              winAmount: this.winAmount
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${authStore.token}`
+              }
             }
-          }
-        );
+          );
 
-        if (response.data.success) {
-          // Update user's balance
-          authStore.updateBalance(response.data.newBalance);
+          if (response.data.success) {
+            const newBalance = currentBalance + this.winAmount;
+            console.log('[KENO] Win processed successfully!', {
+              previousBalance: currentBalance,
+              winAmount: this.winAmount,
+              newBalance,
+              profit: this.winAmount
+            });
+            authStore.updateBalance(newBalance);
+          }
+        } catch (error: any) {
+          console.error('[KENO] Error processing win:', {
+            error: error.response?.data || error,
+            gameId: this.currentGameId,
+            winAmount: this.winAmount
+          });
+          this.error = error.response?.data?.message || 'Failed to process win';
+        } finally {
+          this.loading = false;
           this.resetGame();
         }
-
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Failed to cashout';
-        console.error('Error processing keno cashout:', error);
-      } finally {
-        this.loading = false;
+      } else {
+        console.log('[KENO] No win this round', {
+          selectedNumbers: this.selectedNumbers,
+          drawnNumbers: this.drawnNumbers,
+          matches: this.matches,
+          betAmount: this.betAmount,
+          currentBalance
+        });
+        this.resetGame();
       }
     },
 
@@ -186,6 +243,7 @@ export const useKenoStore = defineStore('keno', {
       this.winAmount = 0;
       this.currentMultiplier = 1;
       this.error = null;
+      this.currentGameId = null;
     }
   },
 
