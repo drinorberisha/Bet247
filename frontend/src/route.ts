@@ -22,6 +22,7 @@ import AdminLayout from "./Layouts/AdminLayout.vue";
 import { useAuthStore } from "./stores/auth";
 import MyBets from "./views/MyBets.vue";
 import SameGameMulti from "./Pages/SameGameMulti.vue";
+import Keno from "./Pages/Games/Keno.vue"; // Update this import
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -161,6 +162,14 @@ export const router = createRouter({
       component: SameGameMulti,
       meta: {
         title: "Same Game Multi - BET 24/7",
+      },
+    },
+    {
+      path: "/casino/keno",
+      component: Keno,
+      meta: {
+        title: "Keno - BET 24/7",
+        layout: "default",
       },
     },
 

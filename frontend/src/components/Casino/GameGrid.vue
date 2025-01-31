@@ -10,14 +10,14 @@
 
     <!-- Games Grid -->
     <div class="games-wrapper">
-      <div 
-        v-for="game in games" 
-        :key="game.id" 
+      <div
+        v-for="game in games"
+        :key="game.id"
         class="game-card"
         @click="handleGameClick(game)"
       >
         <div class="game-thumbnail">
-          <img :src="game.thumbnail" :alt="game.name">
+          <img :src="game.thumbnail" :alt="game.name" />
           <div class="game-overlay">
             <button class="play-button">Play Now</button>
           </div>
@@ -32,36 +32,52 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const props = defineProps<{
   currentGame: string;
 }>();
 
-const emit = defineEmits(['launch-game']);
+const emit = defineEmits(["launch-game"]);
 
 const games = [
   {
-    id: 'mines',
-    name: 'Mines',
-    provider: 'Stake Originals',
-    thumbnail: '/images/games/mines.webp',
-    type: 'mines',
-    category: 'originals'
+    id: "mines",
+    name: "Mines",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/mines.webp",
+    type: "mines",
+    category: "originals",
+  },
+  {
+    id: "keno",
+    name: "Keno",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/keno.webp",
+    type: "keno",
+    category: "originals",
+    path: "/casino/keno", // Add the path for Keno
   },
   // ... other games
 ];
 
 const handleGameClick = (game: any) => {
-  console.log('GameGrid handling game click:', game); // Debug log
-  emit('launch-game', {
-    type: game.type,
-    name: game.name
-  });
+  if (game.path) {
+    // If game has a path, use router navigation
+    router.push(game.path);
+  } else {
+    // Otherwise emit the launch event as before
+    emit("launch-game", {
+      type: game.type,
+      name: game.name,
+    });
+  }
 };
 
 const filteredGames = computed(() => {
-  return games.filter(game => game.category === props.currentGame);
+  return games.filter((game) => game.category === props.currentGame);
 });
 </script>
 
@@ -74,7 +90,11 @@ const filteredGames = computed(() => {
 
 .featured-game {
   height: 200px;
-  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(
+    to right,
+    var(--primary-color),
+    var(--secondary-color)
+  );
   border-radius: 12px;
   padding: 2rem;
   display: flex;
@@ -189,4 +209,4 @@ const filteredGames = computed(() => {
     font-size: 1rem;
   }
 }
-</style> 
+</style>
