@@ -3,28 +3,25 @@ import dotenv from 'dotenv';
 import cors from "cors";
 import path from 'path';
 import mongoose from "mongoose";
-import authRoutes from './routes/auth';
-import betRoutes from './routes/bet';
-import adminRoutes from './routes/adminRoutes';
-import matchRoutes from './routes/matchRoutes';
+import routes from "./routes";
+
 import { SchedulerService } from './services/schedulerService';
 import { createServer } from 'http';
-import routes from "./routes";
-import { WebSocket, WebSocketServer } from 'ws';
-import { parse } from 'url';
-import jwt from 'jsonwebtoken';
+
 import { DatabaseService } from './services/DatabaseService';
 import config from './config/config';
 import { startMatchResultsJob } from './jobs/matchResultsJob';
-import minesRoutes from "./routes/casino/minesRoutes";
-
 const app = express();
 const server = createServer(app);
 
 // Middleware
 app.use(express.json());
 
-
+// Add debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  next();
+});
 
 // Define allowed origins
 const allowedOrigins = [
@@ -62,11 +59,23 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/bets', betRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/matches', matchRoutes);
-app.use('/api/casino/mines', minesRoutes);
+app.use('/api', routes);
+console.log('[SERVER] Routes mounted at /api');
+
+// Log all registered routes
+const printRoutes = (stack: any[], prefix = '') => {
+  stack.forEach((r: any) => {
+    if (r.route) {
+      console.log(`[ROUTE] ${prefix}${r.route.path} [${Object.keys(r.route.methods).join(', ')}]`);
+    } else if (r.name === 'router') {
+      printRoutes(r.handle.stack, prefix + r.regexp.toString().replace('/^', '').replace('/(?=\\/|$)/i', ''));
+    }
+  });
+};
+
+console.log('\n[SERVER] Registered Routes:');
+printRoutes(app._router.stack);
+
 startMatchResultsJob();
 
 // Connect to MongoDB
@@ -86,10 +95,6 @@ mongoose
 
 // Initialize database service
 const dbService = new DatabaseService();
-
-
-// Routes
-app.use("/api", routes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

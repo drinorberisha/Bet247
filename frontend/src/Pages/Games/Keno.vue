@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import MainLayout from "../../layouts/MainLayout.vue";
+import MainLayout from "../../Layouts/MainLayout.vue";
 import KenoGame from "../../components/Casino/Games/Keno.vue";
 </script>
 

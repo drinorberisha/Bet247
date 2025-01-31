@@ -7,7 +7,7 @@ const dbService = new DatabaseService();
 export const startGame = async (req: Request, res: Response) => {
   try {
     const { betAmount } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
 
     // Validate user and bet amount
     const user = await dbService.users.findById(userId);

@@ -4,15 +4,15 @@
       <div class="stats-container">
         <div class="stat-box">
           <span class="stat-label">Selected</span>
-          <span class="stat-value">{{ selectedNumbers.length }}/10</span>
+          <span class="stat-value">{{ kenoStore.selectedNumbers.length }}/10</span>
         </div>
         <div class="stat-box">
           <span class="stat-label">Matches</span>
-          <span class="stat-value">{{ matches.length }}</span>
+          <span class="stat-value">{{ kenoStore.matches.length }}</span>
         </div>
         <div class="stat-box">
           <span class="stat-label">Win Amount</span>
-          <span class="stat-value">{{ winAmount.toFixed(2) }}€</span>
+          <span class="stat-value">{{ kenoStore.winAmount.toFixed(2) }}€</span>
         </div>
       </div>
     </div>
@@ -21,66 +21,76 @@
       <h3>Potential Wins</h3>
       <div class="win-table">
         <div
-          v-for="matches in getPotentialWins"
-          :key="matches.count"
+          v-for="win in kenoStore.potentialWins"
+          :key="win.count"
           class="win-row"
         >
-          <span>Match {{ matches.count }}:</span>
-          <span class="win-value">{{ matches.amount.toFixed(2) }}€</span>
+          <span>{{ win.count }} matches</span>
+          <span class="win-value">{{ formatAmount(win.amount) }}</span>
         </div>
       </div>
     </div>
 
     <div class="keno-grid">
       <button
-        v-for="number in 40"
-        :key="number"
+        v-for="n in 80"
+        :key="n"
         :class="[
           'number-tile',
-          { selected: selectedNumbers.includes(number) },
-          { 'drawn-match': matches.includes(number) },
-          {
-            'drawn-miss':
-              drawnNumbers.includes(number) && !matches.includes(number),
-          },
+          { selected: kenoStore.selectedNumbers.includes(n) },
+          { drawn: kenoStore.drawnNumbers.includes(n) },
+          { match: kenoStore.matches.includes(n) },
         ]"
-        @click="selectNumber(number)"
-        :disabled="
-          isGameActive ||
-          (selectedNumbers.length >= maxSelections &&
-            !selectedNumbers.includes(number))
-        "
+        @click="handleNumberSelect(n)"
+        :disabled="kenoStore.isGameActive || kenoStore.loading"
       >
-        {{ number }}
+        {{ n }}
       </button>
     </div>
 
     <div class="game-controls">
       <div class="bet-controls">
-        <div class="input-group">
-          <label>Bet Amount</label>
-          <input type="number" v-model="betAmount" :disabled="isGameActive" />
+        <label>Bet Amount</label>
+        <div class="bet-input">
+          <input 
+            type="number" 
+            v-model="kenoStore.betAmount"
+            :disabled="kenoStore.isGameActive"
+            min="1"
+            step="1"
+          />
+          <div class="quick-amounts">
+            <button @click="setBetAmount(1)">1</button>
+            <button @click="setBetAmount(5)">5</button>
+            <button @click="setBetAmount(10)">10</button>
+            <button @click="setBetAmount(25)">25</button>
+          </div>
         </div>
       </div>
 
-      <div class="button-group">
-        <button
-          class="action-button clear-button"
-          :disabled="isGameActive || selectedNumbers.length === 0"
-          @click="clearSelections"
+      <div class="action-buttons">
+        <button 
+          class="clear-btn"
+          @click="kenoStore.clearSelections"
+          :disabled="kenoStore.loading"
         >
           Clear
         </button>
-        <button class="action-button" :disabled="!canPlay" @click="startGame">
-          Play Game
+        <button 
+          class="main-btn"
+          @click="handleGameAction"
+          :disabled="!canPlay || kenoStore.loading"
+        >
+          {{ gameActionText }}
         </button>
       </div>
     </div>
+
     <Transition name="modal">
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
           <h2>WIN!</h2>
-          <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
+          <div class="win-amount">{{ kenoStore.winAmount.toFixed(2) }}€</div>
           <div class="multiplier">x{{ currentMultiplier }}</div>
         </div>
       </div>
@@ -89,142 +99,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import { useKenoStore } from '../../../stores/casino';
+import { storeToRefs } from 'pinia';
 
-const selectedNumbers = ref<number[]>([]);
-const drawnNumbers = ref<number[]>([]);
-const matches = ref<number[]>([]);
-const betAmount = ref(1);
-const isGameActive = ref(false);
-const winAmount = ref(0);
+const kenoStore = useKenoStore();
+const { loading, isGameActive, currentMultiplier, winAmount } = storeToRefs(kenoStore);
+
 const showWinModal = ref(false);
-const currentMultiplier = ref(0);
-const maxSelections = 10;
 
-const canPlay = computed(() => {
-  return (
-    selectedNumbers.value.length > 0 &&
-    selectedNumbers.value.length <= maxSelections &&
-    !isGameActive.value
-  );
-});
-
-const getPotentialWins = computed(() => {
-  const selections = selectedNumbers.value.length;
-  if (selections === 0) return [];
-
-  const multiplierTable = {
-    10: { 10: 10000, 9: 4000, 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    9: { 9: 4000, 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    8: { 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    7: { 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    6: { 6: 20, 5: 5, 4: 2, 3: 1 },
-    5: { 5: 5, 4: 2, 3: 1 },
-    4: { 4: 2, 3: 1 },
-    3: { 3: 1 },
-    2: { 2: 1 },
-    1: { 1: 1 },
-  };
-
-  const possibleWins = [];
-  const currentMultipliers =
-    multiplierTable[selections as keyof typeof multiplierTable] || {};
-
-  for (const [matches, multiplier] of Object.entries(currentMultipliers)) {
-    possibleWins.push({
-      count: matches,
-      amount: betAmount.value * multiplier,
-    });
-  }
-
-  return possibleWins.sort((a, b) => Number(b.count) - Number(a.count));
-});
-
-function selectNumber(number: number) {
-  if (isGameActive.value) return;
-
-  const index = selectedNumbers.value.indexOf(number);
-  if (index === -1 && selectedNumbers.value.length < 10) {
-    selectedNumbers.value.push(number);
-  } else if (index !== -1) {
-    selectedNumbers.value.splice(index, 1);
-  }
-}
-
-async function drawNumber(): Promise<number> {
-  let randomNum;
-  do {
-    randomNum = Math.floor(Math.random() * 40) + 1;
-  } while (drawnNumbers.value.includes(randomNum));
-
-  drawnNumbers.value.push(randomNum);
-  if (selectedNumbers.value.includes(randomNum)) {
-    matches.value.push(randomNum);
-  }
-  return randomNum;
-}
-
-async function startGame() {
-  if (!canPlay.value) return;
-
-  isGameActive.value = true;
-  drawnNumbers.value = [];
-  matches.value = [];
-  winAmount.value = 0;
-
-  // Draw numbers one by one with delay
-  for (let i = 0; i < 10; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay between numbers
-    await drawNumber();
-  }
-
-  // Calculate winnings based on matches
-  calculateWinnings();
-
-  // Reset game after delay
-  setTimeout(() => {
-    isGameActive.value = false;
-  }, 1500);
-}
-
-function calculateWinnings() {
-  const matchCount = matches.value.length;
-  const selections = selectedNumbers.value.length;
-
-  // Multiplier table based on selections and matches
-  const multiplierTable: { [key: number]: { [key: number]: number } } = {
-    10: { 10: 10000, 9: 4000, 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    9: { 9: 4000, 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    8: { 8: 500, 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    7: { 7: 100, 6: 20, 5: 5, 4: 2, 3: 1 },
-    6: { 6: 20, 5: 5, 4: 2, 3: 1 },
-    5: { 5: 5, 4: 2, 3: 1 },
-    4: { 4: 2, 3: 1 },
-    3: { 3: 1 },
-    2: { 2: 1 },
-    1: { 1: 1 },
-  };
-
-  const multiplier = multiplierTable[selections]?.[matchCount] || 0;
-  currentMultiplier.value = multiplier;
-  winAmount.value = betAmount.value * multiplier;
-
-  if (multiplier > 0) {
+// Watch for wins
+watch(winAmount, (newWinAmount) => {
+  if (newWinAmount > 0) {
     showWinModal.value = true;
+    // Hide modal after 3 seconds
     setTimeout(() => {
       showWinModal.value = false;
     }, 3000);
   }
-}
+});
 
-function clearSelections() {
-  if (!isGameActive.value) {
-    selectedNumbers.value = [];
-    drawnNumbers.value = [];
-    matches.value = [];
-    winAmount.value = 0;
+const canPlay = computed(() => {
+  return kenoStore.selectedNumbers.length > 0 && 
+         kenoStore.selectedNumbers.length <= 10 && 
+         !kenoStore.isGameActive;
+});
+
+const gameActionText = computed(() => {
+  if (loading.value) return 'Processing...';
+  if (isGameActive.value) return 'Cashout';
+  return 'Play';
+});
+
+const handleGameAction = async () => {
+  if (isGameActive.value) {
+    await kenoStore.cashoutGame();
+  } else {
+    await kenoStore.startGame();
   }
-}
+};
+
+const handleNumberSelect = (number: number) => {
+  if (!isGameActive.value && !loading.value) {
+    kenoStore.selectNumber(number);
+  }
+};
+
+const setBetAmount = (amount: number) => {
+  if (!isGameActive.value) {
+    kenoStore.betAmount = amount;
+  }
+};
+
+const formatAmount = (amount: number) => {
+  return `$${amount.toFixed(2)}`;
+};
 </script>
 
 <style scoped>

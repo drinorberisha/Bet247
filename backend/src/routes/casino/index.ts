@@ -4,7 +4,25 @@ import kenoRoutes from './kenoRoutes';
 
 const router = express.Router();
 
-router.use('/mines', minesRoutes);
-router.use('/keno', kenoRoutes);
+console.log('[CASINO] Setting up casino routes');
+
+// Debug route
+router.get('/test', (req, res) => {
+  console.log('[CASINO] Test route hit');
+  res.json({ message: 'Casino routes are working' });
+});
+
+// Mount casino game routes with logging
+router.use('/mines', (req, res, next) => {
+  console.log('[CASINO] Mines route hit');
+  next();
+}, minesRoutes);
+
+router.use('/keno', (req, res, next) => {
+  console.log('[CASINO] Keno route hit');
+  next();
+}, kenoRoutes);
+
+console.log('[CASINO] Casino routes mounted');
 
 export default router; 
