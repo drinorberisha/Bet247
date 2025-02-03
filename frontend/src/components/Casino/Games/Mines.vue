@@ -4,7 +4,9 @@
       <div class="stats-container">
         <div class="stat-box">
           <span class="stat-label">Next Profit</span>
-          <span class="stat-value">{{ minesStore.currentProfit.toFixed(2) }}€</span>
+          <span class="stat-value"
+            >{{ minesStore.currentProfit.toFixed(2) }}€</span
+          >
         </div>
         <div class="stat-box">
           <span class="stat-label">Multiplier</span>
@@ -26,10 +28,12 @@
           { revealed: tile.revealed },
           { mine: tile.revealed && tile.isMine },
           { diamond: tile.revealed && !tile.isMine },
-          { 'tile-hover': minesStore.isGameActive && !tile.revealed }
+          { 'tile-hover': minesStore.isGameActive && !tile.revealed },
         ]"
         @click="handleTileClick(index)"
-        :disabled="!minesStore.isGameActive || minesStore.loading || tile.revealed"
+        :disabled="
+          !minesStore.isGameActive || minesStore.loading || tile.revealed
+        "
       >
         <div class="tile-content">
           <div class="tile-front">
@@ -37,8 +41,18 @@
           </div>
           <div class="tile-back">
             <template v-if="tile.revealed">
-              <i v-if="tile.isMine" class="fas fa-bomb bomb-icon"></i>
-              <i v-else class="fas fa-gem gem-icon"></i>
+              <i v-if="tile.isMine">💥</i>
+              <i v-else>💵</i>
+              <!-- You can try any of these alternatives:
+                                     💵 (Dollar Bill)
+                                     💸 (Money with Wings)
+                                     🤑 (Money Face)
+                                     💲 (Heavy Dollar Sign)
+                                     💰 (Money Bag)
+                                     💎 (Gem)
+                                     🏆 (Trophy)
+                                     💶 (Euro Note)
+                                     -->
             </template>
           </div>
         </div>
@@ -49,8 +63,8 @@
       <div class="bet-controls">
         <label>Bet Amount</label>
         <div class="bet-input">
-          <input 
-            type="number" 
+          <input
+            type="number"
             v-model="minesStore.betAmount"
             :disabled="minesStore.isGameActive"
             min="1"
@@ -66,8 +80,8 @@
 
         <label>Mines Count</label>
         <div class="mines-input">
-          <input 
-            type="number" 
+          <input
+            type="number"
             v-model="minesStore.minesCount"
             :disabled="minesStore.isGameActive"
             min="1"
@@ -84,7 +98,7 @@
       </div>
 
       <div class="action-buttons">
-        <button 
+        <button
           v-if="!minesStore.isGameActive"
           class="main-btn"
           @click="handleGameAction"
@@ -92,7 +106,7 @@
         >
           {{ gameActionText }}
         </button>
-        <button 
+        <button
           v-else
           class="cashout-btn"
           @click="minesStore.cashout"
@@ -107,7 +121,11 @@
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
           <h2>WIN!</h2>
-          <div class="win-amount">{{ (minesStore.betAmount * minesStore.currentMultiplier).toFixed(2) }}€</div>
+          <div class="win-amount">
+            {{
+              (minesStore.betAmount * minesStore.currentMultiplier).toFixed(2)
+            }}€
+          </div>
           <div class="multiplier">x{{ minesStore.currentMultiplier }}</div>
         </div>
       </div>
@@ -117,11 +135,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useMinesStore } from '../../../stores/casino/mines';
-import { storeToRefs } from 'pinia';
+import { useMinesStore } from "../../../stores/casino/mines";
+import { storeToRefs } from "pinia";
 
 const minesStore = useMinesStore();
-const { loading, isGameActive, currentMultiplier, currentProfit } = storeToRefs(minesStore);
+const { loading, isGameActive, currentMultiplier, currentProfit } =
+  storeToRefs(minesStore);
 
 const showWinModal = ref(false);
 
@@ -136,8 +155,8 @@ watch(currentProfit, (newProfit) => {
 });
 
 const gameActionText = computed(() => {
-  if (loading.value) return 'Processing...';
-  return 'Play';
+  if (loading.value) return "Processing...";
+  return "Play";
 });
 
 const handleGameAction = async () => {
@@ -146,8 +165,8 @@ const handleGameAction = async () => {
 
 const handleTileClick = (index: number) => {
   if (minesStore.isGameActive && !minesStore.loading) {
-    const tile = document.querySelectorAll('.tile')[index];
-    tile.style.setProperty('--index', index.toString());
+    const tile = document.querySelectorAll(".tile")[index];
+    tile.style.setProperty("--index", index.toString());
     minesStore.revealTile(index);
   }
 };
@@ -213,6 +232,10 @@ const setMinesCount = (count: number) => {
   border-radius: 16px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   perspective: 1000px;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .tile {
@@ -224,6 +247,7 @@ const setMinesCount = (count: number) => {
   cursor: pointer;
   transform-style: preserve-3d;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 }
 
 .tile-content {
@@ -254,6 +278,7 @@ const setMinesCount = (count: number) => {
 
 .tile-back {
   transform: rotateY(180deg);
+  box-sizing: border-box; /* Add this to include borders in element size */
 }
 
 .tile.revealed {
@@ -263,16 +288,69 @@ const setMinesCount = (count: number) => {
 .tile.mine .tile-back {
   background: linear-gradient(145deg, #dc3545 0%, #9e1c28 100%);
   border: 1px solid rgba(220, 53, 69, 0.5);
+  font-size: 1.5rem; /* Make emoji bigger */
+  color: #fff;
+  transform: rotateY(180deg) scale(1); /* Add scale to maintain size */
+}
+
+.tile.mine .tile-back i {
+  animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  display: block;
 }
 
 .tile.diamond .tile-back {
-  background: linear-gradient(145deg, #20e920 0%, #15a815 100%);
-  border: 1px solid rgba(32, 233, 32, 0.5);
+  background: linear-gradient(
+    145deg,
+    rgba(21, 227, 21, 0.8),
+    rgba(19, 233, 19, 0.6)
+  );
+  border: 1px solid rgba(32, 233, 32, 0.8); /* Changed from 2px to 1px */
+  font-size: 1.5rem; /* Reduced from 2.5rem */
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(32, 233, 32, 0.8), 0 0 45px rgba(32, 233, 32, 0.6),
+    inset 0 0 20px rgba(255, 255, 255, 0.6);
+  transform: rotateY(180deg) scale(1); /* Add scale to maintain size */
+}
+
+.tile.diamond .tile-back::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: shine-effect 3s linear infinite;
+}
+
+@keyframes shine-effect {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.tile.diamond .tile-back i {
+  animation: shine 0.4s ease-in-out;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); /* Add glow effect */
+  z-index: 2; /* Ensure emoji stays on top */
 }
 
 .bomb-icon {
   color: #fff;
-  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+  animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .gem-icon {
@@ -281,8 +359,8 @@ const setMinesCount = (count: number) => {
 }
 
 .tile-hover:not(:disabled):hover {
-  transform: translateZ(20px);
   filter: brightness(1.2);
+  /* Remove translateZ transform */
 }
 
 .tile-hover:not(:disabled):hover .tile-front {
@@ -290,16 +368,38 @@ const setMinesCount = (count: number) => {
 }
 
 @keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
 }
 
 @keyframes shine {
-  0% { transform: scale(0.5); opacity: 0; }
-  50% { transform: scale(1.2); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    opacity: 0;
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+  }
 }
 
 /* Reveal animation for game over */
@@ -309,10 +409,10 @@ const setMinesCount = (count: number) => {
 
 @keyframes reveal {
   0% {
-    transform: rotateY(0) scale(1);
+    transform: rotateY(0);
   }
   100% {
-    transform: rotateY(180deg) scale(1);
+    transform: rotateY(180deg);
   }
 }
 
@@ -329,17 +429,20 @@ const setMinesCount = (count: number) => {
   margin-bottom: 1rem;
 }
 
-.bet-input, .mines-input {
+.bet-input,
+.mines-input {
   margin-bottom: 1rem;
 }
 
-.quick-amounts, .quick-mines {
+.quick-amounts,
+.quick-mines {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.quick-amounts button, .quick-mines button {
+.quick-amounts button,
+.quick-mines button {
   flex: 1;
   padding: 0.5rem;
   background: var(--subheader);
@@ -349,7 +452,8 @@ const setMinesCount = (count: number) => {
   cursor: pointer;
 }
 
-.main-btn, .cashout-btn {
+.main-btn,
+.cashout-btn {
   width: 100%;
   padding: 1rem;
   border-radius: 8px;
@@ -394,21 +498,32 @@ const setMinesCount = (count: number) => {
 }
 
 @keyframes bounceIn {
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.1); }
-  70% { transform: scale(0.9); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @media (max-width: 768px) {
   .mines-grid {
     gap: 8px;
     padding: 1rem;
+    max-width: 100%;
   }
-  
+
   .tile-front,
   .tile-back {
     font-size: 1rem;
   }
 }
-</style> 
+</style>

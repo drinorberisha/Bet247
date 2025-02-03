@@ -1,5 +1,6 @@
 <template>
   <MainLayout>
+    <Header />
     <div class="mines-page">
       <nav class="game-nav">
         <router-link to="/casino" class="back-link">
@@ -19,6 +20,7 @@
 <script setup lang="ts">
 import MainLayout from "../../Layouts/MainLayout.vue";
 import MinesGame from "../../components/Casino/Games/Mines.vue";
+import Header from "../../components/Header/Header.vue";
 </script>
 
 <style scoped>
@@ -66,12 +68,60 @@ h1 {
 }
 
 @media (max-width: 768px) {
-  .game-wrapper {
+  .mines-page {
     padding: 1rem;
   }
 
+  .game-wrapper {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
   h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .game-nav {
+    margin-bottom: 1.5rem;
   }
 }
-</style> 
+
+@media (max-width: 480px) {
+  .mines-page {
+    padding: 0.75rem;
+  }
+
+  .game-wrapper {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .game-nav {
+    margin-bottom: 1rem;
+  }
+
+  .back-link {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .mines-page {
+    padding: 0.5rem;
+  }
+
+  .game-wrapper {
+    padding: 0.5rem;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+  }
+}
+</style>
