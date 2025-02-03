@@ -70,6 +70,16 @@ const games = [
     category: "originals",
     path: "/casino/roulette"
   },
+  {
+    id: "dragontower",
+    name: "DragonTower",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/dragontower.webp",
+    type: "dragontower",
+    category: "originals",
+    path: "/casino/dragontower"
+  },
+
   // ... other games
 ];
 

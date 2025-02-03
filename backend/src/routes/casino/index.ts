@@ -2,7 +2,7 @@ import express from 'express';
 import minesRoutes from './minesRoutes';
 import kenoRoutes from './kenoRoutes';
 import rouletteRoutes from './rouletteRoutes';
-
+import dragontowerRoutes from './dragonTowerRoutes';
 const router = express.Router();
 
 console.log('[CASINO] Setting up casino routes');
@@ -28,6 +28,11 @@ router.use('/roulette', (req, res, next) => {
   console.log('[CASINO] Roulette route hit');
   next();
 }, rouletteRoutes);
+
+router.use('/dragontower', (req, res, next) => {
+  console.log('[CASINO] DragonTower route hit');
+  next();
+}, dragontowerRoutes);
 
 console.log('[CASINO] Casino routes mounted');
 

@@ -67,6 +67,8 @@ const casinoGames = [
   { id: 'plinko', name: 'Plinko', icon: 'fas fa-circle-dot', count: 1 },
   { id: 'keno', name: 'Keno', icon: 'fas fa-grid', count: 1 },
   { id: 'roulette', name: 'Roulette', icon: 'fas fa-circle-notch', count: 1 },
+  { id: 'dragontower', name: 'DragonTower', icon: 'fas fa-circle-notch', count: 1 },
+
 ];
 </script>
 
