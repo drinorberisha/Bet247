@@ -112,18 +112,24 @@ export const useRouletteStore = defineStore('roulette', {
         }
 
         if (this.currentGameId) {
-          console.log('[ROULETTE-DEBUG] Starting spin with gameId:', this.currentGameId, {
-            currentBalance: authStore.userBalance,
-            totalBet: this.totalBet
-          });
+          console.log('[ROULETTE-DEBUG] Starting spin with gameId:', this.currentGameId);
           
-          this.isSpinning = true;
+          // Generate result first but don't show it
           const number = Math.floor(Math.random() * 37);
+          this.lastNumber = number;
           
-          // Wait for wheel animation to complete
-          await new Promise(resolve => setTimeout(resolve, this.spinDuration));
+          // Start spinning animation
+          this.isSpinning = true;
           
-          // Process result and get win amount
+          // Initial slow spin (acceleration phase)
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Full speed spinning
+          
+          // Deceleration phase before showing final result
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Calculate and process win after spin completes
           const winAmount = this.calculateWinAmount(number);
           console.log('[ROULETTE-DEBUG] Spin result:', {
             number,
@@ -131,7 +137,6 @@ export const useRouletteStore = defineStore('roulette', {
             currentBalance: authStore.userBalance
           });
           
-          // Process payout if there's a win
           if (winAmount > 0) {
             await this.processPayout(winAmount);
           }
@@ -143,18 +148,22 @@ export const useRouletteStore = defineStore('roulette', {
             timestamp: new Date()
           });
           
-          this.isSpinning = false;
-          
-          // Show notification after a small delay
+          // Show notification after spin completes
           setTimeout(() => {
             this.showResultNotification(winAmount);
-          }, 1000);
+          }, 500);
+          
+          // Reset spinning state
+          this.isSpinning = false;
         }
       } catch (error) {
         console.error('[ROULETTE-DEBUG] Error during spin:', error);
+        this.isSpinning = false;
       } finally {
-        // Reset game state
-        this.resetGame();
+        // Reset game state after everything is complete
+        setTimeout(() => {
+          this.resetGame();
+        }, 1500);
       }
     },
 

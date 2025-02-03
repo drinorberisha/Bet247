@@ -48,7 +48,6 @@
       :target-number="rouletteStore.lastNumber"
     />
         </div>
-        <div class="wheel-pointer"></div>
 
         <div class="history-container">
           <h3 class="history-title">PREVIOUS NUMBERS</h3>

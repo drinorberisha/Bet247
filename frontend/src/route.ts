@@ -27,6 +27,7 @@ import Mines from "./Pages/Games/Mines.vue";
 import Roulette from "./Pages/Games/Roulette.vue";
 import DragonTower from "./Pages/Games/DragonTower.vue";
 import Wheel from "./Pages/Games/Wheel.vue";
+import Blackjack from "./Pages/Games/Blackjack.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -208,6 +209,15 @@ export const router = createRouter({
         layout: "default",
       },
     },
+    {
+      path: "/casino/blackjack",
+      component: Blackjack,
+      meta: {
+        title: "Blackjack - BET 24/7",
+        layout: "default",
+      },
+    },
+
 
     // Admin routes
     {

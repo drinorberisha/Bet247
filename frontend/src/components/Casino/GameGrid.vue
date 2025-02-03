@@ -89,7 +89,15 @@ const games = [
     category: "originals",
     path: "/casino/wheel",
   },
-
+  {
+    id: "blackjack",
+    name: "Blackjack",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/blackjack.webp",
+    type: "blackjack",
+    category: "originals",
+    path: "/casino/blackjack",
+  },
   // ... other games
 ];
 
