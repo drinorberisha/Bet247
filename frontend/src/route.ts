@@ -28,6 +28,7 @@ import Roulette from "./Pages/Games/Roulette.vue";
 import DragonTower from "./Pages/Games/DragonTower.vue";
 import Wheel from "./Pages/Games/Wheel.vue";
 import Blackjack from "./Pages/Games/Blackjack.vue";
+import Slots from "./Pages/Games/Slots.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -217,6 +218,15 @@ export const router = createRouter({
         layout: "default",
       },
     },
+    {
+      path: "/casino/slots",
+      component: Slots,
+      meta: {
+        title: "Slots - BET 24/7",
+        layout: "default",
+      },
+    },
+
 
 
     // Admin routes

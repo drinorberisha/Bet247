@@ -98,6 +98,15 @@ const games = [
     category: "originals",
     path: "/casino/blackjack",
   },
+  {
+    id: "slots",
+    name: "Slots",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/slots.webp",
+    type: "slots",
+    category: "originals",
+    path: "/casino/slots",
+  },
   // ... other games
 ];
 

@@ -11,13 +11,14 @@
     </RouterLink>
 
     <RouterLink
-      to="/events"
+      to="/casino"
       class="nav-item"
-      :class="{ active: currentRoute === '/events' }"
+      :class="{ active: currentRoute === '/casino' }"
       @click="openEventsModal"
     >
       <i class="fa-solid fa-gift"></i>
-      <span>Events</span>
+
+      <span>Casino</span>
     </RouterLink>
 
     <!-- Move betslip to middle position -->
@@ -92,16 +93,19 @@ onMounted(() => {
 });
 
 // Remove betslipModal ref and related functions
-const eventsModal = ref<Modal | null>(null);
+const casinoModal = ref<Modal | null>(null);
 const betsModal = ref<Modal | null>(null);
 
+
 onMounted(() => {
-  const eventsModalElement = document.getElementById("eventsp");
+  const casinoModalElement = document.getElementById("casinomodal");
   const betsModalElement = document.getElementById("betsp");
 
-  if (eventsModalElement) {
-    eventsModal.value = Modal.getOrCreateInstance(eventsModalElement);
+
+  if (casinoModalElement) {
+    casinoModal.value = Modal.getOrCreateInstance(casinoModalElement);
   }
+
 
   if (betsModalElement) {
     betsModal.value = Modal.getOrCreateInstance(betsModalElement);
@@ -109,19 +113,21 @@ onMounted(() => {
 });
 
 const closeModal = () => {
-  if (eventsModal.value) {
-    eventsModal.value.hide();
+  if (casinoModal.value) {
+    casinoModal.value.hide();
   }
   if (betsModal.value) {
     betsModal.value.hide();
   }
 };
 
-const openEventsModal = () => {
-  if (eventsModal.value) {
-    eventsModal.value.show();
+
+const openCasinoModal = () => {
+  if (casinoModal.value) {
+    casinoModal.value.show();
   }
 };
+
 
 const openBetsModal = () => {
   if (betsModal.value) {
