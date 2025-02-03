@@ -31,9 +31,7 @@ const selectionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  type: {
-    type: String
-  },
+  type: String,
   odds: {
     type: Number,
     required: true
@@ -47,6 +45,14 @@ const selectionSchema = new mongoose.Schema({
   settledAt: Date,
   matchTime: Date,
   commenceTime: Date
+});
+
+// Add pre-save middleware to ensure selection is set
+selectionSchema.pre('save', function(next) {
+  if (!this.selection && this.type) {
+    this.selection = this.type;
+  }
+  next();
 });
 
 export default mongoose.model<ISelection>('Selection', selectionSchema); 

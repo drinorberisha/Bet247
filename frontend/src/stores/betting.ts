@@ -138,10 +138,15 @@ export const useBettingStore = defineStore("betting", {
 
   actions: {
     addSelection(matchData: Omit<Selection, 'market'>) {
+      console.log('Adding selection - Initial matchData:', matchData);
+
       const selection: Selection = {
         ...matchData,
         market: this.getMarketType(matchData.type),
+        selection: matchData.type.split('_')[1] || matchData.type
       };
+
+      console.log('Processed selection object:', selection);
 
       const existingIndex = this.currentSelections.findIndex(
         (s) => s.matchId === selection.matchId && s.type === selection.type
@@ -152,6 +157,18 @@ export const useBettingStore = defineStore("betting", {
       } else {
         this.currentSelections.push(selection);
       }
+
+      // Debug current selections after update
+      console.log('Current selections after update:', this.currentSelections);
+
+      // Add debug for bet placement
+      console.log('Selection being sent to backend:', {
+        selections: this.currentSelections.map(s => ({
+          ...s,
+          selection: s.selection,
+          type: s.type
+        }))
+      });
 
       // Group selections from the same match into one bet
       const groupedSelections = new Map<string, Selection[]>();
@@ -294,7 +311,10 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        const bets = this.currentBets.map(bet => ({
+        // Filter bets that have stakes
+        const betsWithStakes = this.currentBets.filter(bet => bet.stake > 0);
+        
+        const bets = betsWithStakes.map(bet => ({
           betType: bet.selections.length > 1 ? 'sgm' : 'single',
           amount: bet.stake,
           totalOdds: bet.totalOdds,
@@ -312,6 +332,7 @@ export const useBettingStore = defineStore("betting", {
           }))
         }));
 
+        // Rest of your existing code...
         const totalOdds =
           this.activeMode === "multi"
             ? this.multiOdds
@@ -358,18 +379,15 @@ export const useBettingStore = defineStore("betting", {
         if (response.data.success) {
           authStore.updateBalance(response.data.newBalance);
 
-          // Only clear placed bets in single mode
           if (this.activeMode === "single") {
-            const placedBetIds = bets.map((bet) => bet.id);
-            this.currentBets = this.currentBets.filter(
-              (bet) => !placedBetIds.includes(bet.id)
-            );
-            this.currentSelections = this.currentSelections.filter(
-              (selection) => !placedBetIds.includes(selection.matchId)
-            );
+            // Remove only the bets that were placed (had stakes)
+            betsWithStakes.forEach(bet => {
+              this.removeBet(bet.id);
+            });
           } else {
-            // For multi bets, clear everything
-            this.clearBetSlip();
+            // For multi mode, clear everything
+            this.clearAllBets();
+            // this.clearBetSlip();
           }
         }
 
@@ -641,7 +659,7 @@ export const useBettingStore = defineStore("betting", {
           isSGM: true,
           selections: this.currentSelections.map(selection => ({
             matchId: selection.matchId,
-            selection: selection.type,
+            selection: selection.selection || selection.type,
             odds: selection.odds,
             sportKey: selection.sportKey,
             event: `${selection.homeTeam} vs ${selection.awayTeam}`,
@@ -649,6 +667,7 @@ export const useBettingStore = defineStore("betting", {
             sport: selection.sportKey.split(":")[0],
             homeTeam: selection.homeTeam,
             awayTeam: selection.awayTeam,
+            commenceTime: selection.commenceTime
           }))
         };
 

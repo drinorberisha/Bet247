@@ -103,10 +103,10 @@ const handleOddClick = (market: string, type: string, odds: number) => {
     selection: type,
     odds: odds,
     sportKey: "soccer",
-    market: market,
     status: "upcoming",
     event: `${homeTeam.value} vs ${awayTeam.value}`,
     commenceTime: commenceTime.value,
+    market: market
   });
 };
 

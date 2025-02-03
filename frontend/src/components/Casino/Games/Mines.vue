@@ -426,30 +426,90 @@ const setMinesCount = (count: number) => {
 }
 
 .bet-controls {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .bet-input,
 .mines-input {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+  background: var(--subheader);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.bet-input input,
+.mines-input input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .quick-amounts,
 .quick-mines {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 
 .quick-amounts button,
 .quick-mines button {
-  flex: 1;
-  padding: 0.5rem;
-  background: var(--subheader);
+  padding: 0.75rem;
+  background: var(--background);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   color: var(--white);
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-amounts button:hover,
+.quick-mines button:hover {
+  background: var(--active-color);
+  border-color: var(--active-color);
+  transform: translateY(-2px);
+}
+
+.quick-amounts button:active,
+.quick-mines button:active {
+  transform: translateY(0);
+}
+
+/* Add responsive styles */
+@media (max-width: 768px) {
+  .bet-controls {
+    padding: 0 1rem;
+  }
+
+  .quick-amounts,
+  .quick-mines {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .quick-amounts button,
+  .quick-mines button {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-amounts,
+  .quick-mines {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .main-btn,

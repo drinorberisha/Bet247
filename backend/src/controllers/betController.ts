@@ -37,109 +37,75 @@ const calculateFinalCashoutAmount = (stake: number, partialOdds: number): number
 };
 
 export const placeBet = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const { betType, amount, selections, totalOdds, potentialWin, isSGM } = req.body;
+    console.log('Received bet placement request:', {
+      body: req.body,
+      user: req.user
+    });
 
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-    }
-
-    const user = await User.findById(req.user.userId);
+    const { selections, amount, betType, totalOdds, isSGM } = req.body;
+    
+    // Fetch the actual user document
+    const user = await User.findById(req.user.userId).session(session);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    if (user.balance < amount) {
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient balance'
-      });
-    }
-
-    // For SGM bets, we need to verify the odds are still valid
-    if (isSGM) {
-      const match = await Match.findOne({
-        homeTeam: selections[0].homeTeam,
-        awayTeam: selections[0].awayTeam
-      });
-
-      if (!match) {
-        return res.status(404).json({
-          success: false,
-          message: 'Match not found'
-        });
-      }
-
-      // Verify each selection's odds against current market odds
-      for (const selection of selections) {
-        const marketOdds = match.sgmMarkets?.[selection.market]?.outcomes.find(
-          o => o.name === selection.selection
-        )?.price;
-
-        if (!marketOdds || Math.abs(marketOdds - selection.odds) > 0.01) {
-          return res.status(400).json({
-            success: false,
-            message: 'Odds have changed, please refresh and try again'
-          });
-        }
-      }
+      throw new Error('User not found');
     }
 
     // Create selections
     const selectionDocs = await Promise.all(selections.map(async (selection) => {
-      return new Selection({
+      const selectionValue = selection.selection || selection.type || 'unknown';
+      
+      const selectionDoc = new Selection({
         sportKey: selection.sportKey,
         event: selection.event,
         market: selection.market,
-        selection: selection.selection,
+        selection: selectionValue,
+        type: selection.type,
         odds: selection.odds,
         status: 'pending',
-        matchTime: new Date(selection.commenceTime)
-      }).save();
+        matchTime: selection.commenceTime ? new Date(selection.commenceTime) : null,
+        commenceTime: selection.commenceTime ? new Date(selection.commenceTime) : null
+      });
+      
+      return selectionDoc.save({ session });
     }));
 
-    // Create bet
+    // Create bet with all required fields
     const bet = new Bet({
-      userId: user._id,
-      type: isSGM ? 'sgm' : betType,
-      amount,
-      totalOdds,
-      potentialWin,
+      user: user._id,
+      betType: isSGM ? 'sgm' : (betType || 'single'),
+      amount: Number(amount),
+      totalOdds: Number(totalOdds),
+      potentialWin: Number(amount) * Number(totalOdds),
       status: 'pending',
       selections: selectionDocs.map(doc => doc._id),
+      createdAt: new Date(),
       isSGM: !!isSGM
     });
 
-    await bet.save();
-
     // Update user balance
-    user.balance -= amount;
-    await user.save();
+    user.balance -= Number(amount);
+    await user.save({ session });
+    await bet.save({ session });
+    await session.commitTransaction();
 
     res.json({
       success: true,
       message: 'Bet placed successfully',
-      bet: {
-        id: bet._id,
-        amount,
-        totalOdds,
-        potentialWin,
-        selections: selectionDocs
-      }
+      newBalance: user.balance
     });
-
   } catch (error) {
-    console.error('Error placing bet:', error);
+    console.error('Error in bet placement:', error);
+    await session.abortTransaction();
     res.status(500).json({
       success: false,
-      message: 'Error placing bet'
+      message: error.message || 'Error placing bet'
     });
+  } finally {
+    session.endSession();
   }
 };
 

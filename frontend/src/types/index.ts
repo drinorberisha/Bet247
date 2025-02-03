@@ -48,6 +48,7 @@ interface Selection {
   homeTeam: string;
   awayTeam: string;
   type: string;
+  selection: string;
   odds: number;
   sportKey: string;
   market: string;
