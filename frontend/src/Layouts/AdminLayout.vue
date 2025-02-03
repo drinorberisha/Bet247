@@ -10,9 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '../stores/auth';
-import { useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { useAuthStore } from "../stores/auth";
+import { useRouter } from "vue-router";
+import { computed } from "vue";
 import Header from "../components/Header/Header.vue";
 
 const authStore = useAuthStore();
@@ -20,10 +20,10 @@ const router = useRouter();
 
 const isAdminOrSuperuser = computed(() => {
   const role = authStore.user?.role;
-  return role === 'admin' || role === 'superuser';
+  return role === "admin" || role === "superuser";
 });
 
-const isSuperuser = computed(() => authStore.user?.role === 'superuser');
+const isSuperuser = computed(() => authStore.user?.role === "superuser");
 </script>
 
 <style scoped>
@@ -68,4 +68,4 @@ const isSuperuser = computed(() => authStore.user?.role === 'superuser');
     padding: 80px 15px 15px;
   }
 }
-</style> 
+</style>

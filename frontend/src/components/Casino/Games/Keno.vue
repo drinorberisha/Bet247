@@ -4,7 +4,9 @@
       <div class="stats-container">
         <div class="stat-box">
           <span class="stat-label">Selected</span>
-          <span class="stat-value">{{ kenoStore.selectedNumbers.length }}/10</span>
+          <span class="stat-value"
+            >{{ kenoStore.selectedNumbers.length }}/10</span
+          >
         </div>
         <div class="stat-box">
           <span class="stat-label">Matches</span>
@@ -38,8 +40,13 @@
         :class="[
           'number-tile',
           { selected: kenoStore.selectedNumbers.includes(n) },
-          { drawn: kenoStore.drawnNumbers.includes(n) },
-          { match: kenoStore.matches.includes(n) },
+          { 'drawn-match': kenoStore.matches.includes(n) },
+          {
+            'drawn-miss':
+              kenoStore.drawnNumbers.includes(n) &&
+              !kenoStore.matches.includes(n),
+          },
+          { drawing: kenoStore.currentDrawingNumber === n },
         ]"
         @click="handleNumberSelect(n)"
         :disabled="kenoStore.isGameActive || kenoStore.loading"
@@ -52,8 +59,8 @@
       <div class="bet-controls">
         <label>Bet Amount</label>
         <div class="bet-input">
-          <input 
-            type="number" 
+          <input
+            type="number"
             v-model="kenoStore.betAmount"
             :disabled="kenoStore.isGameActive"
             min="1"
@@ -69,14 +76,14 @@
       </div>
 
       <div class="action-buttons">
-        <button 
+        <button
           class="clear-btn"
-          @click="kenoStore.clearSelections"
+          @click="handleClear"
           :disabled="kenoStore.loading"
         >
           Clear
         </button>
-        <button 
+        <button
           class="main-btn"
           @click="handleGameAction"
           :disabled="!canPlay || kenoStore.loading || kenoStore.isGameActive"
@@ -90,7 +97,7 @@
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
           <h2>WIN!</h2>
-          <div class="win-amount">{{ kenoStore.winAmount.toFixed(2) }}€</div>
+          <div class="win-amount">{{ kenoStore.profit.toFixed(2) }}€</div>
           <div class="multiplier">x{{ currentMultiplier }}</div>
         </div>
       </div>
@@ -100,11 +107,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useKenoStore } from '../../../stores/casino';
-import { storeToRefs } from 'pinia';
+import { useKenoStore } from "../../../stores/casino";
+import { storeToRefs } from "pinia";
 
 const kenoStore = useKenoStore();
-const { loading, isGameActive, currentMultiplier, winAmount } = storeToRefs(kenoStore);
+const { loading, isGameActive, currentMultiplier, winAmount } =
+  storeToRefs(kenoStore);
 
 const showWinModal = ref(false);
 
@@ -120,14 +128,16 @@ watch(winAmount, (newWinAmount) => {
 });
 
 const canPlay = computed(() => {
-  return kenoStore.selectedNumbers.length > 0 && 
-         kenoStore.selectedNumbers.length <= 10 && 
-         !kenoStore.isGameActive;
+  return (
+    kenoStore.selectedNumbers.length > 0 &&
+    kenoStore.selectedNumbers.length <= 10 &&
+    !kenoStore.isGameActive
+  );
 });
 
 const gameActionText = computed(() => {
-  if (loading.value) return 'Processing...';
-  return 'Play';
+  if (loading.value) return "Processing...";
+  return "Play";
 });
 
 const handleGameAction = async () => {
@@ -149,8 +159,11 @@ const setBetAmount = (amount: number) => {
 const formatAmount = (amount: number) => {
   return `$${amount.toFixed(2)}`;
 };
-</script>
 
+const handleClear = () => {
+  kenoStore.clearSelections();
+};
+</script>
 <style scoped>
 .keno-game {
   max-width: 800px;
@@ -304,23 +317,37 @@ const formatAmount = (amount: number) => {
     inset 0 -3px 6px rgba(0, 0, 0, 0.3);
 }
 
-.number-tile.drawn-match {
-  background: rgb(32, 233, 32); /* Change to red for drawn matches */
+.number-tile.drawing {
   color: var(--white);
-  animation: pulse 0.5s ease;
+  animation: drawing 0.1s ease infinite;
   transform: perspective(1000px) rotateX(10deg) rotateY(0deg);
-  box-shadow: 0 5px 15px rgba(32, 233, 32, 0.3),
-    0 15px 12px rgba(32, 233, 32, 0.22), inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes drawing {
+  0% {
+    transform: perspective(1000px) rotateX(10deg) rotateY(0deg) scale(1);
+  }
+
+  100% {
+    transform: perspective(1000px) rotateX(10deg) rotateY(0deg) scale(1);
+  }
+}
+
+/* Update existing animations to be more distinct */
+.number-tile.drawn-match {
+  animation: none;
+  background: linear-gradient(145deg, #20e920 0%, #1ab91a 100%);
+  transform: perspective(1000px) rotateX(10deg) rotateY(0deg);
+  box-shadow: 0 0 20px rgba(32, 233, 32, 0.4);
+  transition: all 0.3s ease;
 }
 
 .number-tile.drawn-miss {
-  background: var(--danger);
-  color: rgba(220, 53, 69, 0.3);
-  animation: shake 0.5s ease;
-  transition: background-color 0.3s ease;
+  animation: none;
+  background: linear-gradient(145deg, var(--danger) 0%, #a81c1c 100%);
   transform: perspective(1000px) rotateX(10deg) rotateY(0deg);
-  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3),
-    0 15px 12px rgba(220, 53, 69, 0.22), inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+  transition: all 0.3s ease;
 }
 
 .game-controls {
@@ -328,7 +355,99 @@ const formatAmount = (amount: number) => {
 }
 
 .bet-controls {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--subheader);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bet-controls label {
+  display: block;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.bet-input {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bet-input input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: var(--header);
+  color: var(--white);
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.quick-amounts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.quick-amounts button {
+  padding: 0.75rem;
+  background: var(--header);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-amounts button:hover {
+  background: var(--active-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.clear-btn,
+.main-btn {
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.clear-btn {
+  background: var(--danger);
+  color: white;
+}
+
+.main-btn {
+  background: var(--active-color);
+  color: white;
+}
+
+.clear-btn:hover,
+.main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.clear-btn:disabled,
+.main-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .input-group {
@@ -474,8 +593,102 @@ const formatAmount = (amount: number) => {
 }
 
 @media (max-width: 768px) {
+  .keno-game {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+
+  .stats-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    padding: 0.75rem;
+  }
+
+  .win-table {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0.5rem;
+  }
+
   .keno-grid {
     grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 1rem;
+  }
+
+  .number-tile {
+    font-size: 1rem;
+  }
+
+  .game-controls {
+    margin-top: 1rem;
+  }
+
+  .bet-controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .bet-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .bet-input input {
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .quick-amounts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .quick-amounts button {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .win-modal .modal-content {
+    width: 80%;
+    max-width: 300px;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .keno-game {
+    padding: 0.75rem;
+  }
+
+  .keno-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 0.75rem;
+  }
+
+  .win-table {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .win-modal .modal-content {
+    padding: 1rem;
   }
 }
 </style>

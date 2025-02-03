@@ -32,7 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { TypeFlags } from "typescript";
+import { computed, provide } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -50,7 +51,7 @@ const games = [
     thumbnail: "/images/games/mines.webp",
     type: "mines",
     category: "originals",
-    path: "/casino/mines"
+    path: "/casino/mines",
   },
   {
     id: "keno",
@@ -59,7 +60,7 @@ const games = [
     thumbnail: "/images/games/keno.webp",
     type: "keno",
     category: "originals",
-    path: "/casino/keno"
+    path: "/casino/keno",
   },
   {
     id: "roulette",
@@ -68,7 +69,7 @@ const games = [
     thumbnail: "/images/games/roulette.webp",
     type: "roulette",
     category: "originals",
-    path: "/casino/roulette"
+    path: "/casino/roulette",
   },
   {
     id: "dragontower",
@@ -77,7 +78,16 @@ const games = [
     thumbnail: "/images/games/dragontower.webp",
     type: "dragontower",
     category: "originals",
-    path: "/casino/dragontower"
+    path: "/casino/dragontower",
+  },
+  {
+    id: "wheel",
+    name: "Wheel",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/wheel.webp",
+    Type: "wheel",
+    category: "originals",
+    path: "/casino/wheel",
   },
 
   // ... other games

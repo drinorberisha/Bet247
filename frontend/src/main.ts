@@ -6,8 +6,8 @@ import { router } from "./route";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import "bootstrap";
-import { createPinia } from 'pinia';
-import Notifications from '@kyvg/vue3-notification';
+import { createPinia } from "pinia";
+import Notifications from "@kyvg/vue3-notification";
 
 router.beforeEach((to) => {
   if (to.meta && typeof to.meta.title === "string") {
