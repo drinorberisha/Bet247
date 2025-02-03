@@ -55,7 +55,7 @@ const handleGameLaunch = (game: any) => {
 };
 
 const casinoGames = [
-  { id: 'originals', name: 'Originals', icon: 'fas fa-star', count: 12 },
+  { id: 'originals', name: 'Originals', icon: 'fas fa-star', count: 13 },
   { id: 'slots', name: 'Slots', icon: 'fas fa-slot-machine', count: 248 },
   { id: 'live', name: 'Live Casino', icon: 'fas fa-dice', count: 34 },
   { id: 'blackjack', name: 'Blackjack', icon: 'fas fa-playing-card', count: 8 },
@@ -66,6 +66,7 @@ const casinoGames = [
   { id: 'mines', name: 'Mines', icon: 'fas fa-bomb', count: 1 },
   { id: 'plinko', name: 'Plinko', icon: 'fas fa-circle-dot', count: 1 },
   { id: 'keno', name: 'Keno', icon: 'fas fa-grid', count: 1 },
+  { id: 'roulette', name: 'Roulette', icon: 'fas fa-circle-notch', count: 1 },
 ];
 </script>
 

@@ -50,6 +50,7 @@ const games = [
     thumbnail: "/images/games/mines.webp",
     type: "mines",
     category: "originals",
+    path: "/casino/mines"
   },
   {
     id: "keno",
@@ -58,7 +59,16 @@ const games = [
     thumbnail: "/images/games/keno.webp",
     type: "keno",
     category: "originals",
-    path: "/casino/keno", // Add the path for Keno
+    path: "/casino/keno"
+  },
+  {
+    id: "roulette",
+    name: "Roulette",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/roulette.webp",
+    type: "roulette",
+    category: "originals",
+    path: "/casino/roulette"
   },
   // ... other games
 ];

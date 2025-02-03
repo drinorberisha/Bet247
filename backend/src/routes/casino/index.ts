@@ -1,6 +1,7 @@
 import express from 'express';
 import minesRoutes from './minesRoutes';
 import kenoRoutes from './kenoRoutes';
+import rouletteRoutes from './rouletteRoutes';
 
 const router = express.Router();
 
@@ -22,6 +23,11 @@ router.use('/keno', (req, res, next) => {
   console.log('[CASINO] Keno route hit');
   next();
 }, kenoRoutes);
+
+router.use('/roulette', (req, res, next) => {
+  console.log('[CASINO] Roulette route hit');
+  next();
+}, rouletteRoutes);
 
 console.log('[CASINO] Casino routes mounted');
 

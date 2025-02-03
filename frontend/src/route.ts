@@ -24,6 +24,7 @@ import MyBets from "./views/MyBets.vue";
 import SameGameMulti from "./Pages/SameGameMulti.vue";
 import Keno from "./Pages/Games/Keno.vue"; // Update this import
 import Mines from "./Pages/Games/Mines.vue";
+import Roulette from "./Pages/Games/Roulette.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -178,6 +179,14 @@ export const router = createRouter({
       component: Mines,
       meta: {
         title: "Mines - BET 24/7",
+        layout: "default",
+      },
+    },
+    {
+      path: "/casino/roulette",
+      component: Roulette,
+      meta: {
+        title: "Roulette - BET 24/7",
         layout: "default",
       },
     },

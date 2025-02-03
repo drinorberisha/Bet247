@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted } from 'vue';
 import MainLayout from "./Layouts/MainLayout.vue";
 import NotificationContainer from "./components/Common/NotificationContainer.vue";
+import { useNotification } from '@kyvg/vue3-notification';
 
 const cleanupModals = () => {
   // Remove modal-open class
@@ -28,6 +29,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <notifications position="top right" />
   <component :is="$route.meta.layout || MainLayout">
     <RouterView />
     <NotificationContainer />

@@ -7,6 +7,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 import "bootstrap";
 import { createPinia } from 'pinia';
+import Notifications from '@kyvg/vue3-notification';
 
 router.beforeEach((to) => {
   if (to.meta && typeof to.meta.title === "string") {
@@ -22,5 +23,6 @@ const pinia = createPinia();
 
 app.use(router);
 app.use(pinia);
+app.use(Notifications);
 
 app.mount("#app");
