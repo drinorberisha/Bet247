@@ -38,6 +38,13 @@ export const startGame = async (req: Request, res: Response) => {
       });
     }
 
+    console.log('[ROULETTE-CONTROLLER] Before balance deduction:', {
+      userId,
+      currentBalance: user.balance,
+      deductAmount: -totalBet,
+      expectedBalance: user.balance - totalBet
+    });
+
     // Create game record
     const gameId = `roulette_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -52,6 +59,13 @@ export const startGame = async (req: Request, res: Response) => {
 
     // Deduct bet amount from balance
     const newBalance = await dbService.users.updateBalance(userId, -totalBet);
+
+    console.log('[ROULETTE-CONTROLLER] After balance deduction:', {
+      userId,
+      previousBalance: user.balance,
+      deductedAmount: totalBet,
+      newBalance: newBalance?.balance
+    });
 
     console.log('[ROULETTE-CONTROLLER] Game started:', {
       gameId,
@@ -109,18 +123,26 @@ export const processWin = async (req: Request, res: Response) => {
     game.completedAt = new Date();
     await game.save();
 
+    console.log('[ROULETTE-CONTROLLER] Before processing win:', {
+      userId,
+      gameId,
+      winAmount,
+      currentGameStatus: game.status
+    });
+
     // Update user balance with winnings
     const newBalance = await dbService.users.updateBalance(userId, winAmount);
 
-    console.log('[ROULETTE-CONTROLLER] Win processed:', {
-      gameId,
+    console.log('[ROULETTE-CONTROLLER] After processing win:', {
+      userId,
+      previousBalance: game.betAmount,
       winAmount,
-      newBalance
+      finalBalance: newBalance?.balance
     });
 
     res.json({
       success: true,
-      newBalance
+      newBalance: typeof newBalance === 'object' ? newBalance?.balance : newBalance
     });
 
   } catch (error) {

@@ -5,27 +5,44 @@ import MinesGame from '../models/MinesGame';
 class DatabaseService {
   users = {
     findById: async (userId: string) => {
-      return await User.findById(userId);
+      const user = await User.findById(userId);
+      console.log('[DB-SERVICE] Found user:', {
+        userId,
+        currentBalance: user?.balance
+      });
+      return user;
     },
     updateBalance: async (userId: string, amount: number) => {
-      console.log('[DB-SERVICE] Updating balance:', {
+      const user = await User.findById(userId);
+      console.log('[DB-SERVICE] Balance update request:', {
         userId,
-        amount,
-        amountType: typeof amount
+        currentBalance: user?.balance,
+        updateAmount: amount,
+        expectedNewBalance: user ? user.balance + Number(amount) : null
       });
 
       // Ensure amount is a number
       const numericAmount = Number(amount);
       
       if (isNaN(numericAmount)) {
+        console.error('[DB-SERVICE] Invalid amount for balance update:', amount);
         throw new Error('Invalid amount type for balance update');
       }
 
-      return await User.findByIdAndUpdate(
+      const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $inc: { balance: numericAmount } },
         { new: true }
       );
+
+      console.log('[DB-SERVICE] Balance updated:', {
+        userId,
+        previousBalance: user?.balance,
+        updateAmount: numericAmount,
+        newBalance: updatedUser?.balance
+      });
+
+      return updatedUser;
     }
   };
 

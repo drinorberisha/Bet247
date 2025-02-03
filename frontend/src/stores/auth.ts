@@ -252,7 +252,7 @@ export const useAuthStore = defineStore("auth", {
 
     updateBalance(newBalance: number) {
       if (this.user) {
-        this.user.balance = newBalance;
+        this.user.balance = Number(newBalance);
         localStorage.setItem("user", JSON.stringify(this.user));
       }
     },

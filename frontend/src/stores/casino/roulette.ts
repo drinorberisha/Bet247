@@ -58,29 +58,12 @@ export const useRouletteStore = defineStore('roulette', {
     async startGame() {
       const authStore = useAuthStore();
       
-      console.log('[ROULETTE-DEBUG] Starting game with state:', {
-        currentBets: this.currentBets,
-        totalBet: this.totalBet,
-        currentGameId: this.currentGameId,
-        isGameActive: this.isGameActive
-      });
-      
-      if (!authStore.token) {
-        console.log('[ROULETTE-DEBUG] No auth token found');
-        this.error = 'Please login to play';
-        return false;
-      }
-
-      if (this.currentBets.length === 0) {
-        console.log('[ROULETTE-DEBUG] No bets placed');
-        this.error = 'Please place at least one bet';
-        return false;
-      }
-
-      this.totalBet = this.calculateTotalBet();
-      console.log('[ROULETTE-DEBUG] Calculated total bet:', this.totalBet);
-
       try {
+        console.log('[ROULETTE-FRONTEND] Starting game:', {
+          currentBalance: authStore.userBalance,
+          totalBet: this.totalBet
+        });
+
         const response = await axios.post(
           `${API_URL}/casino/roulette/start`,
           { totalBet: this.totalBet },
@@ -91,59 +74,87 @@ export const useRouletteStore = defineStore('roulette', {
           }
         );
 
-        console.log('[ROULETTE-DEBUG] Start game response:', response.data);
-
         if (response.data.success) {
-          this.currentGameId = response.data.gameId;
-          console.log('[ROULETTE-DEBUG] Game started successfully:', {
-            gameId: this.currentGameId,
+          const newBalance = typeof response.data.newBalance === 'object' 
+            ? Number(response.data.newBalance.balance) 
+            : Number(response.data.newBalance);
+
+          console.log('[ROULETTE-FRONTEND] Game started:', {
+            previousBalance: authStore.userBalance,
+            newBalance: newBalance,
             totalBet: this.totalBet,
-            isGameActive: this.isGameActive
+            response: response.data
           });
+
+          if (!isNaN(newBalance)) {
+            authStore.updateBalance(newBalance);
+          } else {
+            console.error('[ROULETTE-FRONTEND] Invalid balance received:', response.data.newBalance);
+          }
+          
+          this.currentGameId = response.data.gameId;
           this.isGameActive = true;
-          authStore.updateBalance(response.data.newBalance);
-          return true;
         }
       } catch (error: any) {
-        console.error('[ROULETTE-DEBUG] Start game error:', error);
+        console.error('[ROULETTE-FRONTEND] Error starting game:', error);
         this.error = error.response?.data?.message || 'Failed to start game';
       }
-      return false;
     },
 
     async spinWheel() {
       console.log('[ROULETTE-DEBUG] Store spinWheel called');
+      const authStore = useAuthStore();
       
-      if (!this.currentGameId) {
-        console.log('[ROULETTE-DEBUG] No game ID, starting new game');
-        const success = await this.startGame();
-        if (!success) {
-          console.error('[ROULETTE-DEBUG] Failed to start game');
-          return;
+      try {
+        if (!this.currentGameId) {
+          console.log('[ROULETTE-DEBUG] No game ID, starting new game');
+          await this.startGame();
         }
-      }
 
-      if (this.currentGameId) {
-        console.log('[ROULETTE-DEBUG] Starting spin with gameId:', this.currentGameId);
-        this.isSpinning = true;
-        const number = Math.floor(Math.random() * 37);
-        
-        // Wait for wheel animation to complete
-        await new Promise(resolve => setTimeout(resolve, this.spinDuration));
-        
-        // Process result
-        const winAmount = await this.processResult(number);
-        
-        // Set spinning to false
-        this.isSpinning = false;
-        
+        if (this.currentGameId) {
+          console.log('[ROULETTE-DEBUG] Starting spin with gameId:', this.currentGameId, {
+            currentBalance: authStore.userBalance,
+            totalBet: this.totalBet
+          });
+          
+          this.isSpinning = true;
+          const number = Math.floor(Math.random() * 37);
+          
+          // Wait for wheel animation to complete
+          await new Promise(resolve => setTimeout(resolve, this.spinDuration));
+          
+          // Process result and get win amount
+          const winAmount = this.calculateWinAmount(number);
+          console.log('[ROULETTE-DEBUG] Spin result:', {
+            number,
+            winAmount,
+            currentBalance: authStore.userBalance
+          });
+          
+          // Process payout if there's a win
+          if (winAmount > 0) {
+            await this.processPayout(winAmount);
+          }
+          
+          // Add to history
+          this.addToHistory({
+            number,
+            color: this.getNumberColor(number),
+            timestamp: new Date()
+          });
+          
+          this.isSpinning = false;
+          
+          // Show notification after a small delay
+          setTimeout(() => {
+            this.showResultNotification(winAmount);
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('[ROULETTE-DEBUG] Error during spin:', error);
+      } finally {
         // Reset game state
         this.resetGame();
-        
-        // Show notification after a small delay
-        setTimeout(() => {
-          this.showResultNotification(winAmount);
-        }, 1000);
       }
     },
 
@@ -219,6 +230,12 @@ export const useRouletteStore = defineStore('roulette', {
     },
 
     resetGame() {
+      console.log('[ROULETTE-DEBUG] Resetting game state:', {
+        currentBets: this.currentBets,
+        currentGameId: this.currentGameId,
+        isGameActive: this.isGameActive
+      });
+      
       this.currentBets = [];
       this.currentGameId = null;
       this.potentialWin = 0;
@@ -246,44 +263,18 @@ export const useRouletteStore = defineStore('roulette', {
       }
     },
 
-    async processResult(number: number) {
-      this.lastNumber = number;
-      const winAmount = this.calculateWinAmount(number);
-      
-      if (winAmount > 0) {
-        await this.processPayout(winAmount);
-      }
-      
-      // Add to history only after spin animation completes
-      this.addToHistory({
-        number,
-        color: this.getNumberColor(number),
-        timestamp: new Date()
-      });
-
-      this.currentGameId = null;
-      this.currentBets = [];
-      
-      return winAmount;
-    },
-
-    getNumberColor(number: number): string {
-      if (number === 0) return 'green';
-      const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
-      return redNumbers.includes(number) ? 'red' : 'black';
-    },
-
     async processPayout(amount: number) {
       const authStore = useAuthStore();
       
       try {
-        console.log('[ROULETTE] Processing win:', {
+        console.log('[ROULETTE-FRONTEND] Processing win:', {
+          currentBalance: authStore.userBalance,
           gameId: this.currentGameId,
-          amount
+          winAmount: amount
         });
 
         if (!this.currentGameId) {
-          console.error('[ROULETTE] No game ID found when processing win');
+          console.error('[ROULETTE-FRONTEND] No game ID found when processing win');
           return;
         }
 
@@ -291,7 +282,7 @@ export const useRouletteStore = defineStore('roulette', {
           `${API_URL}/casino/roulette/processWin`,
           {
             gameId: this.currentGameId,
-            winAmount: amount
+            winAmount: Number(amount)
           },
           {
             headers: {
@@ -301,16 +292,37 @@ export const useRouletteStore = defineStore('roulette', {
         );
 
         if (response.data.success) {
-          authStore.updateBalance(response.data.newBalance);
+          const newBalance = typeof response.data.newBalance === 'object' 
+            ? Number(response.data.newBalance.balance) 
+            : Number(response.data.newBalance);
+          
+          console.log('[ROULETTE-FRONTEND] Win processed:', {
+            previousBalance: authStore.userBalance,
+            winAmount: amount,
+            newBalance: newBalance,
+            response: response.data
+          });
+
+          if (!isNaN(newBalance)) {
+            authStore.updateBalance(newBalance);
+          } else {
+            console.error('[ROULETTE-FRONTEND] Invalid balance received:', response.data.newBalance);
+          }
         }
       } catch (error: any) {
-        console.error('[ROULETTE] Error processing win:', error);
+        console.error('[ROULETTE-FRONTEND] Error processing win:', error);
         this.error = error.response?.data?.message || 'Failed to process win';
       }
     },
 
     addToHistory(result: { number: number; color: string; timestamp: Date }) {
       this.history.unshift(result.number);
+    },
+
+    getNumberColor(number: number): string {
+      if (number === 0) return 'green';
+      const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+      return redNumbers.includes(number) ? 'red' : 'black';
     }
   }
 }); 
