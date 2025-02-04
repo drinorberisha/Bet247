@@ -107,6 +107,24 @@ const games = [
     category: "originals",
     path: "/casino/slots",
   },
+  {
+    id: "slotforeign",
+    name: "Slot Foreign",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/slotforeign.webp",
+    type: "slotforeign",
+    category: "originals",
+    path: "/casino/slotforeign",
+  },
+  {
+    id: "halloween-slots",
+    name: "Halloween Slots",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/halloween-slots.webp",
+    type: "halloween-slots",
+    category: "originals",
+    path: "/casino/halloween-slots"
+  },
   // ... other games
 ];
 

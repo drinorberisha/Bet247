@@ -29,6 +29,8 @@ import DragonTower from "./Pages/Games/DragonTower.vue";
 import Wheel from "./Pages/Games/Wheel.vue";
 import Blackjack from "./Pages/Games/Blackjack.vue";
 import Slots from "./Pages/Games/Slots.vue";
+import SlotForeign from "./Pages/Games/SlotForeign.vue";
+import HalloweenSlots from "./Pages/Games/HalloweenSlots.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -226,10 +228,28 @@ export const router = createRouter({
         layout: "default",
       },
     },
+    {
+      path: "/casino/slotforeign",
+      component: SlotForeign,
+      meta: {
+        title: "Slot Foreign - BET 24/7",
+        layout: "default",
+      },
+    },
+    {
+      path: "/casino/halloween-slots",
+      component: HalloweenSlots,
+      meta: {
+        title: "Halloween Slots - BET 24/7",
+        layout: "default",
+      },
+    },
+
 
 
 
     // Admin routes
+
     {
       path: "/admin",
       component: AdminLayout,
