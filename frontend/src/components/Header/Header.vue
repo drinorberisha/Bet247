@@ -17,7 +17,7 @@
       <!-- Brand -->
       <div class="header-brand">
         <router-link to="/" class="brand-link">
-          <span class="brand-text">SportOdds</span>
+          <span class="brand-text">BET</span>
         </router-link>
       </div>
 

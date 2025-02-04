@@ -43,15 +43,17 @@
 
     <!-- Move account to end -->
     <RouterLink
-      to="/dashboard"
+      to="/profile"
       class="nav-item"
-      :class="{ active: currentRoute === '/dashboard' }"
+      :class="{ active: currentRoute === '/profile' }"
       @click="closeModal"
     >
       <i class="far fa-user-circle"></i>
-      <span>Account</span>
+
+      <span>Profile</span>
     </RouterLink>
   </nav>
+
 
   <!-- Remove the bootstrap modal and add BetSlip directly -->
   <BetSlip v-if="isMobile" ref="betslipRef" />
