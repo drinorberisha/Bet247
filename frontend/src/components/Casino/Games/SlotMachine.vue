@@ -1,5 +1,5 @@
 <template>
-  <div class="slot-game">
+  <div class="slot-machine">
     <div class="stats-container">
       <div class="stat-box">
         <span class="stat-label">Bet Amount</span>
@@ -36,12 +36,12 @@
       SPIN
     </button>
 
-    <Transition name="fade">
+    <Transition name="modal">
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
           <h2>WIN!</h2>
           <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
-          <div class="matches">{{ matchCount }} MATCHES!</div>
+          <div class="multiplier">Matching symbols: {{ lastWinningCount }}</div>
         </div>
       </div>
     </Transition>
@@ -51,7 +51,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const symbols = ["🎰", "💎", "7️⃣", "🍊", "🍇", "🎲", "🎮"];
+const symbols = ["🍎", "🍋", "🍇", "🍑", "💎", "7️⃣", "🎰"];
+const multipliers = {
+  6: 2, // 6 matching symbols: 2x
+  7: 3, // 7 matching symbols: 3x
+  8: 5, // 8 matching symbols: 5x
+  9: 10, // 9 matching symbols: 10x
+  10: 15, // 10+ matching symbols: 15x
+};
+
 const grid = ref(
   Array(4)
     .fill(null)
@@ -62,51 +70,45 @@ const betAmount = ref(1);
 const winAmount = ref(0);
 const showWinModal = ref(false);
 const winningPositions = ref<string[]>([]);
-const matchCount = ref(0);
-
-const multipliers = {
-  5: 2, // 5 matches = 2x
-  6: 3, // 6 matches = 3x
-  7: 5, // 7 matches = 5x
-  8: 8, // 8 matches = 8x
-  9: 10, // 9 matches = 10x
-  10: 15, // 10+ matches = 15x
-};
+const lastWinningCount = ref(0);
 
 function getRandomSymbol() {
   return symbols[Math.floor(Math.random() * symbols.length)];
 }
 
-function checkWins() {
-  const counts = new Map<string, { count: number; positions: string[] }>();
+function checkWinningCombinations() {
+  const symbolCounts = new Map();
+  const positions = new Map();
 
-  // Count symbols and track positions
+  // Count symbols and their positions
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 5; col++) {
       const symbol = grid.value[row][col];
-      if (!counts.has(symbol)) {
-        counts.set(symbol, { count: 0, positions: [] });
+      if (!symbolCounts.has(symbol)) {
+        symbolCounts.set(symbol, 0);
+        positions.set(symbol, []);
       }
-      const data = counts.get(symbol)!;
-      data.count++;
-      data.positions.push(`${row}-${col}`);
+      symbolCounts.set(symbol, symbolCounts.get(symbol) + 1);
+      positions.get(symbol).push(`${row}-${col}`);
     }
   }
 
-  // Find best winning combination
-  let bestMatch = { symbol: "", count: 0, positions: [] as string[] };
-  counts.forEach((data, symbol) => {
-    if (data.count >= 5 && data.count > bestMatch.count) {
-      bestMatch = { symbol, count: data.count, positions: data.positions };
+  // Find winning combinations
+  let maxCount = 0;
+  let winningSymbol = null;
+
+  symbolCounts.forEach((count, symbol) => {
+    if (count >= 6 && count > maxCount) {
+      maxCount = count;
+      winningSymbol = symbol;
     }
   });
 
-  if (bestMatch.count >= 5) {
-    winningPositions.value = bestMatch.positions;
-    matchCount.value = bestMatch.count;
+  if (winningSymbol && maxCount >= 6) {
+    winningPositions.value = positions.get(winningSymbol);
+    lastWinningCount.value = maxCount;
     return (
-      multipliers[Math.min(bestMatch.count, 10) as keyof typeof multipliers] ||
-      15
+      multipliers[Math.min(maxCount, 10) as keyof typeof multipliers] || 15
     );
   }
 
@@ -121,10 +123,11 @@ function spin() {
   winAmount.value = 0;
   winningPositions.value = [];
 
+  // Fill grid with new random symbols
   setTimeout(() => {
     grid.value = grid.value.map((row) => row.map(() => getRandomSymbol()));
 
-    const multiplier = checkWins();
+    const multiplier = checkWinningCombinations();
     winAmount.value = betAmount.value * multiplier;
 
     if (multiplier > 0) {
@@ -137,12 +140,14 @@ function spin() {
 </script>
 
 <style scoped>
-.slot-game {
+.slot-machine {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
+
+// ...existing code for stats-container, stat-box, etc...
 
 .slot-grid {
   display: flex;
@@ -173,7 +178,7 @@ function spin() {
 
 .winning-cell {
   background: var(--active-color);
-  animation: pulse 1.5s infinite;
+  animation: pulse 1s infinite;
 }
 
 .symbol {
@@ -182,22 +187,6 @@ function spin() {
 
 .symbol.spinning {
   animation: spin 0.2s infinite;
-}
-
-.spin-button {
-  background: var(--active-color);
-  color: white;
-  border: none;
-  padding: 1rem 3rem;
-  font-size: 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.spin-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 @keyframes spin {
@@ -215,49 +204,12 @@ function spin() {
 @keyframes pulse {
   0% {
     transform: scale(1);
-    filter: brightness(1);
   }
   50% {
     transform: scale(1.05);
-    filter: brightness(1.2);
   }
   100% {
     transform: scale(1);
-    filter: brightness(1);
   }
-}
-
-.win-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--header);
-  padding: 2rem;
-  border-radius: 16px;
-  text-align: center;
-  animation: dropIn 0.5s ease-out;
-}
-
-@keyframes dropIn {
-  0% {
-    transform: translate(-50%, -150%);
-  }
-  70% {
-    transform: translate(-50%, -45%);
-  }
-  100% {
-    transform: translate(-50%, -50%);
-  }
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

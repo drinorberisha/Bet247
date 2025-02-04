@@ -40,26 +40,26 @@
     <!-- Game Controls -->
     <div class="game-controls">
       <div class="bet-controls">
-        <button 
-          class="control-btn decrease" 
+        <button
+          class="control-btn decrease"
           @click="handleBetChange('decrease')"
           :disabled="isSpinning"
         >
           -
         </button>
         <span class="bet-amount">{{ formatCurrency(betAmount) }}</span>
-        <button 
-          class="control-btn increase" 
+        <button
+          class="control-btn increase"
           @click="handleBetChange('increase')"
           :disabled="isSpinning"
         >
           +
         </button>
       </div>
-      
-      <button 
-        class="spin-btn" 
-        :disabled="!canSpin || isSpinning" 
+
+      <button
+        class="spin-btn"
+        :disabled="!canSpin || isSpinning"
         @click="handleSpin"
       >
         SPIN
@@ -69,18 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useHalloweenSlotsStore } from '../../../stores/casino/halloweenSlots';
-import { storeToRefs } from 'pinia';
+import { ref, onMounted, onUnmounted } from "vue";
+import { useHalloweenSlotsStore } from "../../../stores/casino/halloweenSlots";
+import { storeToRefs } from "pinia";
 
 const slotStore = useHalloweenSlotsStore();
-const { 
-  betAmount, 
-  lastWin, 
-  isSpinning, 
-  reels, 
-  canSpin 
-} = storeToRefs(slotStore);
+const { betAmount, lastWin, isSpinning, reels, canSpin } =
+  storeToRefs(slotStore);
 
 // Format currency utility function
 const formatCurrency = (amount: number): string => {
@@ -98,7 +93,7 @@ const audio = {
 // Methods
 const handleSpin = async () => {
   if (!canSpin.value) return;
-  
+
   audio.spin.currentTime = 0;
   audio.spin.play();
   
@@ -123,8 +118,8 @@ const handleSpin = async () => {
   }
 };
 
-const handleBetChange = (direction: 'increase' | 'decrease') => {
-  if (direction === 'increase') {
+const handleBetChange = (direction: "increase" | "decrease") => {
+  if (direction === "increase") {
     slotStore.increaseBet();
   } else {
     slotStore.decreaseBet();
@@ -133,7 +128,7 @@ const handleBetChange = (direction: 'increase' | 'decrease') => {
 
 // Keyboard controls
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.code === 'Space') {
+  if (e.code === "Space") {
     e.preventDefault();
     handleSpin();
   }
@@ -154,11 +149,11 @@ onMounted(() => {
       generateReelSymbols()
     ]
   });
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
   slotStore.resetGame();
 });
 </script>
@@ -355,4 +350,4 @@ onUnmounted(() => {
     padding: 0.25rem;
   }
 }
-</style> 
+</style>

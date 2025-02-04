@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { TypeFlags } from "typescript";
+import { DiagnosticCategory, TypeFlags } from "typescript";
 import { computed, provide } from "vue";
 import { useRouter } from "vue-router";
 import minator from "../../assets/img/header/mines.jpg";
@@ -130,7 +130,16 @@ const games = [
     thumbnail: "/images/games/halloween-slots.webp",
     type: "halloween-slots",
     category: "originals",
-    path: "/casino/halloween-slots"
+    path: "/casino/halloween-slots",
+  },
+  {
+    id: "NewSlot",
+    name: "New Slot",
+    provider: "Stake Originals",
+    thumbnail: slotseri,
+    type: "NewSlot",
+    categoryL: "originals",
+    path: "/casino/NewSlot",
   },
   {
     id: "slotpen",
