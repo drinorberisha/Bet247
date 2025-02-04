@@ -132,6 +132,15 @@ const games = [
     category: "originals",
     path: "/casino/halloween-slots"
   },
+  {
+    id: "slotpen",
+    name: "Slot Pen",
+    provider: "Stake Originals",
+    thumbnail: "/images/games/slotpen.webp",
+    type: "slotpen",
+    category: "originals",
+    path: "/casino/slotpen",
+  },
   // ... other games
 ];
 

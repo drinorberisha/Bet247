@@ -102,7 +102,7 @@ export const placeBet = async (req: Request, res: Response) => {
     await session.abortTransaction();
     res.status(500).json({
       success: false,
-      message: error.message || 'Error placing bet'
+      message: (error as Error).message || 'Error placing bet'
     });
   } finally {
     session.endSession();

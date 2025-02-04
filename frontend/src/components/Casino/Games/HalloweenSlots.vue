@@ -18,11 +18,12 @@
         <div v-for="(reel, reelIndex) in reels" 
              :key="reelIndex" 
              class="reel"
-             :class="{ spinning: isSpinning }"
-             :style="{ '--reel-delay': `${reelIndex * 0.5}s` }">
+             :class="{ spinning: isSpinning }">
           <div class="reel-viewport">
-            <div class="reel-strip" :class="{ 'spin-animation': isSpinning }">
-              <div v-for="i in 10" :key="i" class="symbol">
+            <div class="reel-strip" 
+                 :class="{ 'spin-animation': isSpinning }"
+                 :style="{ '--reel-delay': `${reelIndex * 0.2}s` }">
+              <div v-for="i in 20" :key="i" class="symbol">
                 <img 
                   :src="reel[i % reel.length]?.image"
                   :alt="reel[i % reel.length]?.name"
@@ -89,9 +90,9 @@ const formatCurrency = (amount: number): string => {
 // Audio setup
 const audio = {
   spin: new Audio('/sounds/spin.mp3'),
-  win: new Audio('/sounds/win.mp3'),
-  bigWin: new Audio('/sounds/big_win.mp3'),
-  insertCoin: new Audio('/sounds/insert_coin.mp3')
+  win: new Audio('/sounds/lock.mp3'),
+  bigWin: new Audio('/sounds/sin_end.mp3'),
+  insertCoin: new Audio('/sounds/lock.mp3')
 };
 
 // Methods
@@ -101,7 +102,17 @@ const handleSpin = async () => {
   audio.spin.currentTime = 0;
   audio.spin.play();
   
+  // Start the game and get the results
   await slotStore.startGame();
+  
+  // Wait for the spinning animation to complete
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // After spinning completes, update the display to show final results
+  const finalSymbols = slotStore.reels;
+  slotStore.$patch({
+    reels: finalSymbols
+  });
   
   if (lastWin.value > 0) {
     if (lastWin.value >= betAmount.value * 10) {
@@ -128,13 +139,19 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 };
 
-// Initialize reels on mount
+// Initialize reels with enough symbols for smooth spinning
 onMounted(() => {
+  const generateReelSymbols = () => {
+    const symbols = slotStore.symbols;
+    // Create a repeating pattern that will align with final results
+    return Array(20).fill(null).map(() => ({ ...symbols[Math.floor(Math.random() * symbols.length)] }));
+  };
+
   slotStore.$patch({
     reels: [
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] })),
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] })),
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] }))
+      generateReelSymbols(),
+      generateReelSymbols(),
+      generateReelSymbols()
     ]
   });
   window.addEventListener('keydown', handleKeydown);
@@ -203,7 +220,7 @@ onUnmounted(() => {
 
 .reel {
   position: relative;
-  height: 120px; /* Height for 3 symbols */
+  height: 120px;
   overflow: hidden;
   background: #1a1a1a;
   border-radius: 4px;
@@ -221,12 +238,13 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.1s linear;
+  transform: translateY(0);
 }
 
 .symbol {
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,7 +260,7 @@ onUnmounted(() => {
 }
 
 .spin-animation {
-  animation: spin 3s cubic-bezier(0.3, 0.1, 0.3, 1) forwards;
+  animation: spin 3s cubic-bezier(0.5, 0, 0.5, 1) forwards;
   animation-delay: var(--reel-delay);
 }
 
@@ -250,20 +268,9 @@ onUnmounted(() => {
   0% {
     transform: translateY(0);
   }
-  20% {
-    transform: translateY(-100%);
-  }
-  40% {
-    transform: translateY(-200%);
-  }
-  60% {
-    transform: translateY(-300%);
-  }
-  80% {
-    transform: translateY(-380%);
-  }
   100% {
-    transform: translateY(-400%);
+    /* Ensure this matches exactly with the symbol height multiplied by the number of positions */
+    transform: translateY(calc(-40px * 17));
   }
 }
 

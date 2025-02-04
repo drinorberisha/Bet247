@@ -203,6 +203,20 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
       this.winningLines = [];
       this.multiplier = 1;
       this.reels = [[], [], []];
+    },
+
+    increaseBet() {
+      const maxBet = 100; // Set your maximum bet limit
+      if (this.betAmount < maxBet) {
+        this.betAmount = Math.min(this.betAmount + 1, maxBet);
+      }
+    },
+
+    decreaseBet() {
+      const minBet = 1; // Set your minimum bet limit
+      if (this.betAmount > minBet) {
+        this.betAmount = Math.max(this.betAmount - 1, minBet);
+      }
     }
   }
 }); 

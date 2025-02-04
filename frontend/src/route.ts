@@ -31,6 +31,7 @@ import Blackjack from "./Pages/Games/Blackjack.vue";
 import Slots from "./Pages/Games/Slots.vue";
 import SlotForeign from "./Pages/Games/SlotForeign.vue";
 import HalloweenSlots from "./Pages/Games/HalloweenSlots.vue";
+import SlotPen from "./Pages/Games/SlotPen.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -244,7 +245,14 @@ export const router = createRouter({
         layout: "default",
       },
     },
-
+    {
+      path: "/casino/slotpen",
+      component: SlotPen,
+      meta: {
+        title: "Slot Pen - BET 24/7",
+        layout: "default",
+      },
+    },
 
 
 

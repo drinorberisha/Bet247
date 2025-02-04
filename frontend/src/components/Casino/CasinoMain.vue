@@ -72,7 +72,7 @@ const casinoGames = [
   { id: 'slots', name: 'Slots', icon: 'fas fa-circle-notch', count: 1 },
   { id: 'slotforeign', name: 'Slot Foreign', icon: 'fas fa-circle-notch', count: 1 },
   { id: 'halloween-slots', name: 'Halloween Slots', icon: 'fas fa-circle-notch', count: 1 },
-  
+  { id: 'slotpen', name: 'Slot Pen', icon: 'fas fa-circle-notch', count: 1 },
 
 ];
 </script>

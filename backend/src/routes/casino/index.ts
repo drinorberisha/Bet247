@@ -6,6 +6,7 @@ import dragontowerRoutes from './dragonTowerRoutes';
 import blackjackRoutes from './blackjackRoutes';
 import slotsRoutes from './slotsRoutes';
 import halloweenSlotsRoutes from './halloweenSlotsRoutes';
+import slotPenRoutes from './slotPenRoutes';
 const router = express.Router();
 
 console.log('[CASINO] Setting up casino routes');
@@ -49,6 +50,10 @@ router.use('/halloween-slots', (req, res, next) => {
   console.log('[CASINO] Halloween Slots route hit');
   next();
 }, halloweenSlotsRoutes);
+router.use('/slotpen', (req, res, next) => {
+  console.log('[CASINO] Slot Pen route hit');
+  next();
+}, slotPenRoutes);
 
 
 console.log('[CASINO] Casino routes mounted');
