@@ -2,10 +2,17 @@
   <div class="roulette-game">
     <!-- Result overlay when spinning ends -->
     <Transition name="fade">
-      <div v-if="showResult" class="result-overlay" :class="getNumberClass(rouletteStore.lastNumber)">
+      <div
+        v-if="showResult"
+        class="result-overlay"
+        :class="getNumberClass(rouletteStore.lastNumber)"
+      >
         <div class="result-content">
           <div class="result-number">
-            <div class="number-circle" :class="getNumberClass(rouletteStore.lastNumber)">
+            <div
+              class="number-circle"
+              :class="getNumberClass(rouletteStore.lastNumber)"
+            >
               {{ rouletteStore.lastNumber }}
             </div>
           </div>
@@ -38,34 +45,30 @@
     <div class="roulette-container">
       <!-- Wheel Section -->
       <div class="wheel-section">
-        <div 
-          class="wheel-container"
-         
-        >
-        <RouletteWheel
-      :numbers="wheelNumbers"
-      :is-spinning="rouletteStore.isSpinning"
-      :target-number="rouletteStore.lastNumber"
-    />
+        <div class="wheel-container">
+          <RouletteWheel
+            :numbers="wheelNumbers"
+            :is-spinning="rouletteStore.isSpinning"
+            :target-number="rouletteStore.lastNumber"
+          />
         </div>
 
         <div class="history-container">
           <h3 class="history-title">PREVIOUS NUMBERS</h3>
           <div class="history-bar">
-            <div 
-              v-for="(number, index) in rouletteStore.history" 
+            <div
+              v-for="(number, index) in rouletteStore.history"
               :key="index"
               class="history-item"
             >
-              <div 
-                class="history-number"
-                :class="getNumberClass(number)"
-              >
+              <div class="history-number" :class="getNumberClass(number)">
                 {{ number }}
               </div>
               <div class="history-details">
                 <span class="history-color">{{ getNumberColor(number) }}</span>
-                <span class="history-parity">{{ number % 2 === 0 ? 'EVEN' : 'ODD' }}</span>
+                <span class="history-parity">{{
+                  number % 2 === 0 ? "EVEN" : "ODD"
+                }}</span>
               </div>
             </div>
           </div>
@@ -76,8 +79,8 @@
       <div class="controls-section">
         <div class="bet-controls">
           <div class="bet-amount-controls">
-            <button 
-              v-for="amount in [1, 5, 10, 25, 50, 100]" 
+            <button
+              v-for="amount in [1, 5, 10, 25, 50, 100]"
               :key="amount"
               class="bet-amount-btn"
               :class="{ active: rouletteStore.betAmount === amount }"
@@ -87,19 +90,21 @@
             </button>
           </div>
           <div class="action-buttons">
-            <button 
+            <button
               class="clear-btn"
               @click="rouletteStore.resetGame"
               :disabled="rouletteStore.loading"
             >
               Clear
             </button>
-            <button 
+            <button
               class="spin-btn"
-              @click="() => {
-    console.log('[ROULETTE-DEBUG] Spin button clicked');
-    rouletteStore.spinWheel();
-  }"
+              @click="
+                () => {
+                  console.log('[ROULETTE-DEBUG] Spin button clicked');
+                  rouletteStore.spinWheel();
+                }
+              "
               :disabled="!canPlay || rouletteStore.loading"
             >
               Spin
@@ -113,12 +118,13 @@
     <div class="betting-grid-container">
       <div class="betting-grid">
         <!-- Zero -->
-        <div 
-          class="number zero" 
-          @click="placeBet('straight', [0])"
-        >
+        <div class="number zero" @click="placeBet('straight', [0])">
           0
-          <div v-if="getBetOnNumber(0)" class="casino-chip" :class="chipClass(getBetOnNumber(0))">
+          <div
+            v-if="getBetOnNumber(0)"
+            class="casino-chip"
+            :class="chipClass(getBetOnNumber(0))"
+          >
             <div class="chip-inner">
               <div class="chip-stripes"></div>
               <span class="chip-amount">{{ getBetOnNumber(0) }}€</span>
@@ -127,15 +133,19 @@
         </div>
 
         <!-- Numbers 1-36 -->
-        <div 
-          v-for="n in 36" 
+        <div
+          v-for="n in 36"
           :key="n"
           class="number"
           :class="getNumberClass(n)"
           @click="placeBet('straight', [n])"
         >
           {{ n }}
-          <div v-if="getBetOnNumber(n)" class="casino-chip" :class="chipClass(getBetOnNumber(n))">
+          <div
+            v-if="getBetOnNumber(n)"
+            class="casino-chip"
+            :class="chipClass(getBetOnNumber(n))"
+          >
             <div class="chip-inner">
               <div class="chip-stripes"></div>
               <span class="chip-amount">{{ getBetOnNumber(n) }}€</span>
@@ -147,75 +157,147 @@
         <div class="outside-bets">
           <!-- First row (1-18, Even, Red, Black, Odd, 19-36) -->
           <div class="bet-row">
-            <div 
-              class="bet-box" 
-              @click="placeBet('1to18', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])"
+            <div
+              class="bet-box"
+              @click="
+                placeBet(
+                  '1to18',
+                  [
+                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                    18,
+                  ]
+                )
+              "
             >
               1-18
-              <div v-if="getBetOnType('1to18')" class="casino-chip" :class="chipClass(getBetOnType('1to18'))">
+              <div
+                v-if="getBetOnType('1to18')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('1to18'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('1to18') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("1to18") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box" 
-              @click="placeBet('even', [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36])"
+            <div
+              class="bet-box"
+              @click="
+                placeBet(
+                  'even',
+                  [
+                    2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+                    34, 36,
+                  ]
+                )
+              "
             >
               EVEN
-              <div v-if="getBetOnType('even')" class="casino-chip" :class="chipClass(getBetOnType('even'))">
+              <div
+                v-if="getBetOnType('even')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('even'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('even') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("even") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box red" 
-              @click="placeBet('red', [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36])"
+            <div
+              class="bet-box red"
+              @click="
+                placeBet(
+                  'red',
+                  [
+                    1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32,
+                    34, 36,
+                  ]
+                )
+              "
             >
               RED
-              <div v-if="getBetOnType('red')" class="casino-chip" :class="chipClass(getBetOnType('red'))">
+              <div
+                v-if="getBetOnType('red')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('red'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('red') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("red") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box black" 
-              @click="placeBet('black', [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35])"
+            <div
+              class="bet-box black"
+              @click="
+                placeBet(
+                  'black',
+                  [
+                    2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31,
+                    33, 35,
+                  ]
+                )
+              "
             >
               BLACK
-              <div v-if="getBetOnType('black')" class="casino-chip" :class="chipClass(getBetOnType('black'))">
+              <div
+                v-if="getBetOnType('black')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('black'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('black') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("black") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box" 
-              @click="placeBet('odd', [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35])"
+            <div
+              class="bet-box"
+              @click="
+                placeBet(
+                  'odd',
+                  [
+                    1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31,
+                    33, 35,
+                  ]
+                )
+              "
             >
               ODD
-              <div v-if="getBetOnType('odd')" class="casino-chip" :class="chipClass(getBetOnType('odd'))">
+              <div
+                v-if="getBetOnType('odd')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('odd'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('odd') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("odd") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box" 
-              @click="placeBet('19to36', [19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36])"
+            <div
+              class="bet-box"
+              @click="
+                placeBet(
+                  '19to36',
+                  [
+                    19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+                    34, 35, 36,
+                  ]
+                )
+              "
             >
               19-36
-              <div v-if="getBetOnType('19to36')" class="casino-chip" :class="chipClass(getBetOnType('19to36'))">
+              <div
+                v-if="getBetOnType('19to36')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('19to36'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('19to36') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("19to36") }}€</span>
                 </div>
               </div>
             </div>
@@ -223,39 +305,63 @@
 
           <!-- Dozens -->
           <div class="bet-row">
-            <div 
-              class="bet-box dozen" 
-              @click="placeBet('1st12', [1,2,3,4,5,6,7,8,9,10,11,12])"
+            <div
+              class="bet-box dozen"
+              @click="
+                placeBet('1st12', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+              "
             >
               1st 12
-              <div v-if="getBetOnType('1st12')" class="casino-chip" :class="chipClass(getBetOnType('1st12'))">
+              <div
+                v-if="getBetOnType('1st12')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('1st12'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('1st12') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("1st12") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box dozen" 
-              @click="placeBet('2nd12', [13,14,15,16,17,18,19,20,21,22,23,24])"
+            <div
+              class="bet-box dozen"
+              @click="
+                placeBet(
+                  '2nd12',
+                  [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+                )
+              "
             >
               2nd 12
-              <div v-if="getBetOnType('2nd12')" class="casino-chip" :class="chipClass(getBetOnType('2nd12'))">
+              <div
+                v-if="getBetOnType('2nd12')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('2nd12'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('2nd12') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("2nd12") }}€</span>
                 </div>
               </div>
             </div>
-            <div 
-              class="bet-box dozen" 
-              @click="placeBet('3rd12', [25,26,27,28,29,30,31,32,33,34,35,36])"
+            <div
+              class="bet-box dozen"
+              @click="
+                placeBet(
+                  '3rd12',
+                  [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+                )
+              "
             >
               3rd 12
-              <div v-if="getBetOnType('3rd12')" class="casino-chip" :class="chipClass(getBetOnType('3rd12'))">
+              <div
+                v-if="getBetOnType('3rd12')"
+                class="casino-chip"
+                :class="chipClass(getBetOnType('3rd12'))"
+              >
                 <div class="chip-inner">
                   <div class="chip-stripes"></div>
-                  <span class="chip-amount">{{ getBetOnType('3rd12') }}€</span>
+                  <span class="chip-amount">{{ getBetOnType("3rd12") }}€</span>
                 </div>
               </div>
             </div>
@@ -267,18 +373,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouletteStore } from '../../../stores/casino/roulette';
-import { FortuneWheel } from 'vue3-fortune-wheel';
-import type { Data } from 'vue3-fortune-wheel';
-import RouletteWheel from './RouletteWheel.vue';
+import { ref, computed, onMounted } from "vue";
+import { useRouletteStore } from "../../../stores/casino/roulette";
+import { FortuneWheel } from "vue3-fortune-wheel";
+import type { Data } from "vue3-fortune-wheel";
+import RouletteWheel from "./RouletteWheel.vue";
 
 const rouletteStore = useRouletteStore();
 const targetValue = ref(0);
 
 // European roulette wheel numbers in order
 const wheelNumbers = [
-  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
+  16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
 ];
 
 interface WheelData extends Data {
@@ -291,35 +398,40 @@ interface WheelData extends Data {
 }
 
 const wheelData = computed<WheelData[]>(() => {
-  return wheelNumbers.map(number => ({
+  return wheelNumbers.map((number) => ({
     id: number,
     value: number.toString(),
     text: number.toString(),
     color: getNumberColor(number),
     bgColor: getNumberColor(number),
-    textColor: '#FFFFFF'
+    textColor: "#FFFFFF",
   }));
 });
 
 const getNumberColor = (number: number) => {
-  if (number === 0) return '#0EA94A'; // Green for zero
-  const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-  return redNumbers.includes(number) ? '#DD3333' : '#222222';
+  if (number === 0) return "#0EA94A"; // Green for zero
+  const redNumbers = [
+    1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+  ];
+  return redNumbers.includes(number) ? "#DD3333" : "#222222";
 };
 
 const getNumberClass = (number: number) => {
-  if (number === 0) return 'green';
-  const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-  return redNumbers.includes(number) ? 'red' : 'black';
+  if (number === 0) return "green";
+  const redNumbers = [
+    1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+  ];
+  return redNumbers.includes(number) ? "red" : "black";
 };
 
 const canPlay = computed(() => {
-  const canPlayState = rouletteStore.currentBets.length > 0 && !rouletteStore.isGameActive;
-  console.log('[ROULETTE-DEBUG] Can play state:', {
+  const canPlayState =
+    rouletteStore.currentBets.length > 0 && !rouletteStore.isGameActive;
+  console.log("[ROULETTE-DEBUG] Can play state:", {
     currentBetsLength: rouletteStore.currentBets.length,
     isGameActive: rouletteStore.isGameActive,
     loading: rouletteStore.loading,
-    canPlay: canPlayState
+    canPlay: canPlayState,
   });
   return canPlayState;
 });
@@ -330,16 +442,15 @@ const placeBet = (type: string, numbers: number[]) => {
   }
 };
 
-
 const getBetOnNumber = (number: number): number | null => {
   const bet = rouletteStore.currentBets.find(
-    bet => bet.type === 'straight' && bet.numbers.includes(number)
+    (bet) => bet.type === "straight" && bet.numbers.includes(number)
   );
   return bet ? bet.amount : null;
 };
 
 const getBetOnType = (type: string): number | null => {
-  const bet = rouletteStore.currentBets.find(bet => bet.type === type);
+  const bet = rouletteStore.currentBets.find((bet) => bet.type === type);
   return bet ? bet.amount : null;
 };
 
@@ -349,13 +460,13 @@ const wheelSize = computed(() => {
 });
 
 const chipClass = (amount: number) => {
-  const classes = ['casino-chip'];
-  if (amount <= 1) classes.push('chip-1');
-  else if (amount <= 5) classes.push('chip-5');
-  else if (amount <= 10) classes.push('chip-10');
-  else if (amount <= 25) classes.push('chip-25');
-  else if (amount <= 50) classes.push('chip-50');
-  else classes.push('chip-100');
+  const classes = ["casino-chip"];
+  if (amount <= 1) classes.push("chip-1");
+  else if (amount <= 5) classes.push("chip-5");
+  else if (amount <= 10) classes.push("chip-10");
+  else if (amount <= 25) classes.push("chip-25");
+  else if (amount <= 50) classes.push("chip-50");
+  else classes.push("chip-100");
   return classes;
 };
 
@@ -363,16 +474,18 @@ const showResult = ref(false);
 const lastWinAmount = ref(0);
 
 const getResultText = (number: number | null) => {
-  if (number === null) return '';
+  if (number === null) return "";
   const texts = [];
-  if (number === 0) return 'ZERO';
-  if (number <= 18) texts.push('1-18');
-  else texts.push('19-36');
-  if (number % 2 === 0) texts.push('EVEN');
-  else texts.push('ODD');
-  const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-  texts.push(redNumbers.includes(number) ? 'RED' : 'BLACK');
-  return texts.join(' • ');
+  if (number === 0) return "ZERO";
+  if (number <= 18) texts.push("1-18");
+  else texts.push("19-36");
+  if (number % 2 === 0) texts.push("EVEN");
+  else texts.push("ODD");
+  const redNumbers = [
+    1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+  ];
+  texts.push(redNumbers.includes(number) ? "RED" : "BLACK");
+  return texts.join(" • ");
 };
 </script>
 
@@ -470,7 +583,8 @@ const getResultText = (number: number | null) => {
   margin-top: 1rem;
 }
 
-.clear-btn, .spin-btn {
+.clear-btn,
+.spin-btn {
   padding: 0.75rem;
   border-radius: 4px;
   font-weight: bold;
@@ -541,7 +655,8 @@ const getResultText = (number: number | null) => {
     margin-top: 0.5rem;
   }
 
-  .clear-btn, .spin-btn {
+  .clear-btn,
+  .spin-btn {
     padding: 0.5rem;
     font-size: 0.9rem;
     min-height: 35px;
@@ -621,7 +736,8 @@ const getResultText = (number: number | null) => {
     min-height: 32px;
   }
 
-  .clear-btn, .spin-btn {
+  .clear-btn,
+  .spin-btn {
     padding: 0.4rem;
     font-size: 0.8rem;
     min-height: 32px;
@@ -687,7 +803,7 @@ const getResultText = (number: number | null) => {
 }
 
 .number.red {
-  background: #DD3333;
+  background: #dd3333;
 }
 
 .number.black {
@@ -697,7 +813,7 @@ const getResultText = (number: number | null) => {
 .zero {
   grid-column: span 12;
   aspect-ratio: 12/1;
-  background: #0EA94A;
+  background: #0ea94a;
 }
 
 .outside-bets {
@@ -728,7 +844,7 @@ const getResultText = (number: number | null) => {
 }
 
 .bet-box.red {
-  color: #DD3333;
+  color: #dd3333;
 }
 
 .bet-box.black {
@@ -874,13 +990,13 @@ const getResultText = (number: number | null) => {
 }
 
 .number-circle::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
 }
 
 .number-circle.red {
@@ -1053,14 +1169,14 @@ const getResultText = (number: number | null) => {
 }
 
 .history-number::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
   pointer-events: none;
 }
 
@@ -1090,7 +1206,8 @@ const getResultText = (number: number | null) => {
   gap: 0.25rem;
 }
 
-.history-color, .history-parity {
+.history-color,
+.history-parity {
   font-size: 0.625rem;
   font-weight: 600;
   color: var(--textcolor);
@@ -1122,7 +1239,8 @@ const getResultText = (number: number | null) => {
     font-size: 1rem;
   }
 
-  .history-color, .history-parity {
+  .history-color,
+  .history-parity {
     font-size: 0.5rem;
   }
 }
@@ -1181,13 +1299,13 @@ const getResultText = (number: number | null) => {
 }
 
 .center-circle::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
   border-radius: 50%;
 }
 
@@ -1206,9 +1324,7 @@ const getResultText = (number: number | null) => {
 /* Enhance the wheel appearance */
 :deep(.fortune-wheel) {
   border: 8px solid var(--border);
-  box-shadow: 
-    0 0 0 4px var(--header),
-    0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px var(--header), 0 8px 24px rgba(0, 0, 0, 0.3);
   background: var(--header);
 }
 
@@ -1219,4 +1335,4 @@ const getResultText = (number: number | null) => {
 :deep(.wheel-item:hover) {
   filter: brightness(1.2);
 }
-</style> 
+</style>

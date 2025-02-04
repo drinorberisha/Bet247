@@ -212,7 +212,7 @@ const setMinesCount = (count: number) => {
 .stat-label {
   display: block;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #fff;
   margin-bottom: 0.5rem;
 }
 
@@ -429,6 +429,7 @@ const setMinesCount = (count: number) => {
   margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
+  color: var(--white);
   gap: 1rem;
   max-width: 600px;
   margin-left: auto;

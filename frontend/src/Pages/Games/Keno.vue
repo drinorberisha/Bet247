@@ -1,5 +1,6 @@
 <template>
   <MainLayout>
+    <Header />
     <div class="keno-page">
       <nav class="game-nav">
         <router-link to="/casino" class="back-link">
@@ -19,6 +20,7 @@
 <script setup lang="ts">
 import MainLayout from "../../Layouts/MainLayout.vue";
 import KenoGame from "../../components/Casino/Games/Keno.vue";
+import Header from "../../components/Header/Header.vue";
 </script>
 
 <style scoped>
@@ -32,7 +34,7 @@ import KenoGame from "../../components/Casino/Games/Keno.vue";
 }
 
 .back-link {
-  color: var(--text-secondary);
+  color: var(--white);
   text-decoration: none;
   display: inline-flex;
   align-items: center;

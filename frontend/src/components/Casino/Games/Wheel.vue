@@ -276,7 +276,7 @@ input {
 }
 
 .stat-label {
-  color: var(--text-secondary);
+  color: #fff;
   display: block;
   margin-bottom: 0.5rem;
 }

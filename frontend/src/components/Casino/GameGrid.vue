@@ -35,6 +35,13 @@
 import { TypeFlags } from "typescript";
 import { computed, provide } from "vue";
 import { useRouter } from "vue-router";
+import minator from "../../assets/img/header/mines.jpg";
+import kenotar from "../../assets/img/header/keno.jpg";
+import rouletter from "../../assets/img/header/roulette.webp";
+import dragon from "../../assets/img/header/dragon.jpg";
+import blacki from "../../assets/img/header/blackjack.jpg";
+import slotser from "../../assets/img/header/slots.jpg";
+import slotseri from "../../assets/img/header/slotsi.avif";
 
 const router = useRouter();
 const props = defineProps<{
@@ -48,7 +55,7 @@ const games = [
     id: "mines",
     name: "Mines",
     provider: "Stake Originals",
-    thumbnail: "/images/games/mines.webp",
+    thumbnail: minator,
     type: "mines",
     category: "originals",
     path: "/casino/mines",
@@ -57,7 +64,7 @@ const games = [
     id: "keno",
     name: "Keno",
     provider: "Stake Originals",
-    thumbnail: "/images/games/keno.webp",
+    thumbnail: kenotar,
     type: "keno",
     category: "originals",
     path: "/casino/keno",
@@ -66,7 +73,7 @@ const games = [
     id: "roulette",
     name: "Roulette",
     provider: "Stake Originals",
-    thumbnail: "/images/games/roulette.webp",
+    thumbnail: rouletter,
     type: "roulette",
     category: "originals",
     path: "/casino/roulette",
@@ -75,7 +82,7 @@ const games = [
     id: "dragontower",
     name: "DragonTower",
     provider: "Stake Originals",
-    thumbnail: "/images/games/dragontower.webp",
+    thumbnail: dragon,
     type: "dragontower",
     category: "originals",
     path: "/casino/dragontower",
@@ -84,7 +91,7 @@ const games = [
     id: "wheel",
     name: "Wheel",
     provider: "Stake Originals",
-    thumbnail: "/images/games/wheel.webp",
+    thumbnail: slotseri,
     Type: "wheel",
     category: "originals",
     path: "/casino/wheel",
@@ -93,7 +100,7 @@ const games = [
     id: "blackjack",
     name: "Blackjack",
     provider: "Stake Originals",
-    thumbnail: "/images/games/blackjack.webp",
+    thumbnail: blacki,
     type: "blackjack",
     category: "originals",
     path: "/casino/blackjack",
@@ -102,7 +109,7 @@ const games = [
     id: "slots",
     name: "Slots",
     provider: "Stake Originals",
-    thumbnail: "/images/games/slots.webp",
+    thumbnail: slotser,
     type: "slots",
     category: "originals",
     path: "/casino/slots",

@@ -34,7 +34,7 @@ import Header from "../../components/Header/Header.vue";
 }
 
 .back-link {
-  color: var(--text-secondary);
+  color: #fff;
   text-decoration: none;
   display: inline-flex;
   align-items: center;

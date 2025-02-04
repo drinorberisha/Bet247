@@ -1,5 +1,6 @@
 <template>
   <MainLayout>
+    <Header />
     <div class="blackjack-page">
       <nav class="game-nav">
         <router-link to="/casino" class="back-link">
@@ -19,6 +20,7 @@
 <script setup lang="ts">
 import MainLayout from "../../Layouts/MainLayout.vue";
 import BlackjackGame from "../../components/Casino/Games/Blackjack.vue";
+import Header from "../../components/Header/Header.vue";
 </script>
 
 <style scoped>
@@ -33,7 +35,7 @@ import BlackjackGame from "../../components/Casino/Games/Blackjack.vue";
 }
 
 .back-link {
-  color: var(--text-secondary);
+  color: #fff;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -80,4 +82,4 @@ h1 {
     margin-bottom: 1.5rem;
   }
 }
-</style> 
+</style>

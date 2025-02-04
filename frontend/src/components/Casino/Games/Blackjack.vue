@@ -4,11 +4,19 @@
     <div class="stats-container">
       <div class="stat-box">
         <span class="stat-label">Bet Amount</span>
-        <span class="stat-value">{{ formatAmount(blackjackStore.betAmount) }}</span>
+        <span class="stat-value">{{
+          formatAmount(blackjackStore.betAmount)
+        }}</span>
       </div>
       <div class="stat-box">
         <span class="stat-label">Last Win</span>
-        <span class="stat-value" :class="{ 'win': blackjackStore.lastWinAmount > 0, 'loss': blackjackStore.lastWinAmount < 0 }">
+        <span
+          class="stat-value"
+          :class="{
+            win: blackjackStore.lastWinAmount > 0,
+            loss: blackjackStore.lastWinAmount < 0,
+          }"
+        >
           {{ formatAmount(blackjackStore.lastWinAmount) }}
         </span>
       </div>
@@ -17,29 +25,38 @@
     <!-- Dealer's Area -->
     <div class="dealer-area">
       <h3 class="area-label">
-        Dealer's Hand 
-        <span class="hand-total" v-if="blackjackStore.dealerHand.cards.length > 0">
+        Dealer's Hand
+        <span
+          class="hand-total"
+          v-if="blackjackStore.dealerHand.cards.length > 0"
+        >
           {{ blackjackStore.dealerHand.value }}
         </span>
       </h3>
-      <div class="hand-total-display">{{ blackjackStore.dealerHand.value }}</div>
+      <div class="hand-total-display">
+        {{ blackjackStore.dealerHand.value }}
+      </div>
       <div class="hand dealer-hand">
         <div class="stacked-cards">
           <TransitionGroup name="card">
-            <div v-for="(card, index) in blackjackStore.dealerHand.cards" 
-                 :key="index"
-                 class="card"
-                 :class="[
-                   card.suit, 
-                   { 
-                     'hidden': card.hidden,
-                     'dealing': blackjackStore.isDealing && index === blackjackStore.dealerHand.cards.length - 1
-                   }
-                 ]"
-                 :style="{ 
-                   left: `${index * 30}px`,
-                   top: `${index * 15}px`
-                 }">
+            <div
+              v-for="(card, index) in blackjackStore.dealerHand.cards"
+              :key="index"
+              class="card"
+              :class="[
+                card.suit,
+                {
+                  hidden: card.hidden,
+                  dealing:
+                    blackjackStore.isDealing &&
+                    index === blackjackStore.dealerHand.cards.length - 1,
+                },
+              ]"
+              :style="{
+                left: `${index * 30}px`,
+                top: `${index * 15}px`,
+              }"
+            >
               <template v-if="!card.hidden">
                 <div class="card-value">{{ card.value }}</div>
                 <div class="card-suit">{{ getSuitSymbol(card.suit) }}</div>
@@ -55,32 +72,41 @@
       <h3 class="area-label">Player's Hand</h3>
       <div class="hands-container">
         <TransitionGroup name="hand">
-          <div v-for="(hand, handIndex) in blackjackStore.playerHands" 
-               :key="handIndex"
-               class="hand player-hand"
-               :class="{ 
-                 'active': handIndex === blackjackStore.currentHandIndex,
-                 'dealing': blackjackStore.isDealing && handIndex === blackjackStore.currentHandIndex
-               }">
+          <div
+            v-for="(hand, handIndex) in blackjackStore.playerHands"
+            :key="handIndex"
+            class="hand player-hand"
+            :class="{
+              active: handIndex === blackjackStore.currentHandIndex,
+              dealing:
+                blackjackStore.isDealing &&
+                handIndex === blackjackStore.currentHandIndex,
+            }"
+          >
             <div class="hand-header">
               <span class="hand-label">Hand {{ handIndex + 1 }}</span>
-              <div class="hand-total-display" :class="{
-                'bust': hand.value > 21,
-                'blackjack': hand.value === 21 && hand.cards.length === 2
-              }">
+              <div
+                class="hand-total-display"
+                :class="{
+                  bust: hand.value > 21,
+                  blackjack: hand.value === 21 && hand.cards.length === 2,
+                }"
+              >
                 {{ hand.value }}
               </div>
             </div>
             <div class="stacked-cards">
               <TransitionGroup name="card">
-                <div v-for="(card, cardIndex) in hand.cards" 
-                     :key="cardIndex"
-                     class="card"
-                     :class="card.suit"
-                     :style="{ 
-                       left: `${cardIndex * 30}px`,
-                       top: `${cardIndex * 15}px`
-                     }">
+                <div
+                  v-for="(card, cardIndex) in hand.cards"
+                  :key="cardIndex"
+                  class="card"
+                  :class="card.suit"
+                  :style="{
+                    left: `${cardIndex * 30}px`,
+                    top: `${cardIndex * 15}px`,
+                  }"
+                >
                   <div class="card-value">{{ card.value }}</div>
                   <div class="card-suit">{{ getSuitSymbol(card.suit) }}</div>
                 </div>
@@ -98,8 +124,8 @@
         <div class="betting-controls">
           <div class="bet-input">
             <label>Bet Amount</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               v-model="blackjackStore.betAmount"
               min="1"
               step="1"
@@ -112,10 +138,11 @@
             <button @click="setBetAmount(25)">25</button>
             <button @click="setBetAmount(100)">100</button>
           </div>
-          <button 
+          <button
             class="deal-button"
             @click="blackjackStore.startGame()"
-            :disabled="blackjackStore.loading">
+            :disabled="blackjackStore.loading"
+          >
             Deal
           </button>
         </div>
@@ -123,42 +150,44 @@
 
       <template v-else-if="blackjackStore.gameStatus === 'playing'">
         <div class="action-buttons">
-          <button 
+          <button
             @click="blackjackStore.hit()"
-            :disabled="!canHit || blackjackStore.isDealing">
+            :disabled="!canHit || blackjackStore.isDealing"
+          >
             Hit
           </button>
-          <button 
-            @click="blackjackStore.stand()"
-            :disabled="!canAct">
+          <button @click="blackjackStore.stand()" :disabled="!canAct">
             Stand
           </button>
-          <button 
+          <button
             @click="blackjackStore.double()"
-            :disabled="!blackjackStore.canDouble">
+            :disabled="!blackjackStore.canDouble"
+          >
             Double
           </button>
-          <button 
+          <button
             @click="blackjackStore.split()"
-            :disabled="!blackjackStore.canSplit">
+            :disabled="!blackjackStore.canSplit"
+          >
             Split
           </button>
-          
         </div>
       </template>
 
       <template v-else-if="blackjackStore.gameStatus === 'complete'">
         <div class="result-controls">
-          <button 
+          <button
             class="new-hand-button"
             @click="resetGame"
-            :disabled="blackjackStore.loading">
+            :disabled="blackjackStore.loading"
+          >
             New Hand
           </button>
-          <button 
+          <button
             class="rebet-button"
             @click="rebet"
-            :disabled="blackjackStore.loading">
+            :disabled="blackjackStore.loading"
+          >
             Rebet
           </button>
         </div>
@@ -170,7 +199,9 @@
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
           <h2>{{ winModalTitle }}</h2>
-          <div class="win-amount">{{ formatAmount(blackjackStore.lastWinAmount) }}</div>
+          <div class="win-amount">
+            {{ formatAmount(blackjackStore.lastWinAmount) }}
+          </div>
         </div>
       </div>
     </Transition>
@@ -178,39 +209,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useBlackjackStore } from '../../../stores/casino/blackjack';
-import { storeToRefs } from 'pinia';
+import { ref, computed, watch } from "vue";
+import { useBlackjackStore } from "../../../stores/casino/blackjack";
+import { storeToRefs } from "pinia";
 
 const blackjackStore = useBlackjackStore();
 const showWinModal = ref(false);
 
 // Computed properties
 const canHit = computed(() => {
-  const currentHand = blackjackStore.playerHands[blackjackStore.currentHandIndex];
-  return currentHand?.canHit && blackjackStore.gameStatus === 'playing';
+  const currentHand =
+    blackjackStore.playerHands[blackjackStore.currentHandIndex];
+  return currentHand?.canHit && blackjackStore.gameStatus === "playing";
 });
 
 const canAct = computed(() => {
-  return blackjackStore.gameStatus === 'playing';
+  return blackjackStore.gameStatus === "playing";
 });
 
 const winModalTitle = computed(() => {
   const amount = blackjackStore.lastWinAmount;
-  if (amount > 0) return 'WIN!';
-  if (amount < 0) return 'LOSS';
-  return 'PUSH';
+  if (amount > 0) return "WIN!";
+  if (amount < 0) return "LOSS";
+  return "PUSH";
 });
 
 // Watch for game completion
-watch(() => blackjackStore.gameStatus, (newStatus) => {
-  if (newStatus === 'complete') {
-    showWinModal.value = true;
-    setTimeout(() => {
-      showWinModal.value = false;
-    }, 3000);
+watch(
+  () => blackjackStore.gameStatus,
+  (newStatus) => {
+    if (newStatus === "complete") {
+      showWinModal.value = true;
+      setTimeout(() => {
+        showWinModal.value = false;
+      }, 3000);
+    }
   }
-});
+);
 
 // Methods
 const formatAmount = (amount: number) => {
@@ -218,7 +253,7 @@ const formatAmount = (amount: number) => {
 };
 
 const setBetAmount = (amount: number) => {
-  if (blackjackStore.gameStatus === 'betting') {
+  if (blackjackStore.gameStatus === "betting") {
     blackjackStore.betAmount = amount;
   }
 };
@@ -234,11 +269,16 @@ const rebet = () => {
 
 const getSuitSymbol = (suit: string) => {
   switch (suit) {
-    case 'hearts': return '♥';
-    case 'diamonds': return '♦';
-    case 'clubs': return '♣';
-    case 'spades': return '♠';
-    default: return '';
+    case "hearts":
+      return "♥";
+    case "diamonds":
+      return "♦";
+    case "clubs":
+      return "♣";
+    case "spades":
+      return "♠";
+    default:
+      return "";
   }
 };
 </script>
@@ -267,7 +307,7 @@ const getSuitSymbol = (suit: string) => {
 .stat-label {
   display: block;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #fff;
   margin-bottom: 0.5rem;
 }
 
@@ -577,9 +617,15 @@ button:disabled {
 }
 
 @keyframes pulse {
-  0% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.1); }
-  100% { transform: translateX(-50%) scale(1); }
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.1);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
 }
 
 @media (max-width: 768px) {
@@ -624,7 +670,10 @@ button:disabled {
   }
 
   .stacked-cards .card {
-    transform: translate(calc(var(--index, 0) * 15px), calc(var(--index, 0) * 8px));
+    transform: translate(
+      calc(var(--index, 0) * 15px),
+      calc(var(--index, 0) * 8px)
+    );
   }
 
   .betting-controls {
@@ -716,7 +765,10 @@ button:disabled {
   }
 
   .stacked-cards .card {
-    transform: translate(calc(var(--index, 0) * 12px), calc(var(--index, 0) * 6px));
+    transform: translate(
+      calc(var(--index, 0) * 12px),
+      calc(var(--index, 0) * 6px)
+    );
   }
 
   .stat-box {
@@ -742,4 +794,4 @@ button:disabled {
     margin-top: 0.1rem;
   }
 }
-</style> 
+</style>
