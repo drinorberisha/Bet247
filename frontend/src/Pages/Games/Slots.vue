@@ -35,7 +35,7 @@ import Header from "../../components/Header/Header.vue";
 }
 
 .back-link {
-  color: var(--text-secondary);
+  color: #fff;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -67,4 +67,4 @@ h1 {
   padding: 2rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
-</style> 
+</style>

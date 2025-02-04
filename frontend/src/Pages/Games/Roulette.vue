@@ -1,5 +1,6 @@
 <template>
   <MainLayout>
+    <Header />
     <div class="roulette-page">
       <nav class="game-nav">
         <router-link to="/casino" class="back-link">
@@ -19,6 +20,7 @@
 <script setup lang="ts">
 import MainLayout from "../../Layouts/MainLayout.vue";
 import RouletteGame from "../../components/Casino/Games/Roulette.vue";
+import Header from "../../components/Header/Header.vue";
 </script>
 
 <style scoped>
@@ -32,7 +34,7 @@ import RouletteGame from "../../components/Casino/Games/Roulette.vue";
 }
 
 .back-link {
-  color: var(--text-secondary);
+  color: #fff;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -74,4 +76,4 @@ h1 {
     font-size: 2rem;
   }
 }
-</style> 
+</style>

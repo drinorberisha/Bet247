@@ -192,7 +192,7 @@ const handleClear = () => {
 .stat-label {
   display: block;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #fff;
   margin-bottom: 0.5rem;
 }
 
@@ -357,6 +357,7 @@ const handleClear = () => {
 .bet-controls {
   margin-bottom: 1.5rem;
   background: var(--subheader);
+  color: var(--white);
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
