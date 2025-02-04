@@ -31,6 +31,7 @@ import Blackjack from "./Pages/Games/Blackjack.vue";
 import Slots from "./Pages/Games/Slots.vue";
 import SlotForeign from "./Pages/Games/SlotForeign.vue";
 import HalloweenSlots from "./Pages/Games/HalloweenSlots.vue";
+import NewSlots from "./Pages/Games/NewSlots.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -59,6 +60,11 @@ export const router = createRouter({
       path: "/promotions",
       component: Promotions,
       meta: { title: "BET 24/7" },
+    },
+    {
+      path: "/casino/NewSlot",
+      component: NewSlots,
+      meta: { title: "New Slots - BET 24/7", layout: "default" },
     },
     {
       path: "/profile",
@@ -244,9 +250,6 @@ export const router = createRouter({
         layout: "default",
       },
     },
-
-
-
 
     // Admin routes
 

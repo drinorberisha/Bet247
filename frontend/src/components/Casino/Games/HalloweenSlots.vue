@@ -15,15 +15,17 @@
     <!-- Slot Machine -->
     <div class="slot-container">
       <div class="reels-container">
-        <div v-for="(reel, reelIndex) in reels" 
-             :key="reelIndex" 
-             class="reel"
-             :class="{ spinning: isSpinning }"
-             :style="{ '--reel-delay': `${reelIndex * 0.5}s` }">
+        <div
+          v-for="(reel, reelIndex) in reels"
+          :key="reelIndex"
+          class="reel"
+          :class="{ spinning: isSpinning }"
+          :style="{ '--reel-delay': `${reelIndex * 0.5}s` }"
+        >
           <div class="reel-viewport">
             <div class="reel-strip" :class="{ 'spin-animation': isSpinning }">
               <div v-for="i in 10" :key="i" class="symbol">
-                <img 
+                <img
                   :src="reel[i % reel.length]?.image"
                   :alt="reel[i % reel.length]?.name"
                   width="40"
@@ -39,26 +41,26 @@
     <!-- Game Controls -->
     <div class="game-controls">
       <div class="bet-controls">
-        <button 
-          class="control-btn decrease" 
+        <button
+          class="control-btn decrease"
           @click="handleBetChange('decrease')"
           :disabled="isSpinning"
         >
           -
         </button>
         <span class="bet-amount">{{ formatCurrency(betAmount) }}</span>
-        <button 
-          class="control-btn increase" 
+        <button
+          class="control-btn increase"
           @click="handleBetChange('increase')"
           :disabled="isSpinning"
         >
           +
         </button>
       </div>
-      
-      <button 
-        class="spin-btn" 
-        :disabled="!canSpin || isSpinning" 
+
+      <button
+        class="spin-btn"
+        :disabled="!canSpin || isSpinning"
         @click="handleSpin"
       >
         SPIN
@@ -68,18 +70,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useHalloweenSlotsStore } from '../../../stores/casino/halloweenSlots';
-import { storeToRefs } from 'pinia';
+import { ref, onMounted, onUnmounted } from "vue";
+import { useHalloweenSlotsStore } from "../../../stores/casino/halloweenSlots";
+import { storeToRefs } from "pinia";
 
 const slotStore = useHalloweenSlotsStore();
-const { 
-  betAmount, 
-  lastWin, 
-  isSpinning, 
-  reels, 
-  canSpin 
-} = storeToRefs(slotStore);
+const { betAmount, lastWin, isSpinning, reels, canSpin } =
+  storeToRefs(slotStore);
 
 // Format currency utility function
 const formatCurrency = (amount: number): string => {
@@ -88,21 +85,21 @@ const formatCurrency = (amount: number): string => {
 
 // Audio setup
 const audio = {
-  spin: new Audio('/sounds/spin.mp3'),
-  win: new Audio('/sounds/win.mp3'),
-  bigWin: new Audio('/sounds/big_win.mp3'),
-  insertCoin: new Audio('/sounds/insert_coin.mp3')
+  spin: new Audio("/sounds/spin.mp3"),
+  win: new Audio("/sounds/win.mp3"),
+  bigWin: new Audio("/sounds/big_win.mp3"),
+  insertCoin: new Audio("/sounds/insert_coin.mp3"),
 };
 
 // Methods
 const handleSpin = async () => {
   if (!canSpin.value) return;
-  
+
   audio.spin.currentTime = 0;
   audio.spin.play();
-  
+
   await slotStore.startGame();
-  
+
   if (lastWin.value > 0) {
     if (lastWin.value >= betAmount.value * 10) {
       audio.bigWin.play();
@@ -112,8 +109,8 @@ const handleSpin = async () => {
   }
 };
 
-const handleBetChange = (direction: 'increase' | 'decrease') => {
-  if (direction === 'increase') {
+const handleBetChange = (direction: "increase" | "decrease") => {
+  if (direction === "increase") {
     slotStore.increaseBet();
   } else {
     slotStore.decreaseBet();
@@ -122,7 +119,7 @@ const handleBetChange = (direction: 'increase' | 'decrease') => {
 
 // Keyboard controls
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.code === 'Space') {
+  if (e.code === "Space") {
     e.preventDefault();
     handleSpin();
   }
@@ -132,16 +129,34 @@ const handleKeydown = (e: KeyboardEvent) => {
 onMounted(() => {
   slotStore.$patch({
     reels: [
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] })),
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] })),
-      Array(3).fill(null).map(() => ({ ...slotStore.symbols[Math.floor(Math.random() * slotStore.symbols.length)] }))
-    ]
+      Array(3)
+        .fill(null)
+        .map(() => ({
+          ...slotStore.symbols[
+            Math.floor(Math.random() * slotStore.symbols.length)
+          ],
+        })),
+      Array(3)
+        .fill(null)
+        .map(() => ({
+          ...slotStore.symbols[
+            Math.floor(Math.random() * slotStore.symbols.length)
+          ],
+        })),
+      Array(3)
+        .fill(null)
+        .map(() => ({
+          ...slotStore.symbols[
+            Math.floor(Math.random() * slotStore.symbols.length)
+          ],
+        })),
+    ],
   });
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
   slotStore.resetGame();
 });
 </script>
@@ -348,4 +363,4 @@ onUnmounted(() => {
     padding: 0.25rem;
   }
 }
-</style> 
+</style>
