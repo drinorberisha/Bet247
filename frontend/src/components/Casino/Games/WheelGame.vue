@@ -33,8 +33,36 @@
               </div>
             </div>
           </div>
-          <div class="controls">
-            <button @click="spin" :disabled="isSpinning">SPIN</button>
+          <div class="bet-controls">
+            <div class="bet-amount">
+              <span class="bet-label">Bet Amount:</span>
+              <div class="bet-input-group">
+                <button class="bet-btn" @click="decreaseBet" :disabled="isSpinning">-</button>
+                  <span class="bet-value">{{ wheelStore.betAmount.toFixed(2) }}€</span>
+                <button class="bet-btn" @click="increaseBet" :disabled="isSpinning">+</button>
+              </div>
+            </div>
+            
+            <div class="quick-bets">
+              <button 
+                v-for="amount in quickBets" 
+                :key="amount"
+                class="quick-bet-btn"
+                :class="{ active: wheelStore.betAmount === amount }"
+                @click="setBet(amount)"
+                :disabled="isSpinning"
+              >
+                {{ amount }}€
+              </button>
+            </div>
+
+            <button 
+              class="spin-button" 
+              @click="spin" 
+              :disabled="isSpinning"
+            >
+              SPIN
+            </button>
           </div>
         </div>
   
@@ -79,6 +107,7 @@
   <script setup>
   import MainLayout from "../../../Layouts/MainLayout.vue";
   import { ref, reactive } from "vue";
+  import { useWheelStore } from "../../../stores/casino/wheel";
   
   // Define paytable configuration
   const paytableConfig = [
@@ -101,12 +130,14 @@
     [...symbols].sort(() => Math.random() - 0.5),
   ]);
   
+  const wheelStore = useWheelStore();
   const isSpinning = ref(false);
   const showResult = ref(false);
   const isWin = ref(false);
   const resultMessage = ref("");
   const showPaytable = ref(false);
-  const betAmount = ref(1); // Add this or use your existing bet amount state
+  const betAmount = ref(1);
+  const quickBets = [1, 2, 5, 10, 20, 50];
   
   const getReelSymbols = (reel) => {
     // Duplicate symbols to create seamless loop
@@ -154,11 +185,12 @@
       }, index * 300);
     });
   
-    // Randomize the reels
-    reels.forEach((reel, index) => {
-      const newSymbols = [...symbols].sort(() => Math.random() - 0.5);
-      reels[index] = newSymbols;
-    });
+    // Call the store action
+    try {
+      await wheelStore.spin();
+    } catch (error) {
+      console.error("Error during spin:", error);
+    }
   
     // Sequential stop
     for (let i = 0; i < reelElements.length; i++) {
@@ -180,13 +212,26 @@
       el.style.transform = `translateY(${finalOffset}px)`;
     }
   
-    // Final cleanup
+    // Final cleanup and result display
     setTimeout(() => {
       reelElements.forEach((el) => {
         el.classList.remove("spinning", "stopping");
       });
       isSpinning.value = false;
-      checkWin();
+      
+      // Show result based on store state
+      showResult.value = true;
+      if (wheelStore.lastWin > 0) {
+        isWin.value = true;
+        resultMessage.value = `🎉 YOU WIN ${wheelStore.lastWin}€! 🎉`;
+      } else {
+        isWin.value = false;
+        resultMessage.value = "Try Again!";
+      }
+  
+      setTimeout(() => {
+        showResult.value = false;
+      }, 3000);
     }, 1000);
   };
   
@@ -204,7 +249,7 @@
           (config) => config.symbol === symbol
         );
         if (payConfig) {
-          const winAmount = payConfig.multiplier * Number(slotStore.betAmount);
+          const winAmount = payConfig.multiplier * Number(betAmount.value);
           highestWin = Math.max(highestWin, winAmount);
         }
       }
@@ -232,6 +277,24 @@
       showResult.value = false;
     }, 3000);
   };
+  
+  const increaseBet = () => {
+    if (!isSpinning.value) {
+      wheelStore.setBetAmount(Math.min(wheelStore.betAmount + 1, 50));
+    }
+  };
+  
+  const decreaseBet = () => {
+    if (!isSpinning.value) {
+      wheelStore.setBetAmount(Math.max(wheelStore.betAmount - 1, 1));
+    }
+  };
+  
+  const setBet = (amount) => {
+    if (!isSpinning.value) {
+      wheelStore.setBetAmount(amount);
+    }
+  };
   </script>
   
   <style scoped>
@@ -239,7 +302,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 100px);
     padding: 20px;
     width: 100%;
   }
@@ -258,7 +320,7 @@
     display: flex;
     justify-content: center;
     gap: 30px;
-    margin: 40px auto;
+    margin: 20px auto;
     max-width: 1200px;
     perspective: 1000px;
   }
@@ -400,12 +462,15 @@
   @media (max-width: 768px) {
     .game-container {
       padding: 10px;
-      min-height: calc(100vh - 80px);
     }
   
     .slot-machine {
       padding: 20px;
       max-width: 700px;
+    }
+  
+    .reels-container {
+      margin: 10px auto;
     }
   
     .reel {
@@ -620,6 +685,138 @@
     .modal-content h2 {
       font-size: 1.5rem;
       margin-bottom: 1rem;
+    }
+  }
+  
+  .bet-controls {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .bet-amount {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .bet-label {
+    color: var(--white);
+    font-size: 1rem;
+  }
+  
+  .bet-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 5px 10px;
+    border-radius: 5px;
+  }
+  
+  .bet-value {
+    color: var(--white);
+    font-size: 1.2rem;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .bet-btn {
+    background: var(--header);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .bet-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .quick-bets {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .quick-bet-btn {
+    padding: 8px 16px;
+    background: var(--header);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--white);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .quick-bet-btn:hover:not(:disabled) {
+    background: var(--active-color);
+  }
+  
+  .quick-bet-btn.active {
+    background: var(--active-color);
+    border-color: var(--active-color);
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(var(--active-color-rgb), 0.3);
+  }
+  
+  .quick-bet-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .spin-button {
+    padding: 12px 40px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    background: var(--active-color);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .spin-button:hover:not(:disabled) {
+    transform: scale(1.05);
+  }
+  
+  .spin-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    .bet-controls {
+      padding: 15px;
+      gap: 10px;
+    }
+  
+    .quick-bets {
+      gap: 5px;
+    }
+  
+    .quick-bet-btn {
+      padding: 6px 12px;
+      font-size: 0.9rem;
+    }
+  
+    .spin-button {
+      padding: 10px 30px;
+      font-size: 1.1rem;
     }
   }
   </style>

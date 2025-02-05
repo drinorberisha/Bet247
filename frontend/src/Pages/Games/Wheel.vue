@@ -6,11 +6,11 @@
         <router-link to="/casino" class="back-link">
           <i class="fas fa-arrow-left"></i> Back to Casino
         </router-link>
+        <button class="paytable-button" @click="showPaytable = true">
+          <span class="icon">📋</span>
+          Paytable
+        </button>
       </nav>
-      <button class="paytable-button" @click="showPaytable = true">
-        <span class="icon">📋</span>
-        Paytable
-      </button>
 
       <Transition name="modal">
         <div
@@ -84,6 +84,10 @@ const paytableConfig = [
 
 .game-nav {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
 }
 
 .back-link {
@@ -130,9 +134,6 @@ h1 {
 }
 
 .paytable-button {
-  position: absolute;
-  top: 100px;
-  right: 40px;
   padding: 10px 20px;
   background: linear-gradient(145deg, var(--header) 0%, var(--background) 100%);
   border: 2px solid rgba(255, 215, 0, 0.3);
@@ -143,7 +144,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 10;
   transition: all 0.3s ease;
 }
 
@@ -278,9 +278,12 @@ h1 {
     font-size: 2rem;
   }
 
+  .game-nav {
+    padding: 0 0.5rem;
+    gap: 1rem;
+  }
+
   .paytable-button {
-    top: 10px;
-    right: 10px;
     padding: 8px 16px;
     font-size: 0.9rem;
   }
@@ -302,6 +305,19 @@ h1 {
   .modal-content h2 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-nav {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .paytable-button {
+    right: 10px;
+    bottom: 10px;
+    padding: 10px 16px;
   }
 }
 </style>
