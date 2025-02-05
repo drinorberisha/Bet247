@@ -5,6 +5,7 @@ import * as dragonTowerController from './dragonTowerController';
 import * as blackjackController from './blackjackController';
 import * as halloweenSlotsController from './halloweenSlotsController';
 import * as slotPenController from './slotPenController';
+import * as wheelController from './wheelController';
 export {
   minesController,
   kenoController,
@@ -12,5 +13,6 @@ export {
   dragonTowerController,
   blackjackController,
   halloweenSlotsController,
-  slotPenController
+  slotPenController,
+  wheelController,
 }; 

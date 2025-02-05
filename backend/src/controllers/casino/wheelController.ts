@@ -19,7 +19,7 @@ const WHEEL_SYMBOLS = [
 export const spin = async (req: Request, res: Response) => {
   try {
     const { betAmount } = req.body;
-    // @ts-ignore - user added by auth middleware
+    // @ts-ignore
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -38,49 +38,31 @@ export const spin = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate random reels
-    const reels = Array(3)
-      .fill(null)
-      .map(
-        () =>
-          WHEEL_SYMBOLS[Math.floor(Math.random() * WHEEL_SYMBOLS.length)].symbol
-      );
-
-    // Calculate win
-    const { winAmount, multiplier } = calculateWin(reels, betAmount);
+    // Create game record
+    const gameId = `wheel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Deduct bet amount
+    const updatedUser = await dbService.users.updateBalance(userId, -betAmount);
 
     // Create game record
-    const gameId = `wheel_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-
     await CasinoGame.create({
       gameId,
       userId,
       gameType: "wheel",
       betAmount,
-      winAmount,
       status: "completed",
-      result: winAmount > 0 ? "win" : "loss",
+      createdAt: new Date(),
+      completedAt: new Date()
     });
-
-    // Update user balance
-    const balanceChange = winAmount - betAmount;
-    const updatedUser = await dbService.users.updateBalance(
-      userId,
-      balanceChange
-    );
 
     res.json({
       success: true,
       gameId,
-      reels,
-      winAmount,
-      multiplier,
-      newBalance: updatedUser?.balance,
+      newBalance: updatedUser?.balance
     });
+
   } catch (error) {
-    console.error("[WHEEL-CONTROLLER] Error:", error);
+    console.error("[WHEEL-CONTROLLER] Error processing spin:", error);
     res.status(500).json({
       success: false,
       message: "Error processing spin",
