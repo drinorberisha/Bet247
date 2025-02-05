@@ -21,31 +21,30 @@
     <!-- Slot Machine -->
     <div class="slot-machine">
       <!-- Updated Reels Container -->
-      <div class="reels-container" :class="{ spinning: slotStore.isSpinning }">
+      <div class="reels-container">
         <div
           v-for="(reel, reelIndex) in slotStore.reels"
           :key="reelIndex"
           class="reel"
-          :style="{ animationDelay: `${reelIndex * 0.2}s` }"
         >
-          <!-- Static Symbols -->
           <div
-            v-for="(symbol, symbolIndex) in reel"
-            :key="symbolIndex"
-            class="symbol"
-            :class="{ winning: isWinningSymbol(reelIndex, symbolIndex) }"
+            class="reel-strip"
+            :class="{ spinning: slotStore.isSpinning }"
+            :style="{
+              '--delay': `${reelIndex * 0.5}s`,
+              '--duration': `${2 + reelIndex * 0.5}s`,
+            }"
           >
-            <div class="symbol-inner">
-              <span class="symbol-emoji">{{
-                getSymbolEmoji(symbol?.name)
-              }}</span>
-            </div>
-          </div>
-          <!-- Spinning Animation Symbols -->
-          <div v-if="slotStore.isSpinning" class="spinning-symbols">
-            <div v-for="n in 20" :key="n" class="symbol">
+            <div
+              v-for="(symbol, index) in getReelSymbols(reel)"
+              :key="index"
+              class="symbol"
+              :class="{ winning: isWinningSymbol(reelIndex, index) }"
+            >
               <div class="symbol-inner">
-                <span class="symbol-emoji">{{ getRandomEmoji() }}</span>
+                <span class="symbol-emoji">{{
+                  getSymbolEmoji(symbol?.name)
+                }}</span>
               </div>
             </div>
           </div>
@@ -218,22 +217,83 @@ const getRandomEmoji = () => {
   return allEmojis[Math.floor(Math.random() * allEmojis.length)];
 };
 
-// Update spin handling
+// Add this helper function to duplicate symbols for seamless loop
+const getReelSymbols = (reel: any[]) => {
+  return [...reel, ...reel, ...reel];
+};
+
+// Update the handleSpin function to match WheelGame's spin logic
 const handleSpin = async () => {
-  if (spinningInterval) {
-    clearInterval(spinningInterval);
+  if (slotStore.isSpinning) return;
+
+  const reelElements = document.querySelectorAll(".reel-strip");
+
+  // Reset positions and prepare for spinning
+  reelElements.forEach((el) => {
+    el.style.transition = "none";
+    el.style.transform = "translateY(0)";
+  });
+
+  void document.body.offsetHeight;
+
+  // Improved spinning animation
+  reelElements.forEach((el, index) => {
+    setTimeout(() => {
+      el.style.transition = `transform ${
+        3 + index * 0.5
+      }s cubic-bezier(0.1, 0.3, 0.3, 1)`;
+      el.style.transform = "translateY(-100%)";
+      el.classList.add("spinning");
+
+      const animate = () => {
+        if (!el.classList.contains("spinning")) return;
+        requestAnimationFrame(() => {
+          el.style.transition = "none";
+          el.style.transform = "translateY(0)";
+          void el.offsetHeight;
+          el.style.transition = "transform 1s cubic-bezier(0.1, 0.3, 0.3, 1)";
+          el.style.transform = "translateY(-100%)";
+        });
+      };
+
+      el.addEventListener("transitionend", animate);
+      el._animationHandler = animate;
+    }, index * 300);
+  });
+
+  // Call the store action
+  try {
+    await slotStore.spin();
+  } catch (error) {
+    console.error("Error during spin:", error);
   }
 
-  await slotStore.spin();
+  // Sequential stop
+  for (let i = 0; i < reelElements.length; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    const el = reelElements[i];
 
-  if (slotStore.autoPlay && slotStore.autoPlayCount > 0) {
-    slotStore.autoPlayCount--;
-    if (slotStore.autoPlayCount > 0) {
-      setTimeout(handleSpin, 1000);
-    } else {
-      slotStore.setAutoPlay(0);
-    }
+    // Remove the continuous animation
+    el.removeEventListener("transitionend", el._animationHandler);
+    delete el._animationHandler;
+
+    el.classList.remove("spinning");
+    el.classList.add("stopping");
+
+    // Calculate final position based on symbol height
+    const symbolHeight = el.children[0].offsetHeight;
+    const finalOffset = -symbolHeight; // Align to first symbol
+
+    el.style.transition = "transform 0.5s cubic-bezier(0.5, 0, 0.5, 1)";
+    el.style.transform = `translateY(${finalOffset}px)`;
   }
+
+  // Final cleanup
+  setTimeout(() => {
+    reelElements.forEach((el) => {
+      el.classList.remove("spinning", "stopping");
+    });
+  }, 1000);
 };
 
 const setBetAmount = (amount: number) => {
@@ -378,137 +438,121 @@ watch(
 .slots-game {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-}
-
-.stats-container {
-  display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.stat-box {
-  flex: 1;
-  padding: 1.5rem;
-  background: linear-gradient(145deg, var(--subheader) 0%, var(--header) 100%);
-  border-radius: 16px;
-  text-align: center;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-}
-
-.stat-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
-}
-
-.stat-label {
-  display: block;
-  font-size: 1rem;
-  color: var(--white);
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--white);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 1rem;
 }
 
 .slot-machine {
   position: relative;
   background: linear-gradient(145deg, var(--header) 0%, var(--background) 100%);
-  border-radius: 24px;
-  padding: 3rem;
-  margin: 2rem 0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 1rem 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
 .reels-container {
   display: flex;
-  gap: 0.3rem;
   justify-content: center;
+  gap: 8px;
+  margin: 20px auto;
+  max-width: 100%;
   perspective: 1000px;
+  padding: 10px;
   background: rgba(0, 0, 0, 0.3);
-  padding: 0.5rem;
   border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
 }
 
 .reel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
   flex: 1;
-  max-width: 80px; /* Mobile-first size */
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3),
+    rgba(0, 0, 0, 0) 15%,
+    rgba(0, 0, 0, 0) 85%,
+    rgba(0, 0, 0, 0.3)
+  );
+  height: 300px;
+  min-width: 60px;
+  max-width: 80px;
+  overflow: hidden;
+  border: 3px solid gold;
+  border-radius: 10px;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.reel::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  height: 80px;
+  transform: translateY(-50%);
+  background: rgba(255, 215, 0, 0.1);
+  border-top: 1px solid rgba(255, 215, 0, 0.5);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.5);
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.reel-strip {
+  position: relative;
+  transform: translateY(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.spinning {
+  animation: smoothSpin 1s linear infinite;
+}
+
+@keyframes smoothSpin {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+.stopping {
+  animation: none;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 
 .symbol {
-  aspect-ratio: 1;
-  background: linear-gradient(145deg, var(--subheader) 0%, var(--header) 100%);
-  border-radius: 8px;
-  padding: 0.25rem;
-  position: relative;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  transform-style: preserve-3d;
+  padding: 5px;
 }
 
 .symbol-inner {
-  width: 100%;
-  height: 100%;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  overflow: hidden;
+  position: relative;
+  z-index: 2;
 }
 
 .symbol-emoji {
-  font-size: 1.5rem; /* Mobile-first size */
-  line-height: 1;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-  transition: all 0.3s ease;
+  font-size: 32px;
 }
 
-/* Spinning Animation Styles */
-.spinning-symbols {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  animation: spinReel 0.5s linear infinite;
-}
-
-.reel.spinning .symbol {
-  transform: scale(0.95);
-}
-
-@keyframes spinReel {
-  0% {
-    transform: translateY(0%);
-  }
-  100% {
-    transform: translateY(-50%);
-  }
-}
-
-/* Winning Symbol Animation */
+/* Winning symbol styles */
 .symbol.winning {
-  background: linear-gradient(
-    145deg,
-    var(--active-color) 0%,
-    var(--header) 100%
-  );
+  background: linear-gradient(145deg, var(--active-color) 0%, var(--header) 100%);
   box-shadow: 0 0 15px rgba(var(--active-color-rgb), 0.5);
   transform: scale(1.05);
   z-index: 1;
@@ -519,6 +563,83 @@ watch(
   animation: winPulse 1s infinite;
 }
 
+/* Tablet styles */
+@media (min-width: 768px) {
+  .reels-container {
+    gap: 15px;
+  }
+
+  .reel {
+    height: 400px;
+    min-width: 80px;
+    max-width: 100px;
+    border-width: 4px;
+  }
+
+  .reel::before {
+    height: 100px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+  }
+
+  .symbol {
+    height: 100px;
+  }
+
+  .symbol-emoji {
+    font-size: 48px;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .reels-container {
+    gap: 20px;
+  }
+
+  .reel {
+    height: 450px;
+    min-width: 100px;
+    max-width: 120px;
+    border-width: 6px;
+  }
+
+  .reel::before {
+    height: 120px;
+  }
+
+  .symbol {
+    height: 120px;
+  }
+
+  .symbol-emoji {
+    font-size: 64px;
+  }
+}
+
+/* Large desktop styles */
+@media (min-width: 1200px) {
+  .reel {
+    height: 500px;
+    min-width: 120px;
+    max-width: 140px;
+    border-width: 8px;
+  }
+
+  .reel::before {
+    height: 150px;
+  }
+
+  .symbol {
+    height: 150px;
+  }
+
+  .symbol-emoji {
+    font-size: 72px;
+  }
+}
+
+/* Animation keyframes */
 @keyframes winPulse {
   0% {
     transform: scale(1);
@@ -531,466 +652,34 @@ watch(
   }
 }
 
-/* Tablet and up */
-@media (min-width: 768px) {
-  .reels-container {
-    gap: 0.5rem;
-    padding: 1rem;
-    border-radius: 16px;
-  }
-  .control-label {
-    color: var(--white);
-  }
-  .reel {
-    gap: 0.5rem;
-    max-width: 120px;
-  }
-
-  .symbol {
-    border-radius: 12px;
-    padding: 0.5rem;
-  }
-
-  .symbol-inner {
-    border-radius: 8px;
-  }
-
-  .symbol-emoji {
-    font-size: 2.5rem;
-  }
+/* Stats container styles */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Desktop */
-@media (min-width: 1024px) {
-  .slots-game {
-    padding: 2rem;
-    max-width: 1200px;
-  }
-
-  .stats-container {
-    gap: 2rem;
-    margin-bottom: 2rem;
-  }
-
-  .stat-box {
-    padding: 1.5rem 2rem;
-    min-width: 200px;
-  }
-
-  .stat-label {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-  }
-
-  .stat-value {
-    font-size: 2rem;
-  }
-
-  .slot-machine {
-    padding: 2.5rem;
-    margin: 2rem auto;
-    max-width: 900px;
-    border-radius: 30px;
-  }
-
-  .reels-container {
-    gap: 1rem;
-    padding: 1.5rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .reel {
-    max-width: 140px;
-    gap: 0.8rem;
-  }
-
-  .symbol {
-    padding: 0.5rem;
-    border-radius: 12px;
-  }
-
-  .symbol-emoji {
-    font-size: 3.5rem;
-  }
-
-  /* Game controls for laptop */
-  .game-controls {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 2rem;
-    border-radius: 24px;
-  }
-
-  .bet-controls {
-    gap: 3rem;
-    margin-bottom: 2rem;
-  }
-
-  .bet-input,
-  .auto-spins {
-    padding: 2rem;
-    border-radius: 20px;
-  }
-
-  .quick-amounts,
-  .auto-spins {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-  }
-
-  .quick-amounts button,
-  .auto-spins button {
-    padding: 1rem 1.5rem;
-    font-size: 1.2rem;
-    border-radius: 12px;
-  }
-
-  .spin-button {
-    padding: 1.5rem 3rem;
-    font-size: 1.5rem;
-    border-radius: 16px;
-  }
-
-  /* Win popup for laptop */
-  .win-popup .win-content {
-    padding: 3rem;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .win-content h2 {
-    font-size: 2.5rem;
-  }
-
-  .win-amount {
-    font-size: 3.5rem;
-  }
-
-  .win-multiplier {
-    font-size: 1.8rem;
-  }
-
-  /* Notifications for laptop */
-  .notifications-container {
-    right: 2rem;
-    bottom: 2rem;
-    max-width: 400px;
-  }
-
-  .notification {
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .notification-icon {
-    font-size: 2rem;
-    min-width: 40px;
-    height: 40px;
-  }
-
-  .notification-text h3 {
-    font-size: 1.3rem;
-  }
-
-  .notification-text p {
-    font-size: 1.1rem;
-  }
-}
-
-/* Large laptop and desktop (1440px and up) */
-@media (min-width: 1440px) {
-  .slots-game {
-    padding: 3rem;
-  }
-
-  .slot-machine {
-    max-width: 1000px;
-  }
-
-  .reel {
-    max-width: 160px;
-  }
-
-  .symbol-emoji {
-    font-size: 4rem;
-  }
-
-  .game-controls {
-    max-width: 1000px;
-  }
-}
-
-/* Updated spinning animation with enhanced slowdown effect */
-.spinning .reel {
-  animation: smoothSpinSlowdown 4s cubic-bezier(0.3, 0.1, 0.3, 1) forwards;
-}
-
-@keyframes smoothSpinSlowdown {
-  0% {
-    transform: translateY(0);
-  }
-  10% {
-    /* Quick start */
-    transform: translateY(-10%);
-    animation-timing-function: linear;
-  }
-  40% {
-    /* Full speed */
-    transform: translateY(-60%);
-    animation-timing-function: linear;
-  }
-  65% {
-    /* Initial slowdown */
-    transform: translateY(-80%);
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  80% {
-    /* Slower */
-    transform: translateY(-90%);
-    animation-timing-function: cubic-bezier(0.6, 0, 0.3, 1);
-  }
-  85% {
-    /* Slower */
-    transform: translateY(-94%);
-    animation-timing-function: cubic-bezier(0.6, 0, 0.3, 1);
-  }
-  90% {
-    /* Very slow */
-    transform: translateY(-97%);
-    animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1);
-  }
-  95% {
-    /* Final approach */
-    transform: translateY(-99%);
-    animation-timing-function: cubic-bezier(0.9, 0, 0.1, 1);
-  }
-  100% {
-    /* Settle into position */
-    transform: translateY(-100%);
-  }
-}
-
-/* Updated delays for more dramatic cascade effect */
-.spinning .reel:nth-child(1) {
-  animation-delay: 0s;
-}
-.spinning .reel:nth-child(2) {
-  animation-delay: 0.3s;
-}
-.spinning .reel:nth-child(3) {
-  animation-delay: 0.6s;
-}
-.spinning .reel:nth-child(4) {
-  animation-delay: 0.9s;
-}
-.spinning .reel:nth-child(5) {
-  animation-delay: 1.2s;
-}
-.spinning .reel:nth-child(6) {
-  animation-delay: 1.5s;
-}
-
-/* Enhanced blur effect matching the new slowdown */
-.spinning .symbol-emoji {
-  animation: blurSpinSlowdown 4s linear forwards;
-}
-
-@keyframes blurSpinSlowdown {
-  0% {
-    filter: blur(0);
-  }
-  10% {
-    /* Start of spin */
-    filter: blur(2px);
-  }
-  40% {
-    /* Full speed */
-    filter: blur(3px);
-  }
-  65% {
-    /* Initial slowdown */
-    filter: blur(2px);
-  }
-  80% {
-    /* Slower */
-    filter: blur(1.5px);
-  }
-  90% {
-    /* Very slow */
-    filter: blur(1px);
-  }
-  95% {
-    /* Final approach */
-    filter: blur(0.5px);
-  }
-  100% {
-    /* Stopped */
-    filter: blur(0);
-  }
-}
-
-/* Add a subtle bounce at the end of each reel */
-.spinning .reel {
-  animation: smoothSpinSlowdown 4s cubic-bezier(0.3, 0.1, 0.3, 1) forwards,
-    subtleBounce 0.3s ease-out;
-  animation-delay: var(--reel-delay), calc(var(--reel-delay) + 3.7s);
-}
-
-@keyframes subtleBounce {
-  0% {
-    transform: translateY(-100%);
-  }
-  50% {
-    transform: translateY(-101%);
-  }
-  100% {
-    transform: translateY(-100%);
-  }
-}
-
-/* Handle landscape orientation */
-@media (max-height: 600px) and (orientation: landscape) {
-  .reels-container {
-    padding: 0.5rem;
-  }
-
-  .reel {
-    max-width: 100px;
-  }
-
-  .symbol-emoji {
-    font-size: 2rem;
-  }
-}
-
-/* Updated Payline Styles */
-.paylines-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 10;
-  overflow: visible;
-}
-
-.paylines {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.payline {
-  fill: none;
-  stroke-width: 4px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px currentColor);
-  opacity: 0;
-  animation: paylineShow 2s ease-in-out infinite;
-}
-
-/* Different colors for different paylines */
-.payline-0 {
-  stroke: #ff4081;
-  animation-delay: 0s;
-}
-.payline-1 {
-  stroke: #40c4ff;
-  animation-delay: 0.2s;
-}
-.payline-2 {
-  stroke: #7c4dff;
-  animation-delay: 0.4s;
-}
-.payline-3 {
-  stroke: #ffeb3b;
-  animation-delay: 0.6s;
-}
-.payline-4 {
-  stroke: #76ff03;
-  animation-delay: 0.8s;
-}
-.payline-5 {
-  stroke: #ff9100;
-  animation-delay: 1s;
-}
-.payline-6 {
-  stroke: #00e5ff;
-  animation-delay: 1.2s;
-}
-.payline-7 {
-  stroke: #ff1744;
-  animation-delay: 1.4s;
-}
-.payline-8 {
-  stroke: #64ffda;
-  animation-delay: 1.6s;
-}
-
-@keyframes paylineShow {
-  0%,
-  5% {
-    opacity: 0;
-    stroke-dasharray: 0, 1500;
-    stroke-dashoffset: 1500;
-  }
-  20% {
-    opacity: 1;
-  }
-  45% {
-    stroke-dasharray: 1500, 0;
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
-  }
-  95%,
-  100% {
-    opacity: 0;
-    stroke-dasharray: 1500, 0;
-    stroke-dashoffset: -1500;
-  }
-}
-
-/* Responsive adjustments for paylines */
-@media (max-width: 768px) {
-  .payline {
-    stroke-width: 3px;
-  }
-}
-
-@media (max-width: 480px) {
-  .payline {
-    stroke-width: 2px;
-  }
-}
-
-/* Laptop optimization for paylines */
-@media (min-width: 1024px) {
-  .payline {
-    stroke-width: 5px;
-  }
-}
-
-.game-controls {
-  margin-top: 3rem;
+.stat-box {
+  padding: 1rem;
   background: linear-gradient(145deg, var(--subheader) 0%, var(--header) 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Game controls styles */
+.game-controls {
+  padding: 15px;
+  margin-top: 20px;
+  background: linear-gradient(145deg, var(--subheader) 0%, var(--header) 100%);
+  border-radius: 16px;
   border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .bet-controls {
-  display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 10px;
 }
 
 .bet-amount,
@@ -1088,6 +777,54 @@ watch(
 .win-multiplier {
   font-size: 1.5rem;
   color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .reel {
+    height: 360px;
+  }
+
+  .symbol {
+    height: 120px;
+  }
+
+  .symbol-emoji {
+    font-size: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .reel {
+    height: 270px;
+    width: 150px;
+  }
+
+  .symbol {
+    height: 90px;
+  }
+
+  .symbol-emoji {
+    font-size: 45px;
+  }
+}
+
+@media (max-width: 480px) {
+  .reel {
+    height: 180px;
+    width: 100px;
+  }
+
+  .symbol {
+    height: 60px;
+  }
+
+  .symbol-emoji {
+    font-size: 30px;
+  }
+
+  .reels-container {
+    gap: 10px;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1353,6 +1090,120 @@ watch(
 
   .symbol-emoji {
     font-size: 1.8rem;
+  }
+}
+
+/* Updated Payline Styles */
+.paylines-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
+.paylines {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.payline {
+  fill: none;
+  stroke-width: 4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px currentColor);
+  opacity: 0;
+  animation: paylineShow 2s ease-in-out infinite;
+}
+
+/* Different colors for different paylines */
+.payline-0 {
+  stroke: #ff4081;
+  animation-delay: 0s;
+}
+.payline-1 {
+  stroke: #40c4ff;
+  animation-delay: 0.2s;
+}
+.payline-2 {
+  stroke: #7c4dff;
+  animation-delay: 0.4s;
+}
+.payline-3 {
+  stroke: #ffeb3b;
+  animation-delay: 0.6s;
+}
+.payline-4 {
+  stroke: #76ff03;
+  animation-delay: 0.8s;
+}
+.payline-5 {
+  stroke: #ff9100;
+  animation-delay: 1s;
+}
+.payline-6 {
+  stroke: #00e5ff;
+  animation-delay: 1.2s;
+}
+.payline-7 {
+  stroke: #ff1744;
+  animation-delay: 1.4s;
+}
+.payline-8 {
+  stroke: #64ffda;
+  animation-delay: 1.6s;
+}
+
+@keyframes paylineShow {
+  0%,
+  5% {
+    opacity: 0;
+    stroke-dasharray: 0, 1500;
+    stroke-dashoffset: 1500;
+  }
+  20% {
+    opacity: 1;
+  }
+  45% {
+    stroke-dasharray: 1500, 0;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    stroke-dasharray: 1500, 0;
+    stroke-dashoffset: -1500;
+  }
+}
+
+/* Responsive adjustments for paylines */
+@media (max-width: 768px) {
+  .payline {
+    stroke-width: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payline {
+    stroke-width: 2px;
+  }
+}
+
+/* Laptop optimization for paylines */
+@media (min-width: 1024px) {
+  .payline {
+    stroke-width: 5px;
   }
 }
 </style>
