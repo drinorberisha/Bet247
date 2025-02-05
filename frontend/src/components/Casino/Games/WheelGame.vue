@@ -9,8 +9,16 @@
           </button> -->
   
           <div class="result-message" v-if="showResult">
-            <div :class="['message', { win: isWin, lose: !isWin }]">
-              {{ resultMessage }}
+            <div :class="['message-container', { win: isWin, lose: !isWin }]">
+              <div class="message-icon">
+                {{ isWin ? '🎉' : '💫' }}
+              </div>
+              <div class="message-text">
+                {{ resultMessage }}
+              </div>
+              <div class="message-amount" v-if="isWin">
+                {{ wheelStore.lastWin.toFixed(2) }}€
+              </div>
             </div>
           </div>
           <div class="reels-container">
@@ -219,19 +227,19 @@
       });
       isSpinning.value = false;
       
-      // Show result based on store state
+      // Updated result messages
       showResult.value = true;
       if (wheelStore.lastWin > 0) {
         isWin.value = true;
-        resultMessage.value = `🎉 YOU WIN ${wheelStore.lastWin}€! 🎉`;
+        resultMessage.value = "GREAT WIN!";
       } else {
         isWin.value = false;
-        resultMessage.value = "Try Again!";
+        resultMessage.value = "SPIN AGAIN!";
       }
   
       setTimeout(() => {
         showResult.value = false;
-      }, 3000);
+      }, 1500);
     }, 1000);
   };
   
@@ -420,24 +428,97 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 100;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 0 20px;
   }
   
-  .message {
-    font-size: 24px;
+  .message-container {
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    animation: messagePopup 0.3s ease-out;
+    border: 2px solid;
+  }
+  
+  .message-container.win {
+    border-color: #4caf50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+  }
+  
+  .message-container.lose {
+    border-color: #f44336;
+    box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
+  }
+  
+  .message-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    animation: bounce 0.5s ease infinite alternate;
+  }
+  
+  .message-text {
+    font-size: 1.8rem;
     font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   }
   
-  .win {
+  .win .message-text {
     color: #4caf50;
+    animation: glow 1s ease-in-out infinite alternate;
   }
   
-  .lose {
+  .lose .message-text {
     color: #f44336;
+  }
+  
+  .message-amount {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    animation: scaleUp 0.3s ease-out;
+  }
+  
+  @keyframes messagePopup {
+    from {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes bounce {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-10px);
+    }
+  }
+  
+  @keyframes glow {
+    from {
+      text-shadow: 0 0 5px #4caf50, 0 0 10px #4caf50, 0 0 15px #4caf50;
+    }
+    to {
+      text-shadow: 0 0 10px #4caf50, 0 0 20px #4caf50, 0 0 30px #4caf50;
+    }
+  }
+  
+  @keyframes scaleUp {
+    from {
+      transform: scale(0.5);
+    }
+    to {
+      transform: scale(1);
+    }
   }
   
   @media (max-width: 1024px) {
