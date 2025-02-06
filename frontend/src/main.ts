@@ -35,8 +35,6 @@ const initApp = async () => {
   const authStore = useAuthStore();
   
   try {
-    await authStore.checkAuth();
-    
     if (!authStore.isAuthenticated) {
       router.push("/auth");
     }
