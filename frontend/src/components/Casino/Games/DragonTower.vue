@@ -23,55 +23,71 @@
       </div>
     </div>
 
-    <div class="tower-container">
-      <div
-        v-for="(row, rowIndex) in reversedRows"
-        :key="rowIndex"
-        class="tower-row"
-        :class="{
-          'active-row': isActiveRow(rowIndex),
-          'completed-row': isCompletedRow(rowIndex),
-        }"
-      >
+    <div class="tower-wrapper">
+      <div class="dragon-decoration">
         <div
-          v-for="(tile, tileIndex) in row.tiles.slice(
-            0,
-            DIFFICULTY_CONFIGS[dragonTowerStore.difficulty].columns
-          )"
-          :key="tileIndex"
-          class="tile"
+          class="fire-left"
+          :class="{ 'show-fire': showFireAnimation }"
+        ></div>
+        <div
+          class="fire-right"
+          :class="{ 'show-fire': showFireAnimation }"
+        ></div>
+      </div>
+      <div class="tower-container">
+        <div
+          v-for="(row, rowIndex) in reversedRows"
+          :key="rowIndex"
+          class="tower-row"
           :class="{
-            revealed: tile.revealed,
-            dragon: tile.revealed && tile.isDragon,
-            'dragon-clicked':
-              tile.revealed &&
-              tile.isDragon &&
-              9 - rowIndex === dragonTowerStore.currentRow,
-            'dragon-revealed':
-              tile.revealed &&
-              tile.isDragon &&
-              9 - rowIndex !== dragonTowerStore.currentRow,
-            safe: tile.revealed && !tile.isDragon,
-            'revealed-dragon':
-              !tile.revealed && tile.isDragon && !dragonTowerStore.isGameActive,
+            'active-row': isActiveRow(rowIndex),
+            'completed-row': isCompletedRow(rowIndex),
           }"
-          @click="handleTileClick(9 - rowIndex, tileIndex)"
         >
-          <span
-            v-if="tile.revealed && !tile.isDragon"
-            class="safe-emoji glow-effect"
-            >🥚</span
+          <div
+            v-for="(tile, tileIndex) in row.tiles.slice(
+              0,
+              DIFFICULTY_CONFIGS[dragonTowerStore.difficulty].columns
+            )"
+            :key="tileIndex"
+            class="tile"
+            :class="{
+              revealed: tile.revealed,
+              dragon: tile.revealed && tile.isDragon,
+              'dragon-clicked':
+                tile.revealed &&
+                tile.isDragon &&
+                9 - rowIndex === dragonTowerStore.currentRow,
+              'dragon-revealed':
+                tile.revealed &&
+                tile.isDragon &&
+                9 - rowIndex !== dragonTowerStore.currentRow,
+              safe: tile.revealed && !tile.isDragon,
+              'revealed-dragon':
+                !tile.revealed &&
+                tile.isDragon &&
+                !dragonTowerStore.isGameActive,
+            }"
+            @click="handleTileClick(9 - rowIndex, tileIndex)"
           >
-          <span v-if="tile.revealed && tile.isDragon" class="dragon-emoji"
-            >🐉</span
-          >
-          <span
-            v-if="
-              !tile.revealed && tile.isDragon && !dragonTowerStore.isGameActive
-            "
-            class="revealed-dragon-emoji"
-            >��</span
-          >
+            <span
+              v-if="tile.revealed && !tile.isDragon"
+              class="safe-emoji glow-effect"
+              >🥚</span
+            >
+            <span v-if="tile.revealed && tile.isDragon" class="dragon-emoji"
+              >🐉</span
+            >
+            <span
+              v-if="
+                !tile.revealed &&
+                tile.isDragon &&
+                !dragonTowerStore.isGameActive
+              "
+              class="revealed-dragon-emoji"
+              >��</span
+            >
+          </div>
         </div>
       </div>
     </div>
@@ -129,7 +145,7 @@
         <button
           v-else
           class="cashout-btn"
-          @click="dragonTowerStore.cashout"
+          @click="handleCashout"
           :disabled="!dragonTowerStore.canCashout || dragonTowerStore.loading"
         >
           Cashout ({{ dragonTowerStore.currentMultiplier }}x)
@@ -171,6 +187,8 @@ import {
   DIFFICULTY_CONFIGS,
 } from "../../../stores/casino/dragonTower";
 import { storeToRefs } from "pinia";
+import dragonImage from "../../../assets/img/header/dragotower.jpg";
+import fireImage from "../../../assets/img/header/fire.gif";
 
 const dragonTowerStore = useDragonTowerStore();
 const { loading, isGameActive, currentMultiplier, currentProfit } =
@@ -179,6 +197,7 @@ const { loading, isGameActive, currentMultiplier, currentProfit } =
 const reversedRows = computed(() => [...dragonTowerStore.rows].reverse());
 
 const showWinModal = ref(false);
+const showFireAnimation = ref(false);
 
 // Watch for wins
 watch(currentProfit, (newProfit) => {
@@ -236,6 +255,14 @@ watch(
     }
   }
 );
+
+const handleCashout = async () => {
+  showFireAnimation.value = true;
+  await dragonTowerStore.cashout();
+  setTimeout(() => {
+    showFireAnimation.value = false;
+  }, 2000); // Fire animation duration
+};
 </script>
 
 <style scoped>
@@ -307,7 +334,75 @@ watch(
   }
 }
 
+.tower-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 100px; /* Space for the dragon */
+}
+
+.dragon-decoration {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 150px;
+  background: url("../../../../src/assets/img/header/dragotower.svg") no-repeat
+    center center;
+  background-size: contain;
+  z-index: 1;
+  pointer-events: none; /* Allows clicking through the decoration */
+  animation: floatDragon 4s ease-in-out infinite;
+}
+
+.fire-left,
+.fire-right {
+  position: absolute;
+  width: 60px;
+  height: 100px;
+  bottom: 20px;
+  background: url("../../../../src/assets/img/header/fire.gif") no-repeat center
+    center;
+  background-size: cover;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.fire-left.show-fire,
+.fire-right.show-fire {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fire-left {
+  left: -40px;
+  transform: rotate(-15deg);
+}
+
+.fire-right {
+  right: -40px;
+  transform: rotate(15deg);
+}
+
+@keyframes floatDragon {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 .tower-container {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -728,6 +823,31 @@ watch(
     max-width: 280px;
     padding: 1.5rem;
   }
+
+  .dragon-decoration {
+    width: 200px;
+    height: 100px;
+    top: -10px;
+  }
+
+  .tower-wrapper {
+    padding-top: 80px;
+  }
+
+  .fire-left,
+  .fire-right {
+    width: 40px;
+    height: 70px;
+    bottom: 15px;
+  }
+
+  .fire-left {
+    left: -25px;
+  }
+
+  .fire-right {
+    right: -25px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -791,6 +911,31 @@ watch(
 
   .stats-container {
     gap: 0.25rem; /* Even smaller gap for very small screens */
+  }
+
+  .dragon-decoration {
+    width: 150px;
+    height: 75px;
+    top: -5px;
+  }
+
+  .tower-wrapper {
+    padding-top: 60px;
+  }
+
+  .fire-left,
+  .fire-right {
+    width: 30px;
+    height: 50px;
+    bottom: 10px;
+  }
+
+  .fire-left {
+    left: -20px;
+  }
+
+  .fire-right {
+    right: -20px;
   }
 }
 
