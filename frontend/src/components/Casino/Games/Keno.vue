@@ -175,75 +175,75 @@ const handleClear = () => {
 }
 
 .stats-container {
+  color: white;
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat-box {
-  flex: 1;
-  padding: 1.25rem;
+  align-items: center;
+  justify-content: center;
   background: var(--subheader);
   border-radius: 12px;
-  text-align: center;
+  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  max-width: 600px;
+  margin: 0 auto 1rem;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem;
+}
+
 .stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .stat-value {
-  font-size: 1.4rem;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
   font-weight: bold;
   color: var(--white);
+}
+
+.divider {
+  width: 1px;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .potential-wins {
   background: var(--subheader);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.75rem;
   margin: 1rem 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .potential-wins h3 {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
   color: white;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  text-align: center;
 }
 
 .win-table {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.5rem;
-  justify-content: center;
-  max-width: 600px;
-  margin: 0 auto;
+  font-size: 0.9rem;
 }
 
 .win-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 0.5rem;
+  height: 32px;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
   color: white;
-  padding: 0.5rem 1rem;
-  background: var(--header);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  height: 40px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.win-row:not(:nth-child(-n + 4)) {
-  /* Targets all rows except first 4 */
-  width: 80%;
-  justify-content: center;
-  gap: 1rem;
 }
 
 .keno-grid {
@@ -600,17 +600,26 @@ const handleClear = () => {
   }
 
   .stats-container {
-    flex-direction: column;
-    gap: 0.75rem;
+    padding: 0.5rem;
+    gap: 0.25rem;
   }
 
   .stat-box {
-    padding: 0.75rem;
+    padding: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
   }
 
   .win-table {
     grid-template-columns: repeat(2, 1fr);
-    padding: 0.5rem;
+  }
+
+  .win-row {
+    height: 28px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   .keno-grid {
@@ -670,6 +679,38 @@ const handleClear = () => {
 }
 
 @media (max-width: 480px) {
+  .stats-container {
+    padding: 0.4rem;
+    gap: 0.2rem;
+  }
+
+  .stat-box {
+    padding: 0.2rem;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+  }
+
+  .win-table {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.25rem;
+  }
+
+  .win-row {
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .potential-wins {
+    padding: 0.5rem;
+  }
+
+  .potential-wins h3 {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
   .keno-game {
     padding: 0.75rem;
   }

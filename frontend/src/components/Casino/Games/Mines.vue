@@ -2,17 +2,19 @@
   <div class="mines-game">
     <div class="game-header">
       <div class="stats-container">
-        <div class="stat-box">
+        <div class="stat-item">
           <span class="stat-label">Next Profit</span>
           <span class="stat-value"
             >{{ minesStore.currentProfit.toFixed(2) }}€</span
           >
         </div>
-        <div class="stat-box">
+        <div class="divider"></div>
+        <div class="stat-item">
           <span class="stat-label">Multiplier</span>
           <span class="stat-value">{{ minesStore.currentMultiplier }}x</span>
         </div>
-        <div class="stat-box">
+        <div class="divider"></div>
+        <div class="stat-item">
           <span class="stat-label">Mines</span>
           <span class="stat-value">{{ minesStore.minesCount }}</span>
         </div>
@@ -82,12 +84,13 @@
         <div class="mines-input">
           <input
             type="number"
-            v-model="minesStore.minesCount"
+            v-model="minesCount"
             :disabled="minesStore.isGameActive"
             min="1"
             max="24"
             step="1"
           />
+          <div class="input-error" v-if="minesError">{{ minesError }}</div>
           <div class="quick-mines">
             <button @click="setMinesCount(3)">3</button>
             <button @click="setMinesCount(5)">5</button>
@@ -144,6 +147,10 @@ const { loading, isGameActive, currentMultiplier, currentProfit } =
 
 const showWinModal = ref(false);
 
+// Add new ref for local mines count control
+const minesCount = ref(minesStore.minesCount);
+const minesError = ref("");
+
 // Watch for wins
 watch(currentProfit, (newProfit) => {
   if (newProfit > 0 && !isGameActive.value) {
@@ -151,6 +158,23 @@ watch(currentProfit, (newProfit) => {
     setTimeout(() => {
       showWinModal.value = false;
     }, 3000);
+  }
+});
+
+// Watch for mines count changes
+watch(minesCount, (newValue) => {
+  const value = Number(newValue);
+  if (value < 1) {
+    minesError.value = "Minimum mines count is 1";
+    minesCount.value = 1;
+    minesStore.minesCount = 1;
+  } else if (value > 24) {
+    minesError.value = "Maximum mines count is 24";
+    minesCount.value = 24;
+    minesStore.minesCount = 24;
+  } else {
+    minesError.value = "";
+    minesStore.minesCount = value;
   }
 });
 
@@ -177,11 +201,11 @@ const setBetAmount = (amount: number) => {
   }
 };
 
-const setMinesCount = (count: number) => {
+function setMinesCount(count: number) {
   if (!isGameActive.value) {
-    minesStore.minesCount = count;
+    minesCount.value = Math.min(Math.max(count, 1), 24);
   }
-};
+}
 </script>
 
 <style scoped>
@@ -194,32 +218,63 @@ const setMinesCount = (count: number) => {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
-.stats-container {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+.game-header {
+  margin-bottom: 1rem;
 }
 
-.stat-box {
-  flex: 1;
-  padding: 1.25rem;
+.stats-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--subheader);
   border-radius: 12px;
-  text-align: center;
+  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  max-width: 600px;
+  margin: 0 auto;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+}
+
+.divider {
+  width: 1px;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .stat-value {
-  font-size: 1.4rem;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
   font-weight: bold;
   color: var(--white);
+}
+
+@media (max-width: 480px) {
+  .stats-container {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .stat-item {
+    padding: 0 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: white;
+  }
 }
 
 .mines-grid {
@@ -439,21 +494,43 @@ const setMinesCount = (count: number) => {
 .bet-input,
 .mines-input {
   margin-bottom: 0;
-  background: var(--subheader);
-  padding: 1rem;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02)
+  );
+  padding: 1.25rem;
   border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .bet-input input,
 .mines-input input {
   width: 100%;
-  padding: 0.75rem;
-  background: var(--background);
-  border: 1px solid var(--border);
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: var(--white);
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.bet-input input:focus,
+.mines-input input:focus {
+  outline: none;
+  border-color: var(--active-color);
+  box-shadow: 0 0 0 2px rgba(var(--active-color-rgb), 0.2);
+}
+
+.bet-input input:disabled,
+.mines-input input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .quick-amounts,
@@ -466,13 +543,15 @@ const setMinesCount = (count: number) => {
 .quick-amounts button,
 .quick-mines button {
   padding: 0.75rem;
-  background: var(--background);
-  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: var(--white);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .quick-amounts button:hover,
@@ -480,14 +559,31 @@ const setMinesCount = (count: number) => {
   background: var(--active-color);
   border-color: var(--active-color);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--active-color-rgb), 0.2);
 }
 
-.quick-amounts button:active,
-.quick-mines button:active {
-  transform: translateY(0);
+.quick-amounts button::before,
+.quick-mines button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
 }
 
-/* Add responsive styles */
+.quick-amounts button:hover::before,
+.quick-mines button:hover::before {
+  left: 100%;
+}
+
 @media (max-width: 768px) {
   .bet-controls {
     padding: 0 1rem;
@@ -585,6 +681,22 @@ const setMinesCount = (count: number) => {
   .tile-front,
   .tile-back {
     font-size: 1rem;
+  }
+}
+
+.input-error {
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin: -0.5rem 0 0.5rem;
+  text-align: center;
+  min-height: 1.2rem;
+}
+
+.mines-input input {
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    opacity: 1;
+    cursor: pointer;
   }
 }
 </style>
