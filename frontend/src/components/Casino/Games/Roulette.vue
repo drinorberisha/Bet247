@@ -45,7 +45,7 @@
     <div class="roulette-container">
       <!-- Wheel Section -->
       <div class="wheel-section">
-        <div class="wheel-container">
+        <div class="wheel-container" ref="wheelContainer">
           <RouletteWheel
             :numbers="wheelNumbers"
             :is-spinning="rouletteStore.isSpinning"
@@ -99,12 +99,7 @@
             </button>
             <button
               class="spin-btn"
-              @click="
-                () => {
-                  console.log('[ROULETTE-DEBUG] Spin button clicked');
-                  rouletteStore.spinWheel();
-                }
-              "
+              @click="handleSpin"
               :disabled="!canPlay || rouletteStore.loading"
             >
               Spin
@@ -487,6 +482,26 @@ const getResultText = (number: number | null) => {
   texts.push(redNumbers.includes(number) ? "RED" : "BLACK");
   return texts.join(" • ");
 };
+
+const wheelContainer = ref<HTMLElement | null>(null);
+
+// Add new function to handle spin with scroll
+const handleSpin = async () => {
+  console.log("[ROULETTE-DEBUG] Spin button clicked");
+
+  // First scroll to wheel
+  if (wheelContainer.value) {
+    wheelContainer.value.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  // Then spin after a short delay
+  setTimeout(() => {
+    rouletteStore.spinWheel();
+  }, 500); // Wait for scroll to complete
+};
 </script>
 
 <style scoped>
@@ -543,7 +558,6 @@ const getResultText = (number: number | null) => {
 }
 
 .controls-section {
-  flex: 0 0 300px;
   background: var(--header);
   border-radius: 8px;
   padding: 1rem;
@@ -1264,6 +1278,7 @@ const getResultText = (number: number | null) => {
 .wheel-container {
   position: relative;
   will-change: transform;
+  scroll-margin-top: 20px; /* Add space for better scrolling position */
 }
 
 .wheel-pointer {
@@ -1334,5 +1349,108 @@ const getResultText = (number: number | null) => {
 
 :deep(.wheel-item:hover) {
   filter: brightness(1.2);
+}
+
+/* Mobile grid layout modifications */
+@media (max-width: 768px) {
+  .betting-grid-container {
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 70vh;
+    padding: 0.75rem;
+  }
+
+  .betting-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    min-width: unset;
+    width: 66%;
+    gap: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08),
+      inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Zero position */
+  .zero {
+    grid-column: 1 / -1;
+    aspect-ratio: 3/1;
+    margin-bottom: 4px;
+  }
+
+  /* Numbers layout - 3 columns */
+  .number:not(.zero) {
+    aspect-ratio: 1;
+  }
+
+  /* First column: 1, 4, 7, etc. */
+  .number:nth-child(3n + 1):not(.zero) {
+    grid-column: 3;
+  }
+
+  /* Second column: 2, 5, 8, etc. */
+  .number:nth-child(3n + 2) {
+    grid-column: 1;
+  }
+
+  /* Third column: 3, 6, 9, etc. */
+  .number:nth-child(3n + 3) {
+    grid-column: 2;
+  }
+
+  /* Outside bets */
+  .outside-bets {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+  }
+
+  .bet-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
+  .bet-box {
+    height: 44px;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dozen {
+    grid-column: span 2;
+  }
+
+  /* Adjust chip sizes */
+  .casino-chip {
+    width: 24px;
+    height: 24px;
+  }
+
+  .chip-amount {
+    font-size: 0.7rem;
+  }
+}
+
+/* Small mobile further adjustments */
+@media (max-width: 480px) {
+  .betting-grid-container {
+    padding: 0.5rem;
+  }
+
+  .bet-box {
+    height: 40px;
+    font-size: 0.8rem;
+  }
+
+  .casino-chip {
+    width: 20px;
+    height: 20px;
+  }
+
+  .chip-amount {
+    font-size: 0.65rem;
+  }
 }
 </style>

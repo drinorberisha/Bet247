@@ -108,7 +108,7 @@ watch(
 .wheel-section {
   position: absolute;
   width: 50%;
-  height: 2px;
+  height: 16px;
   transform-origin: 100% 50%;
   left: 0;
   top: 50%;
