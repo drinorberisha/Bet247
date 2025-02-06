@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { DatabaseService } from '../../services/DatabaseService';
 import CasinoGame from '../../models/CasinoGame';
+import { GameLogicService } from '../../services/GameLogicService';
 
 const dbService = new DatabaseService();
+const gameLogic = new GameLogicService();
 
 // Define slot symbols and their properties
 const SLOT_SYMBOLS = [
@@ -33,86 +35,117 @@ export const spin = async (req: Request, res: Response) => {
     const userId = req.user?.userId;
 
     if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    // Validate user and bet amount
+    const user = await dbService.users.findById(userId);
+    if (!user || user.balance < betAmount) {
+      return res.status(400).json({
+        success: false,
+        message: user ? 'Insufficient balance' : 'User not found'
+      });
+    }
+
+    // Generate spin outcome using game logic service
+    const spinOutcome = gameLogic.generateSpinOutcome(betAmount);
+    
+    // Create game record
+    const gameId = `slots_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const game = await CasinoGame.create({
+      gameId,
+      userId,
+      gameType: 'slots',
+      betAmount,
+      winAmount: spinOutcome.totalWin,
+      status: 'completed',
+      result: spinOutcome.totalWin > 0 ? 'win' : 'loss',
+      gameData: {
+        reels: spinOutcome.reels,
+        winningLines: spinOutcome.winningLines,
+        multiplier: spinOutcome.multiplier
+      },
+      createdAt: new Date(),
+      completedAt: new Date()
+    });
+
+    // Update user balance
+    await dbService.users.updateBalance(userId, -betAmount);
+    if (spinOutcome.totalWin > 0) {
+      await dbService.users.updateBalance(userId, spinOutcome.totalWin);
+    }
+
+    // Return spin results to client
+    res.json({
+      success: true,
+      gameId: game.gameId,
+      reels: spinOutcome.reels,
+      winningLines: spinOutcome.winningLines,
+      winAmount: spinOutcome.totalWin,
+      multiplier: spinOutcome.multiplier,
+      newBalance: user.balance - betAmount + spinOutcome.totalWin
+    });
+
+  } catch (error) {
+    console.error('[SLOTS-CONTROLLER] Error processing spin:', error);
+    res.status(500).json({ success: false, message: 'Error processing spin' });
+  }
+};
+
+export const submitResult = async (req: Request, res: Response) => {
+  try {
+    const { gameId, winAmount, winningLines, multiplier } = req.body;
+    // @ts-ignore - user added by auth middleware
+    const userId = req.user?.userId;
+
+    if (!userId) {
       return res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
     }
 
-    console.log('[SLOTS-CONTROLLER] Processing spin:', {
-      userId,
-      betAmount
-    });
-
-    // Validate user and bet amount
-    const user = await dbService.users.findById(userId);
-    if (!user) {
+    // Update game record
+    const game = await CasinoGame.findOne({ gameId });
+    if (!game) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Game not found'
       });
     }
 
-    if (user.balance < betAmount) {
+    if (game.status === 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'Insufficient balance'
+        message: 'Game already completed'
       });
     }
 
-    // Generate random reels
-    const reels = Array(5).fill(null).map(() => 
-      Array(3).fill(null).map(() => 
-        SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]
-      )
-    );
-
-    // Calculate wins
-    const { winAmount, winningLines, multiplier } = calculateWin(reels, betAmount);
-
-    // Create game record
-    const gameId = `slots_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const game = await CasinoGame.create({
-      gameId,
-      userId,
-      gameType: 'slots',
-      betAmount,
-      winAmount,
-      status: 'completed',
-      result: winAmount > 0 ? 'win' : 'loss',
-      createdAt: new Date(),
-      completedAt: new Date()
-    });
-
-    // Update user balance
-    const balanceChange = winAmount - betAmount;
-    const updatedUser = await dbService.users.updateBalance(userId, balanceChange);
-
-    console.log('[SLOTS-CONTROLLER] Spin completed:', {
-      gameId,
-      previousBalance: user.balance,
-      newBalance: updatedUser?.balance,
-      betAmount,
-      winAmount,
+    // Update game record with valid status
+    game.winAmount = winAmount;
+    game.status = 'completed';
+    game.result = winAmount > 0 ? 'win' : 'loss';
+    game.completedAt = new Date();
+    game.gameData = {
+      ...game.gameData,
+      winningLines,
       multiplier
-    });
+    };
+    await game.save();
+
+    // Add win amount to user balance
+    const updatedUser = await dbService.users.updateBalance(userId, winAmount);
 
     res.json({
       success: true,
-      gameId: game.gameId,
-      reels,
-      winAmount,
-      winningLines,
-      multiplier,
       newBalance: updatedUser?.balance
     });
 
   } catch (error) {
-    console.error('[SLOTS-CONTROLLER] Error processing spin:', error);
+    console.error('[SLOTS-CONTROLLER] Error submitting result:', error);
     res.status(500).json({
       success: false,
-      message: 'Error processing spin'
+      message: 'Error submitting result'
     });
   }
 };

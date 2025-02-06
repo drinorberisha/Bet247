@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import { useAuthStore } from '../auth';
+import { PAYLINE_PATTERNS } from '../../constants/slots';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -41,12 +42,7 @@ export const useSlotStore = defineStore('slots', {
     loading: false,
     error: null,
     currentGameId: null,
-    paylines: [
-      [0,0,0,0,0], // horizontal lines
-      [1,1,1,1,1],
-      [2,2,2,2,2],
-      // Add more paylines as needed
-    ],
+    paylines: PAYLINE_PATTERNS,
     winningLines: [],
     multiplier: 1
   }),
@@ -68,16 +64,19 @@ export const useSlotStore = defineStore('slots', {
         return;
       }
 
+      // Reset state before spin
       this.isSpinning = true;
       this.loading = true;
       this.error = null;
+      this.lastWin = 0;
+      this.winningLines = [];
+      this.multiplier = 1;
 
       try {
+        // Get spin outcome from server
         const response = await axios.post(
           `${API_URL}/casino/slots/spin`,
-          {
-            betAmount: this.betAmount
-          },
+          { betAmount: this.betAmount },
           {
             headers: {
               'Authorization': `Bearer ${authStore.token}`,
@@ -87,15 +86,28 @@ export const useSlotStore = defineStore('slots', {
         );
 
         if (response.data.success) {
-          this.currentGameId = response.data.gameId;
-          this.reels = response.data.reels;
-          this.lastWin = response.data.winAmount;
-          this.totalWin += response.data.winAmount;
-          this.winningLines = response.data.winningLines;
-          this.multiplier = response.data.multiplier;
-          authStore.updateBalance(response.data.newBalance);
-          
+          // Store the outcome but don't display yet
+          const outcome = {
+            gameId: response.data.gameId,
+            reels: response.data.reels,
+            winningLines: response.data.winningLines,
+            winAmount: response.data.winAmount,
+            multiplier: response.data.multiplier
+          };
+
+          // Wait for animation
           await this.animateSpin();
+
+          // Update state with outcome
+          this.currentGameId = outcome.gameId;
+          this.reels = outcome.reels;
+          this.lastWin = outcome.winAmount;
+          this.totalWin += outcome.winAmount;
+          this.winningLines = outcome.winningLines;
+          this.multiplier = outcome.multiplier;
+
+          // Update balance
+          authStore.updateBalance(response.data.newBalance);
         }
       } catch (error: any) {
         console.error('[SLOTS] Error spinning:', error);
@@ -107,9 +119,8 @@ export const useSlotStore = defineStore('slots', {
     },
 
     async animateSpin() {
-      // Implement spinning animation logic
       return new Promise(resolve => {
-        setTimeout(resolve, 3000); // Basic delay for now
+        setTimeout(resolve, 4000); // Match the total animation time of reels
       });
     },
 

@@ -7,5 +7,5 @@ const router = express.Router();
 console.log('[SLOTS] Setting up slots routes');
 
 router.post('/spin', authenticateToken, slotsController.spin);
-
+router.post('/submit-result', authenticateToken, slotsController.submitResult);
 export default router; 

@@ -1,179 +1,345 @@
 <template>
   <div class="slots-game">
-    <!-- Game Header Stats -->
-    <div class="game-header">
-      <div class="stats-container">
-        <div class="stat-box">
-          <span class="stat-label">Last Win</span>
-          <span class="stat-value">{{ slotStore.lastWin.toFixed(2) }}€</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Total Win</span>
-          <span class="stat-value">{{ slotStore.totalWin.toFixed(2) }}€</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Multiplier</span>
-          <span class="stat-value">{{ slotStore.multiplier }}x</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Slot Machine -->
-    <div class="slot-machine">
-      <!-- Updated Reels Container -->
-      <div class="reels-container">
-        <div
-          v-for="(reel, reelIndex) in slotStore.reels"
-          :key="reelIndex"
-          class="reel"
-        >
-          <div
-            class="reel-strip"
-            :class="{ spinning: slotStore.isSpinning }"
-            :style="{
-              '--delay': `${reelIndex * 0.5}s`,
-              '--duration': `${2 + reelIndex * 0.5}s`,
-            }"
-          >
-            <div
-              v-for="(symbol, index) in getReelSymbols(reel)"
-              :key="index"
-              class="symbol"
-              :class="{ winning: isWinningSymbol(reelIndex, index) }"
-            >
-              <div class="symbol-inner">
-                <span class="symbol-emoji">{{
-                  getSymbolEmoji(symbol?.name)
-                }}</span>
-              </div>
-            </div>
+    <!-- Desktop Version -->
+    <template v-if="!isMobile">
+      <!-- Game Header Stats -->
+      <div class="game-header">
+        <div class="stats-container">
+          <div class="stat-box">
+            <span class="stat-label">Last Win</span>
+            <span class="stat-value">{{ slotStore.lastWin.toFixed(2) }}€</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Total Win</span>
+            <span class="stat-value">{{ slotStore.totalWin.toFixed(2) }}€</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Multiplier</span>
+            <span class="stat-value">{{ slotStore.multiplier }}x</span>
           </div>
         </div>
       </div>
 
-      <!-- Only show paylines after spinning stops and there are winning lines -->
-      <div
-        class="paylines-overlay"
-        v-if="!slotStore.isSpinning && slotStore.winningLines.length > 0"
-      >
-        <svg class="paylines" preserveAspectRatio="none">
-          <path
-            v-for="(line, index) in slotStore.winningLines"
-            :key="index"
-            :d="getPaylinePath(line)"
-            class="payline"
-            :class="`payline-${index}`"
-          />
-        </svg>
-      </div>
-    </div>
+      <!-- Slot Machine -->
+      <div class="slot-machine">
+        <!-- Updated Reels Container -->
+        <div class="reels-container">
+          <div
+            v-for="(reel, reelIndex) in slotStore.reels"
+            :key="reelIndex"
+            class="reel"
+          >
+            <div
+              class="reel-strip"
+              :class="{ spinning: slotStore.isSpinning }"
+              :style="{
+                '--delay': `${reelIndex * 0.5}s`,
+                '--duration': `${2 + reelIndex * 0.5}s`,
+              }"
+            >
+              <div
+                v-for="(symbol, index) in getReelSymbols(reel)"
+                :key="index"
+                class="symbol"
+                :class="{ winning: isWinningSymbol(reelIndex, index) }"
+              >
+                <div class="symbol-inner">
+                  <span class="symbol-emoji">{{
+                    getSymbolEmoji(symbol?.name)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <!-- Game Controls -->
-    <div class="game-controls">
-      <div class="bet-controls">
-        <div class="bet-amount">
-          <label class="control-label">Bet Amount</label>
-          <div class="bet-input">
-            <input
-              type="number"
-              v-model="slotStore.betAmount"
-              :disabled="slotStore.isSpinning"
-              min="1"
-              step="1"
+        <!-- Updated paylines overlay -->
+        <div 
+          class="paylines-overlay"
+          v-if="!slotStore.isSpinning && slotStore.winningLines.length > 0"
+        >
+          <svg 
+            class="paylines" 
+            :viewBox="`0 0 ${REEL_WIDTH * 5} ${SYMBOL_HEIGHT * 3}`"
+            preserveAspectRatio="none"
+          >
+            <path
+              v-for="lineIndex in slotStore.winningLines"
+              :key="lineIndex"
+              :d="getPaylinePath(lineIndex)"
+              class="payline"
+              :class="`payline-${lineIndex}`"
             />
-            <div class="quick-amounts">
+          </svg>
+        </div>
+      </div>
+
+      <!-- Game Controls -->
+      <div class="game-controls">
+        <div class="bet-controls">
+          <div class="bet-amount">
+            <label class="control-label">Bet Amount</label>
+            <div class="bet-input">
+              <input
+                type="number"
+                v-model="slotStore.betAmount"
+                :disabled="slotStore.isSpinning"
+                min="1"
+                step="1"
+              />
+              <div class="quick-amounts">
+                <button
+                  v-for="amount in [1, 5, 10, 25, 100]"
+                  :key="amount"
+                  @click="setBetAmount(amount)"
+                  :disabled="slotStore.isSpinning"
+                >
+                  {{ amount }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="auto-play">
+            <label class="control-label">Auto Spins</label>
+            <div class="auto-spins">
               <button
-                v-for="amount in [1, 5, 10, 25, 100]"
-                :key="amount"
-                @click="setBetAmount(amount)"
+                v-for="count in [10, 20, 50, 100]"
+                :key="count"
+                @click="setAutoPlay(count)"
+                :class="{ active: slotStore.autoPlayCount === count }"
                 :disabled="slotStore.isSpinning"
               >
-                {{ amount }}
+                {{ count }}
               </button>
             </div>
           </div>
         </div>
 
-        <div class="auto-play">
-          <label class="control-label">Auto Spins</label>
-          <div class="auto-spins">
-            <button
-              v-for="count in [10, 20, 50, 100]"
-              :key="count"
-              @click="setAutoPlay(count)"
-              :class="{ active: slotStore.autoPlayCount === count }"
+        <div class="action-buttons">
+          <button
+            class="stop-auto"
+            v-if="slotStore.autoPlay"
+            @click="stopAutoPlay"
+            :disabled="slotStore.isSpinning"
+          >
+            Stop Auto
+          </button>
+          <button
+            class="spin-button"
+            @click="handleSpin"
+            :disabled="slotStore.isSpinning"
+          >
+            {{ spinButtonText }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Win Popup -->
+      <Transition name="fade">
+        <div v-if="showWinPopup" class="win-popup">
+          <div class="win-content">
+            <h2>{{ resultTitle }}</h2>
+            <div class="win-amount">{{ slotStore.lastWin.toFixed(2) }}€</div>
+            <div v-if="slotStore.multiplier > 1" class="win-multiplier">
+              x{{ slotStore.multiplier }}
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Win Notifications System -->
+      <transition-group
+        name="notification"
+        tag="div"
+        class="notifications-container"
+      >
+        <div
+          v-for="notification in notifications"
+          :key="notification.id"
+          class="notification"
+          :class="notification.type"
+        >
+          <div class="notification-content">
+            <div class="notification-icon">
+              {{ getNotificationIcon(notification.type) }}
+            </div>
+            <div class="notification-text">
+              <h3>{{ notification.title }}</h3>
+              <p>{{ notification.message }}</p>
+            </div>
+          </div>
+        </div>
+      </transition-group>
+
+      <!-- Result Popup -->
+      <Transition name="fade">
+        <div v-if="showResultPopup" class="result-popup" :class="popupClass">
+          <div class="result-content">
+            <div class="result-header">
+              <h2>{{ resultTitle }}</h2>
+              <span class="close-button" @click="closeResultPopup">&times;</span>
+            </div>
+            <div class="result-details">
+              <div class="result-amount">
+                <span class="amount-label">Amount:</span>
+                <span class="amount-value" :class="{ 'win': slotStore.lastWin > 0 }">
+                  {{ slotStore.lastWin > 0 ? '+' : '' }}{{ slotStore.lastWin.toFixed(2) }}€
+                </span>
+              </div>
+              <div v-if="slotStore.multiplier > 1" class="result-multiplier">
+                <span class="multiplier-label">Multiplier:</span>
+                <span class="multiplier-value">x{{ slotStore.multiplier }}</span>
+              </div>
+              <div class="result-lines" v-if="slotStore.winningLines.length > 0">
+                <span class="lines-label">Winning Lines:</span>
+                <span class="lines-value">{{ slotStore.winningLines.length }}</span>
+              </div>
+            </div>
+            <button class="spin-again-button" @click="handleSpinAgain" :disabled="slotStore.isSpinning">
+              Spin Again
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </template>
+
+    <!-- Mobile Version -->
+    <template v-else>
+      <div class="mobile-slots-game">
+        <div class="mobile-stats">
+          <div class="mobile-stat-item">
+            <span class="mobile-stat-label">Last Win</span>
+            <span class="mobile-stat-value">{{ slotStore.lastWin.toFixed(2) }}€</span>
+          </div>
+          <div class="mobile-stat-item">
+            <span class="mobile-stat-label">Total Win</span>
+            <span class="mobile-stat-value">{{ slotStore.totalWin.toFixed(2) }}€</span>
+          </div>
+          <div class="mobile-stat-item">
+            <span class="mobile-stat-label">Multiplier</span>
+            <span class="mobile-stat-value">{{ slotStore.multiplier }}x</span>
+          </div>
+        </div>
+
+        <div class="mobile-slot-machine">
+          <div class="mobile-reels">
+            <div
+              v-for="(reel, reelIndex) in slotStore.reels"
+              :key="reelIndex"
+              class="mobile-reel"
+            >
+              <div
+                v-for="(symbol, index) in reel"
+                :key="index"
+                class="mobile-symbol"
+                :class="{ 'mobile-winning': isWinningSymbol(reelIndex, index) }"
+              >
+                <div class="mobile-symbol-inner">
+                  <span class="mobile-symbol-emoji">
+                    {{ getSymbolEmoji(symbol?.name) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Paylines -->
+          <div 
+            class="mobile-paylines-overlay"
+            v-if="!slotStore.isSpinning && slotStore.winningLines.length > 0"
+          >
+            <svg 
+              class="mobile-paylines" 
+              :viewBox="`0 0 ${REEL_WIDTH * 5} ${SYMBOL_HEIGHT * 3}`"
+              preserveAspectRatio="none"
+            >
+              <path
+                v-for="lineIndex in slotStore.winningLines"
+                :key="lineIndex"
+                :d="getPaylinePath(lineIndex)"
+                class="mobile-payline"
+                :class="`mobile-payline-${lineIndex}`"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mobile-controls">
+          <!-- Bet Amount Controls -->
+          <div class="mobile-bet-section">
+            <div class="mobile-bet-controls">
+              <button 
+                class="mobile-bet-btn"
+                @click="() => adjustBet('min')"
+                :disabled="slotStore.isSpinning || slotStore.betAmount <= 1"
+              >
+                <span>MIN</span>
+              </button>
+              <button 
+                class="mobile-bet-btn"
+                @click="() => adjustBet('decrease')"
+                :disabled="slotStore.isSpinning || slotStore.betAmount <= 1"
+              >
+                <span>-</span>
+              </button>
+              <div class="mobile-bet-display">
+                <span class="mobile-bet-label">BET</span>
+                <span class="mobile-bet-amount">{{ slotStore.betAmount.toFixed(2) }}€</span>
+              </div>
+              <button 
+                class="mobile-bet-btn"
+                @click="() => adjustBet('increase')"
+                :disabled="slotStore.isSpinning || slotStore.betAmount >= 100"
+              >
+                <span>+</span>
+              </button>
+              <button 
+                class="mobile-bet-btn"
+                @click="() => adjustBet('max')"
+                :disabled="slotStore.isSpinning || slotStore.betAmount >= 100"
+              >
+                <span>MAX</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mobile-action-buttons">
+            <button 
+              class="mobile-spin-btn"
+              @click="handleSpin"
               :disabled="slotStore.isSpinning"
             >
-              {{ count }}
+              <span>{{ slotStore.isSpinning ? 'SPINNING...' : 'SPIN' }}</span>
+            </button>
+            <button 
+              class="mobile-auto-btn"
+              @click="toggleAutoPlay"
+              :class="{ active: slotStore.autoPlay }"
+              :disabled="slotStore.isSpinning"
+            >
+              <span>AUTO</span>
             </button>
           </div>
         </div>
       </div>
-
-      <div class="action-buttons">
-        <button
-          class="stop-auto"
-          v-if="slotStore.autoPlay"
-          @click="stopAutoPlay"
-          :disabled="slotStore.isSpinning"
-        >
-          Stop Auto
-        </button>
-        <button
-          class="spin-button"
-          @click="handleSpin"
-          :disabled="slotStore.isSpinning"
-        >
-          {{ spinButtonText }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Win Popup -->
-    <Transition name="fade">
-      <div v-if="showWinPopup" class="win-popup">
-        <div class="win-content">
-          <h2>Big Win!</h2>
-          <div class="win-amount">{{ slotStore.lastWin.toFixed(2) }}€</div>
-          <div class="win-multiplier">x{{ slotStore.multiplier }}</div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Win Notifications System -->
-    <Transition-group
-      name="notification"
-      tag="div"
-      class="notifications-container"
-    >
-      <div
-        v-for="notification in notifications"
-        :key="notification.id"
-        class="notification"
-        :class="notification.type"
-      >
-        <div class="notification-content">
-          <div class="notification-icon">
-            {{ getNotificationIcon(notification.type) }}
-          </div>
-          <div class="notification-text">
-            <h3>{{ notification.title }}</h3>
-            <p>{{ notification.message }}</p>
-          </div>
-        </div>
-      </div>
-    </Transition-group>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, TransitionGroup } from "vue";
 import { useSlotStore } from "../../../stores/casino/slots";
 import { storeToRefs } from "pinia";
+import { PAYLINE_PATTERNS, SYMBOLS } from '../../../constants/slots';
+import { useDeviceDetection } from '../../../composables/useDeviceDetection';
 
 const slotStore = useSlotStore();
 const showWinPopup = ref(false);
+const showResultPopup = ref(false);
 let spinningInterval: ReturnType<typeof setInterval> | null = null;
+const { isMobile } = useDeviceDetection();
 
 const spinButtonText = computed(() => {
   if (slotStore.isSpinning) return "Spinning...";
@@ -181,35 +347,65 @@ const spinButtonText = computed(() => {
   return "Spin";
 });
 
-// Watch for wins
+const resultTitle = computed(() => {
+  const winAmount = slotStore.lastWin;
+  const betAmount = slotStore.betAmount;
+  
+  if (winAmount === 0) return 'No Win';
+  if (winAmount >= betAmount * 50) return 'MEGA WIN!';
+  if (winAmount >= betAmount * 20) return 'BIG WIN!';
+  return 'WIN!';
+});
+
+const popupClass = computed(() => {
+  const winAmount = slotStore.lastWin;
+  const betAmount = slotStore.betAmount;
+  
+  if (winAmount === 0) return 'loss';
+  if (winAmount >= betAmount * 50) return 'mega-win';
+  if (winAmount >= betAmount * 20) return 'big-win';
+  return 'win';
+});
+
+// Watch for spin completion instead of wins
 watch(
-  () => slotStore.lastWin,
-  (newWin) => {
-    if (newWin > 0) {
-      showWinPopup.value = true;
-      setTimeout(() => {
-        showWinPopup.value = false;
-      }, 3000);
+  () => slotStore.isSpinning,
+  async (isSpinning) => {
+    if (!isSpinning) {  // Spin has completed
+      if (slotStore.lastWin > 0) {
+        // Show win popup for big wins
+        if (slotStore.lastWin > slotStore.betAmount * 20) {
+          showWinPopup.value = true;
+          setTimeout(() => {
+            showWinPopup.value = false;
+          }, 3000);
+        }
+      }
+      // Always show result popup after spin
+      showResultPopup.value = true;
+      // Auto-close for small wins/losses
+      if (slotStore.lastWin <= slotStore.betAmount * 20) {
+        setTimeout(() => {
+          showResultPopup.value = false;
+        }, 5000);
+      }
+    } else {
+      // Hide popups when spinning starts
+      showWinPopup.value = false;
+      showResultPopup.value = false;
     }
   }
 );
 
-// Update the emoji list and remove question mark fallback
-const allEmojis = ["7️⃣", "🎰", "🔔", "🍒", "🍋", "🍊", "🫐", "🍇"];
+// Create an array of emojis for random selection
+const allEmojis = Object.values(SYMBOLS).map(symbol => symbol.emoji);
 
-// Update getSymbolEmoji to use random emoji if no symbol name
-const getSymbolEmoji = (symbolName: string) => {
-  const emojis = {
-    SEVEN: "7️⃣",
-    BAR: "🎰",
-    BELL: "🔔",
-    CHERRY: "🍒",
-    LEMON: "🍋",
-    ORANGE: "🍊",
-    PLUM: "🫐",
-    GRAPE: "🍇",
-  };
-  return emojis[symbolName as keyof typeof emojis] || getRandomEmoji();
+const getSymbolEmoji = (symbolName: string | undefined) => {
+  if (!symbolName) {
+    // Return a random emoji from our array
+    return allEmojis[Math.floor(Math.random() * allEmojis.length)];
+  }
+  return SYMBOLS[symbolName as keyof typeof SYMBOLS]?.emoji || '🎰';
 };
 
 // Enhanced random emoji generation
@@ -222,78 +418,14 @@ const getReelSymbols = (reel: any[]) => {
   return [...reel, ...reel, ...reel];
 };
 
-// Update the handleSpin function to match WheelGame's spin logic
 const handleSpin = async () => {
   if (slotStore.isSpinning) return;
-
-  const reelElements = document.querySelectorAll(".reel-strip");
-
-  // Reset positions and prepare for spinning
-  reelElements.forEach((el) => {
-    el.style.transition = "none";
-    el.style.transform = "translateY(0)";
-  });
-
-  void document.body.offsetHeight;
-
-  // Improved spinning animation
-  reelElements.forEach((el, index) => {
-    setTimeout(() => {
-      el.style.transition = `transform ${
-        3 + index * 0.5
-      }s cubic-bezier(0.1, 0.3, 0.3, 1)`;
-      el.style.transform = "translateY(-100%)";
-      el.classList.add("spinning");
-
-      const animate = () => {
-        if (!el.classList.contains("spinning")) return;
-        requestAnimationFrame(() => {
-          el.style.transition = "none";
-          el.style.transform = "translateY(0)";
-          void el.offsetHeight;
-          el.style.transition = "transform 1s cubic-bezier(0.1, 0.3, 0.3, 1)";
-          el.style.transform = "translateY(-100%)";
-        });
-      };
-
-      el.addEventListener("transitionend", animate);
-      el._animationHandler = animate;
-    }, index * 300);
-  });
-
-  // Call the store action
-  try {
-    await slotStore.spin();
-  } catch (error) {
-    console.error("Error during spin:", error);
-  }
-
-  // Sequential stop
-  for (let i = 0; i < reelElements.length; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    const el = reelElements[i];
-
-    // Remove the continuous animation
-    el.removeEventListener("transitionend", el._animationHandler);
-    delete el._animationHandler;
-
-    el.classList.remove("spinning");
-    el.classList.add("stopping");
-
-    // Calculate final position based on symbol height
-    const symbolHeight = el.children[0].offsetHeight;
-    const finalOffset = -symbolHeight; // Align to first symbol
-
-    el.style.transition = "transform 0.5s cubic-bezier(0.5, 0, 0.5, 1)";
-    el.style.transform = `translateY(${finalOffset}px)`;
-  }
-
-  // Final cleanup
-  setTimeout(() => {
-    reelElements.forEach((el) => {
-      el.classList.remove("spinning", "stopping");
-    });
-  }, 1000);
+  
+  // Hide any existing popups
+  showWinPopup.value = false;
+  showResultPopup.value = false;
+  
+  await slotStore.spin();
 };
 
 const setBetAmount = (amount: number) => {
@@ -313,61 +445,45 @@ const stopAutoPlay = () => {
   slotStore.setAutoPlay(0);
 };
 
-const isWinningSymbol = (reelIndex: number, symbolIndex: number) => {
-  if (slotStore.isSpinning) return false;
-  return slotStore.winningLines.some((lineIndex) => {
-    const pattern = paylinePatterns[lineIndex];
-    return pattern && pattern[reelIndex] === symbolIndex;
+// Update isWinningSymbol to use PAYLINE_PATTERNS
+const isWinningSymbol = (reelIndex: number, rowIndex: number) => {
+  return slotStore.winningLines.some(lineIndex => {
+    const pattern = slotStore.paylines[lineIndex];
+    return pattern[reelIndex] === rowIndex;
   });
 };
 
-// Updated payline paths function
-const getPaylinePath = (lineIndex: number) => {
-  // Get the actual dimensions of the reels container
-  const reelContainer = document.querySelector(".reels-container");
-  if (!reelContainer) return "";
+// Constants for positioning
+const SYMBOL_HEIGHT = 100;  // Height of each symbol container
+const SYMBOL_CENTER = SYMBOL_HEIGHT / 2;
+const REEL_WIDTH = 100;    // Width of each reel
+const REEL_CENTER = REEL_WIDTH / 2;
 
-  const containerRect = reelContainer.getBoundingClientRect();
-  const reelWidth = containerRect.width / 5; // 5 reels
-  const symbolHeight = containerRect.height / 3; // 3 symbols per reel
+// Updated getPaylinePath function
+const getPaylinePath = (lineIndex: number): string => {
+  const pattern = slotStore.paylines[lineIndex];
+  
+  // Calculate points for each position in the pattern
+  const points = pattern.map((row, col) => ({
+    x: col * REEL_WIDTH + REEL_CENTER,
+    y: row * SYMBOL_HEIGHT + SYMBOL_CENTER
+  }));
 
-  // Define payline patterns (0 = top, 1 = middle, 2 = bottom)
-  const paylinePatterns = [
-    [1, 1, 1, 1, 1], // Middle horizontal
-    [0, 0, 0, 0, 0], // Top horizontal
-    [2, 2, 2, 2, 2], // Bottom horizontal
-    [0, 1, 2, 1, 0], // V shape
-    [2, 1, 0, 1, 2], // Inverted V
-    [1, 0, 0, 0, 1], // Top curve
-    [1, 2, 2, 2, 1], // Bottom curve
-    [0, 1, 1, 1, 0], // Top small V
-    [2, 1, 1, 1, 2], // Bottom small V
-  ];
-
-  const pattern = paylinePatterns[lineIndex] || paylinePatterns[0];
-
-  // Calculate points with actual dimensions
-  const points = pattern.map((pos, i) => {
-    const x = i * reelWidth + reelWidth / 2;
-    const y = pos * symbolHeight + symbolHeight / 2;
-    return `${x},${y}`;
-  });
-
-  // Create smooth curve
-  let path = `M ${points[0]}`;
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const [x1, y1] = points[i].split(",").map(Number);
-    const [x2, y2] = points[i + 1].split(",").map(Number);
-
-    const cp1x = x1 + (x2 - x1) / 3;
-    const cp1y = y1;
-    const cp2x = x2 - (x2 - x1) / 3;
-    const cp2y = y2;
-
-    path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+  // Create SVG path
+  let path = `M ${points[0].x},${points[0].y}`;
+  
+  // Use curve commands for smooth lines
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    
+    // Calculate control points for smooth curve
+    const cp1x = prev.x + (curr.x - prev.x) * 0.5;
+    const cp2x = curr.x - (curr.x - prev.x) * 0.5;
+    
+    path += ` C ${cp1x},${prev.y} ${cp2x},${curr.y} ${curr.x},${curr.y}`;
   }
-
+  
   return path;
 };
 
@@ -432,6 +548,48 @@ watch(
     }
   }
 );
+
+const closeResultPopup = () => {
+  showResultPopup.value = false;
+};
+
+const handleSpinAgain = () => {
+  closeResultPopup();
+  handleSpin();
+};
+
+const MIN_BET = 1;
+const MAX_BET = 100;
+const BET_STEP = 1;
+
+const adjustBet = (action: 'min' | 'max' | 'increase' | 'decrease') => {
+  if (slotStore.isSpinning) return;
+
+  switch (action) {
+    case 'min':
+      slotStore.setBetAmount(MIN_BET);
+      break;
+    case 'max':
+      slotStore.setBetAmount(MAX_BET);
+      break;
+    case 'increase':
+      const increasedBet = Math.min(slotStore.betAmount + BET_STEP, MAX_BET);
+      slotStore.setBetAmount(increasedBet);
+      break;
+    case 'decrease':
+      const decreasedBet = Math.max(slotStore.betAmount - BET_STEP, MIN_BET);
+      slotStore.setBetAmount(decreasedBet);
+      break;
+  }
+};
+
+const toggleAutoPlay = () => {
+  if (slotStore.autoPlay) {
+    slotStore.setAutoPlay(0);
+  } else {
+    slotStore.setAutoPlay(50);
+  }
+};
 </script>
 
 <style scoped>
@@ -1204,6 +1362,404 @@ watch(
 @media (min-width: 1024px) {
   .payline {
     stroke-width: 5px;
+  }
+}
+
+.result-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2px;
+  min-width: 300px;
+  max-width: 90vw;
+}
+
+.result-content {
+  background: linear-gradient(145deg, var(--header) 0%, var(--background) 100%);
+  border-radius: 18px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.result-header {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.result-header h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+  background: linear-gradient(to right, #fff, var(--active-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-button {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: var(--white);
+}
+
+.result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.result-amount,
+.result-multiplier,
+.result-lines {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.amount-value.win {
+  color: var(--active-color);
+  font-weight: bold;
+}
+
+.spin-again-button {
+  background: linear-gradient(145deg, var(--active-color) 0%, var(--header) 100%);
+  color: var(--white);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.spin-again-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(var(--active-color-rgb), 0.3);
+}
+
+.spin-again-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Popup variants */
+.result-popup.mega-win {
+  animation: pulse 1s infinite;
+  border: 2px solid var(--active-color);
+}
+
+.result-popup.big-win {
+  border: 2px solid var(--active-color);
+}
+
+.result-popup.win {
+  border: 1px solid var(--active-color);
+}
+
+.result-popup.loss {
+  border: 1px solid var(--border);
+}
+
+/* Animation keyframes */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--active-color-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(var(--active-color-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--active-color-rgb), 0);
+  }
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .result-popup {
+    min-width: 280px;
+  }
+
+  .result-content {
+    padding: 1.5rem;
+  }
+
+  .result-header h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile-specific styles */
+.mobile-slots-game {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.mobile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-stat-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.mobile-stat-label {
+  font-size: 0.75rem;
+  display: block;
+  color: #888;
+}
+
+.mobile-stat-value {
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.mobile-slot-machine {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5/3;
+  background: #2c3e50;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.mobile-reels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  height: 100%;
+}
+
+.mobile-reel {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.mobile-symbol {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-symbol-emoji {
+  font-size: 1.5rem;
+}
+
+.mobile-winning {
+  animation: mobile-symbol-highlight 1s infinite;
+  background: rgba(255, 215, 0, 0.2);
+}
+
+.mobile-paylines-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.mobile-paylines {
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-payline {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.7));
+  animation: mobile-payline-blink 1s infinite;
+}
+
+/* Mobile payline colors */
+.mobile-payline-0 { stroke: #ff0000; }
+.mobile-payline-1 { stroke: #00ff00; }
+.mobile-payline-2 { stroke: #0000ff; }
+.mobile-payline-3 { stroke: #ffff00; }
+.mobile-payline-4 { stroke: #ff00ff; }
+.mobile-payline-5 { stroke: #00ffff; }
+.mobile-payline-6 { stroke: #ff8800; }
+.mobile-payline-7 { stroke: #88ff00; }
+.mobile-payline-8 { stroke: #0088ff; }
+
+@keyframes mobile-symbol-highlight {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes mobile-payline-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.mobile-bet-section {
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  margin: 0.5rem 0;
+}
+
+.mobile-bet-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.mobile-bet-btn {
+  flex: 0 0 auto;
+  height: 40px;
+  min-width: 40px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-bet-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-bet-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mobile-bet-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  border-radius: 8px;
+  min-width: 80px;
+}
+
+.mobile-bet-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.mobile-bet-amount {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.mobile-action-buttons {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.mobile-spin-btn {
+  background: linear-gradient(to bottom, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.mobile-spin-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  background: linear-gradient(to bottom, #45a049, #409444);
+}
+
+.mobile-auto-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.mobile-auto-btn.active {
+  background: #ff9800;
+}
+
+.mobile-auto-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Additional responsive adjustments */
+@media (max-width: 360px) {
+  .mobile-bet-btn {
+    height: 36px;
+    min-width: 36px;
+    font-size: 0.875rem;
+  }
+
+  .mobile-bet-amount {
+    font-size: 1rem;
+  }
+
+  .mobile-spin-btn {
+    font-size: 1.125rem;
+    padding: 0.75rem;
+  }
+
+  .mobile-auto-btn {
+    font-size: 0.875rem;
   }
 }
 </style>
