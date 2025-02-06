@@ -54,36 +54,62 @@ export const placeBet = async (req: Request, res: Response) => {
       throw new Error('User not found');
     }
 
+    // Validate selections array
+    if (!Array.isArray(selections) || selections.length === 0) {
+      throw new Error('No selections provided');
+    }
+
+    // Log selections before processing
+    console.log('Processing selections:', selections);
+
     // Create selections
     const selectionDocs = await Promise.all(selections.map(async (selection) => {
-      const selectionValue = selection.selection || selection.type || 'unknown';
+      // Extract selection value from type field
+      const selectionValue = selection.type?.split('_')[1] || selection.type;
       
       const selectionDoc = new Selection({
         sportKey: selection.sportKey,
         event: selection.event,
         market: selection.market,
-        selection: selectionValue,
+        selection: selectionValue, // Use the extracted value
         type: selection.type,
         odds: selection.odds,
         status: 'pending',
         matchTime: selection.commenceTime ? new Date(selection.commenceTime) : null,
-        commenceTime: selection.commenceTime ? new Date(selection.commenceTime) : null
+        commenceTime: selection.commenceTime ? new Date(selection.commenceTime) : null,
+        homeTeam: selection.homeTeam,
+        awayTeam: selection.awayTeam
+      });
+      
+      console.log('Creating selection with value:', {
+        original: selection,
+        processed: selectionDoc
       });
       
       return selectionDoc.save({ session });
     }));
 
+    // Log created selection documents
+    console.log('Created selection documents:', selectionDocs);
+    
     // Create bet with all required fields
     const bet = new Bet({
       user: user._id,
-      betType: isSGM ? 'sgm' : (betType || 'single'),
+      betType: betType === 'multiple' ? 'multiple' : (isSGM ? 'sgm' : 'single'), // Explicitly check for multiple
       amount: Number(amount),
       totalOdds: Number(totalOdds),
       potentialWin: Number(amount) * Number(totalOdds),
       status: 'pending',
-      selections: selectionDocs.map(doc => doc._id),
+      selections: selectionDocs.map(doc => doc._id), // Add selection IDs
       createdAt: new Date(),
       isSGM: !!isSGM
+    });
+
+    console.log('Creating bet:', {
+      betType: bet.betType,
+      selections: bet.selections,
+      amount: bet.amount,
+      totalOdds: bet.totalOdds
     });
 
     // Update user balance
@@ -95,7 +121,8 @@ export const placeBet = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'Bet placed successfully',
-      newBalance: user.balance
+      newBalance: user.balance,
+      bet: bet // Return the created bet for verification
     });
   } catch (error) {
     console.error('Error in bet placement:', error);

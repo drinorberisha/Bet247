@@ -33,6 +33,8 @@ interface BettingStore {
   updateMultiStake: (stake: number) => void;
   removeBet: (betId: string) => void;
   clearAllBets: () => void;
+  fetchUserBets: () => Promise<void>;
+  cashoutBet: (betId: string) => Promise<any>;
   placeBet: () => Promise<PlaceBetResponse>;
   addSGMSelection: (matchData: Omit<Selection, 'market'>) => void;
   placeSGMBet: () => Promise<PlaceBetResponse>;
@@ -311,59 +313,77 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        // Filter bets that have stakes
-        const betsWithStakes = this.currentBets.filter(bet => bet.stake > 0);
-        
-        const bets = betsWithStakes.map(bet => ({
-          betType: bet.selections.length > 1 ? 'sgm' : 'single',
-          amount: bet.stake,
-          totalOdds: bet.totalOdds,
-          potentialWin: bet.stake * bet.totalOdds,
-          isSGM: bet.selections.length > 1,
-          selections: bet.selections.map(selection => ({
+        console.log('Starting bet placement. Mode:', this.activeMode);
+        console.log('Current selections:', this.currentSelections);
+        console.log('Current bets:', this.currentBets);
+
+        let payload;
+
+        if (this.activeMode === "multi") {
+          console.log('Preparing multiple bet payload');
+          console.log('Multi stake:', this.multiStake);
+          console.log('Multi odds:', this.multiOdds);
+          
+          // For multiple bets, use all current selections
+          const selections = this.currentSelections.map(selection => ({
             matchId: selection.matchId,
-            selection: selection.type,
+            selection: selection.selection || selection.type || '1',
+            type: selection.type || selection.selection || '1',
             odds: selection.odds,
             sportKey: selection.sportKey,
             event: `${selection.homeTeam} vs ${selection.awayTeam}`,
-            market: selection.market,
+            market: selection.market || this.getMarketType(selection.type || selection.selection || '1'),
+            sport: selection.sportKey.split(":")[0],
             homeTeam: selection.homeTeam,
             awayTeam: selection.awayTeam,
-          }))
-        }));
+          }));
 
-        // Rest of your existing code...
-        const totalOdds =
-          this.activeMode === "multi"
-            ? this.multiOdds
-            : bets[0]?.selections[0]?.odds || 0;
+          console.log('Processed selections for multi bet:', selections);
 
-        const amount =
-          this.activeMode === "multi"
-            ? this.multiStake
-            : bets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+          payload = {
+            betType: "multiple",
+            amount: this.multiStake,
+            totalOdds: this.multiOdds,
+            potentialWin: this.multiStake * this.multiOdds,
+            selections: selections
+          };
+        } else {
+          console.log('Preparing single bet payload');
+          
+          // For single bets, filter bets with stakes
+          const betsWithStakes = this.currentBets.filter(bet => bet.stake > 0);
+          console.log('Bets with stakes:', betsWithStakes);
 
-        const potentialWin = amount * totalOdds;
-
-        const payload = {
-          betType: this.activeMode === "multi" ? "multiple" : "single",
-          amount,
-          totalOdds,
-          potentialWin,
-          selections: bets.flatMap((bet) =>
-            bet.selections.map((selection) => ({
+          const selections = betsWithStakes.flatMap(bet => 
+            bet.selections.map(selection => ({
               matchId: selection.matchId,
-              selection: selection.type,
+              selection: selection.selection || selection.type || '1',
+              type: selection.type || selection.selection || '1',
               odds: selection.odds,
               sportKey: selection.sportKey,
               event: `${selection.homeTeam} vs ${selection.awayTeam}`,
-              market: this.getMarketType(selection.type),
+              market: selection.market || this.getMarketType(selection.type || selection.selection || '1'),
               sport: selection.sportKey.split(":")[0],
               homeTeam: selection.homeTeam,
               awayTeam: selection.awayTeam,
             }))
-          ),
-        };
+          );
+
+          console.log('Processed selections for single bets:', selections);
+
+          const totalStake = betsWithStakes.reduce((sum, bet) => sum + (bet.stake || 0), 0);
+          const totalOdds = betsWithStakes[0]?.totalOdds || 0;
+
+          payload = {
+            betType: "single",
+            amount: totalStake,
+            totalOdds: totalOdds,
+            potentialWin: totalStake * totalOdds,
+            selections: selections
+          };
+        }
+
+        console.log('Final payload being sent:', payload);
 
         const response = await axios.post<PlaceBetResponse>(
           `${API_URL}/bets/place`,
@@ -376,18 +396,20 @@ export const useBettingStore = defineStore("betting", {
           }
         );
 
+        console.log('Response from server:', response.data);
+
         if (response.data.success) {
           authStore.updateBalance(response.data.newBalance);
 
           if (this.activeMode === "single") {
             // Remove only the bets that were placed (had stakes)
+            const betsWithStakes = this.currentBets.filter(bet => bet.stake > 0);
             betsWithStakes.forEach(bet => {
               this.removeBet(bet.id);
             });
           } else {
             // For multi mode, clear everything
             this.clearAllBets();
-            // this.clearBetSlip();
           }
         }
 
@@ -415,14 +437,11 @@ export const useBettingStore = defineStore("betting", {
       this.error = null;
 
       try {
-        // Add token check
         if (!authStore.token) {
           console.log('No auth token found');
           return;
         }
 
-        console.log('Fetching bets with token:', authStore.token);
-        
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/bets/user`,
           {
@@ -435,33 +454,37 @@ export const useBettingStore = defineStore("betting", {
           }
         );
 
-        // Log the raw response
-        console.log('Raw API response:', response);
-
         const data = response.data;
-        console.log('Parsed data:', data);
+        console.log('Raw bets data:', data);
 
-        this.placedBets = Array.isArray(data) ? data : [];
-        console.log('Placed bets after assignment:', this.placedBets);
+        // Transform the data to include formatted selections
+        this.placedBets = Array.isArray(data) ? data.map(bet => ({
+          ...bet,
+          selections: bet.selections.map(selection => ({
+            ...selection,
+            // Extract selection type from market or type field
+            selection: selection.type?.split('_')[1] || selection.market?.split('_')[1] || selection.type || 'unknown',
+            // Ensure we have the event teams split correctly
+            homeTeam: selection.event?.split(' vs ')[0] || selection.homeTeam,
+            awayTeam: selection.event?.split(' vs ')[1] || selection.awayTeam
+          }))
+        })) : [];
+
+        console.log('Transformed placed bets:', this.placedBets);
 
         // Filter bets into active and settled
         this.activeBets = this.placedBets.filter((bet) =>
           ["pending"].includes(bet.status || "")
         );
-        console.log('Active bets:', this.activeBets);
+        console.log('Active bets with transformed selections:', this.activeBets);
 
         this.settledBets = this.placedBets.filter((bet) =>
           ["won", "lost", "cancelled", "cashed_out"].includes(bet.status || "")
         );
-        console.log('Settled bets:', this.settledBets);
+        console.log('Settled bets with transformed selections:', this.settledBets);
 
       } catch (err: any) {
-        console.error('Detailed fetch error:', {
-          error: err,
-          response: err.response,
-          status: err.response?.status,
-          data: err.response?.data
-        });
+        console.error('Fetch error:', err.response?.data || err);
         this.error = err.response?.data?.message || "Failed to fetch bets";
       } finally {
         this.loading = false;

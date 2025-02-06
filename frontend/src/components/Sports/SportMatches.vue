@@ -147,20 +147,20 @@ const filteredMatches = computed(() => {
         );
 
   // Debug log
-  matches.forEach((match) => {
-    console.log("Match data:", {
-      title: match.title,
-      odds: match.odds,
-      status: match.status,
-    });
-  });
+  // matches.forEach((match) => {
+  //   console.log("Match data:", {
+  //     title: match.title,
+  //     odds: match.odds,
+  //     status: match.status,
+  //   });
+  // });
 
   return matches;
 });
 
 // Watch for status changes
 watch(selectedStatus, async () => {
-  console.log("Status changed to:", selectedStatus.value);
+  // console.log("Status changed to:", selectedStatus.value);
   isLoading.value = true;
   try {
     const leagues = getSportLeagues(props.sportKey);
@@ -174,7 +174,7 @@ watch(selectedStatus, async () => {
 
 // Initial fetch
 onMounted(() => {
-  console.log("Component mounted, fetching matches for:", props.sportKey);
+  // console.log("Component mounted, fetching matches for:", props.sportKey);
   const leagues = getSportLeagues(props.sportKey);
 
   Promise.all(
