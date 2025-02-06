@@ -340,6 +340,11 @@ const handleCashout = async () => {
   max-width: 600px;
   margin: 0 auto;
   padding-top: 100px; /* Space for the dragon */
+  background: url("../../../assets/img/header/backdrago.webp") no-repeat center
+    center;
+  background-size: cover;
+  border-radius: 16px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .dragon-decoration {
@@ -425,7 +430,7 @@ const handleCashout = async () => {
   aspect-ratio: 1;
   min-width: 40px;
   max-width: 80px;
-  background: var(--subheader);
+  background: #767171; /* Changed to light gray */
   border: 2px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
@@ -921,6 +926,7 @@ const handleCashout = async () => {
 
   .tower-wrapper {
     padding-top: 60px;
+    padding-bottom: 40px;
   }
 
   .fire-left,
