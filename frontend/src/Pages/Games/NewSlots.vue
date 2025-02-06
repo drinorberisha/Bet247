@@ -3,12 +3,14 @@
     <Header />
     <div class="game-page">
       <nav class="game-nav">
-        <router-link to="/casino" class="back-link">
-          <i class="fas fa-arrow-left"></i> Back to Casino
-        </router-link>
+        <div class="left-nav">
+          <router-link to="/casino" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Casino
+          </router-link>
+        </div>
       </nav>
       <div class="game-container">
-        <h1>Halloween Slots</h1>
+        <h1></h1>
         <div class="game-wrapper">
           <SlotGame />
         </div>
@@ -38,6 +40,8 @@ const backgroundStyle = {
   min-height: calc(100vh - 60px);
   background: var(--background);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-page::before {
@@ -61,10 +65,19 @@ const backgroundStyle = {
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-nav {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .back-link {
@@ -82,16 +95,23 @@ const backgroundStyle = {
 }
 
 .game-wrapper {
-  background: var(--header);
+  background: linear-gradient(45deg, #2b3dbb, #4657e8);
   border-radius: 20px;
   padding: 2rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(70, 87, 232, 0.3),
+    inset 0 0 80px rgba(255, 255, 255, 0.1);
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 h1 {
   color: var(--white);
   margin-bottom: 2rem;
   text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -101,6 +121,38 @@ h1 {
 
   .game-wrapper {
     padding: 1rem;
+    border-radius: 16px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-page {
+    padding: 0.75rem;
+  }
+
+  .game-wrapper {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Handle notch devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .game-page {
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    padding-left: calc(1rem + env(safe-area-inset-left));
+    padding-right: calc(1rem + env(safe-area-inset-right));
   }
 }
 </style>

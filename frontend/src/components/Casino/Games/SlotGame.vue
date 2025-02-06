@@ -18,7 +18,7 @@
         <input
           type="number"
           v-model="betAmount"
-          :disabled="isSpinning"
+          :disabled="isSpinning || isFreeSpinMode"
           min="1"
           step="1"
         />
@@ -26,6 +26,10 @@
       <div class="stat-box">
         <span class="stat-label">Win Amount</span>
         <span class="stat-value">{{ winAmount.toFixed(2) }}€</span>
+      </div>
+      <div v-if="freeSpinsRemaining > 0" class="stat-box free-spins">
+        <span class="stat-label">Free Spins</span>
+        <span class="stat-value">{{ freeSpinsRemaining }}</span>
       </div>
     </div>
 
@@ -62,30 +66,36 @@
       <button
         class="spin-button"
         @click="spin"
-        :disabled="isSpinning || betAmount <= 0"
+        :disabled="isSpinning || (!isFreeSpinMode && betAmount <= 0)"
       >
         <span class="button-glow"></span>
-        {{ isSpinning ? "SPINNING..." : "SPIN" }}
+        {{ spinButtonText }}
       </button>
     </div>
 
     <Transition name="fade">
       <div v-if="showWinModal" class="win-modal">
         <div class="modal-content">
-          <h2>WIN!</h2>
-          <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
-          <div
-            v-for="(win, index) in winCombinations"
-            :key="index"
-            class="win-combination"
-          >
-            <div class="symbol-group">
-              <span class="win-symbol">{{ win.symbol }}</span>
-              <span class="match-count">× {{ win.count }}</span>
+          <template v-if="freeSpinsRemaining === 5">
+            <h2>BONUS WIN!</h2>
+            <div class="bonus-win">5 Free Spins Awarded! 🎲</div>
+          </template>
+          <template v-else>
+            <h2>WIN!</h2>
+            <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
+            <div
+              v-for="(win, index) in winCombinations"
+              :key="index"
+              class="win-combination"
+            >
+              <div class="symbol-group">
+                <span class="win-symbol">{{ win.symbol }}</span>
+                <span class="match-count">× {{ win.count }}</span>
+              </div>
+              <div class="win-multiplier">x{{ win.multiplier }}</div>
             </div>
-            <div class="win-multiplier">x{{ win.multiplier }}</div>
-          </div>
-          <div class="total-multiplier">Total: x{{ currentMultiplier }}</div>
+            <div class="total-multiplier">Total: x{{ currentMultiplier }}</div>
+          </template>
         </div>
       </div>
     </Transition>
@@ -101,118 +111,42 @@
           <button class="close-button" @click="showPaytable = false">×</button>
           <h2>Paytable</h2>
           <div class="paytable-grid">
-            <div class="paytable-row">
-              <div class="symbol-container">⭐</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(15, matches) }}×</span
-                  >
-                </div>
+            <div class="paytable-row bonus-row">
+              <div class="symbol-container">🎲</div>
+              <div class="bonus-info">
+                <h3>Bonus Symbol</h3>
+                <p>Get 4 or more columns with 🎲 to win 5 Free Spins!</p>
               </div>
             </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌟</div>
+            <div
+              v-for="config in symbolConfigs.filter((c) => !c.isBonus)"
+              :key="config.symbol"
+              class="paytable-row"
+            >
+              <div class="symbol-container">{{ config.symbol }}</div>
               <div class="multipliers">
                 <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  v-for="matches in [7, 8, 9, 10, 11, 12]"
                   :key="matches"
                   class="multiplier-item"
                 >
                   <span class="matches">{{ matches }}×</span>
                   <span class="value"
-                    >{{ calculateMultiplier(10, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">☄️</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(8, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌞</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(6, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌙</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(4, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌎</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(3, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌍</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(3, matches) }}×</span
+                    >{{
+                      calculateMultiplier(config.multiplier, matches)
+                    }}×</span
                   >
                 </div>
               </div>
             </div>
           </div>
           <div class="paytable-info">
-            <p>Match 5 or more symbols to win!</p>
+            <p>Match 7 or more symbols to win!</p>
             <p>Multiple winning combinations are added together.</p>
             <div class="rarity-info">
-              <p>⭐ Rare Symbol - Highest Payout</p>
-              <p>🌍 Common Symbol - Regular Payout</p>
+              <p>💫 Super Rare - Highest Payout (50x)</p>
+              <p>⭐ Very Rare - High Payout (25x)</p>
+              <p>🌍 Common - Regular Payout (3x)</p>
             </div>
           </div>
         </div>
@@ -224,15 +158,19 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 
-// Define symbol configurations with weights and payouts
+// Update symbol configurations with more symbols and new weights
 const symbolConfigs = [
-  { symbol: "⭐", weight: 5, multiplier: 15 }, // Golden Star - Rare, highest payout
-  { symbol: "🌟", weight: 8, multiplier: 10 }, // Glowing Star - Uncommon, high payout
-  { symbol: "☄️", weight: 12, multiplier: 8 }, // Comet - Uncommon, medium-high payout
-  { symbol: "🌞", weight: 15, multiplier: 6 }, // Sun - Common, medium payout
-  { symbol: "🌙", weight: 20, multiplier: 4 }, // Moon - Common, medium-low payout
-  { symbol: "🌎", weight: 25, multiplier: 3 }, // Earth - Very common, low payout
-  { symbol: "🌍", weight: 25, multiplier: 3 }, // Earth Alt - Very common, low payout
+  { symbol: "🎲", weight: 1, multiplier: 0, isBonus: true }, // Bonus - Free Spins (unchanged)
+  { symbol: "💫", weight: 3, multiplier: 50 }, // New Super Star - Highest payout
+  { symbol: "⭐", weight: 5, multiplier: 25 }, // Golden Star
+  { symbol: "🌟", weight: 7, multiplier: 15 }, // Glowing Star
+  { symbol: "☄️", weight: 10, multiplier: 10 }, // Comet
+  { symbol: "🌞", weight: 12, multiplier: 8 }, // Sun
+  { symbol: "🌙", weight: 15, multiplier: 6 }, // Moon
+  { symbol: "⚡", weight: 18, multiplier: 5 }, // New Lightning Symbol
+  { symbol: "✨", weight: 20, multiplier: 4 }, // New Sparkles Symbol
+  { symbol: "🌎", weight: 22, multiplier: 3 }, // Earth
+  { symbol: "🌍", weight: 22, multiplier: 3 }, // Earth Alt
 ];
 
 // Create weighted symbols array for random selection
@@ -242,18 +180,21 @@ const weightedSymbols = symbolConfigs.reduce((acc, config) => {
 
 // Update multipliers object to use symbol-specific multipliers
 const getSymbolMultiplier = (symbol: string, count: number) => {
+  if (count < 7) return 0; // No wins for less than 7 matches
+
   const baseMultiplier =
     symbolConfigs.find((config) => config.symbol === symbol)?.multiplier || 1;
-  // Additional multiplier based on match count
+
   const countMultiplier =
     {
-      5: 1, // 5 matches = base multiplier
-      6: 1.5, // 6 matches = 1.5x base multiplier
-      7: 2, // 7 matches = 2x base multiplier
-      8: 3, // 8 matches = 3x base multiplier
-      9: 4, // 9 matches = 4x base multiplier
-      10: 5, // 10+ matches = 5x base multiplier
-    }[Math.min(count, 10)] || 5;
+      6: 1,
+      7: 1, // 7 matches = base multiplier
+      8: 1.5, // 8 matches = 1.5x
+      9: 2, // 9 matches = 2x
+      10: 3, // 10 matches = 3x
+      11: 4, // 11 matches = 4x
+      12: 5, // 12+ matches = 5x
+    }[Math.min(count, 12)] || 5;
 
   return baseMultiplier * countMultiplier;
 };
@@ -293,11 +234,37 @@ interface WinCombination {
 // Add new ref for multiple wins
 const winCombinations = ref<WinCombination[]>([]);
 
-// Modify checkWins function to handle multiple wins
+// Add new ref for free spins
+const freeSpinsRemaining = ref(0);
+const isFreeSpinMode = computed(() => freeSpinsRemaining.value > 0);
+
+// Update checkWins function to only consider 7+ matches
 function checkWins() {
   const counts = new Map<string, { count: number; positions: string[] }>();
   winCombinations.value = [];
   let totalMultiplier = 0;
+
+  // First check for bonus symbols (🎲)
+  const bonusPositions: string[] = [];
+  const bonusColumns = new Set<number>();
+
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 5; col++) {
+      if (grid.value[row][col] === "🎲") {
+        bonusPositions.push(`${row}-${col}`);
+        bonusColumns.add(col);
+      }
+    }
+  }
+
+  // If bonus symbol appears in 4 or more columns, trigger free spins
+  if (bonusColumns.size >= 4 && !isFreeSpinMode.value) {
+    freeSpinsRemaining.value = 5;
+    // Add visual feedback for bonus win
+    winningPositions.value.push(...bonusPositions);
+    // Show bonus win message
+    showBonusWinModal();
+  }
 
   // Count symbols
   for (let row = 0; row < 4; row++) {
@@ -312,9 +279,12 @@ function checkWins() {
     }
   }
 
-  // Find all winning combinations (5 or more matches)
+  // Find winning combinations (7 or more matches)
   counts.forEach((data, symbol) => {
-    if (data.count >= 5) {
+    if (
+      data.count >= 7 &&
+      !symbolConfigs.find((c) => c.symbol === symbol)?.isBonus
+    ) {
       const multiplier = getSymbolMultiplier(symbol, data.count);
       winCombinations.value.push({
         symbol,
@@ -343,8 +313,24 @@ function checkWins() {
   return totalMultiplier;
 }
 
-function spin() {
-  if (isSpinning.value || betAmount.value <= 0) return;
+// Add function to show bonus win modal
+function showBonusWinModal() {
+  showWinModal.value = true;
+  setTimeout(() => {
+    showWinModal.value = false;
+  }, 3000);
+}
+
+const spinButtonText = computed(() => {
+  if (isSpinning.value) return "SPINNING...";
+  if (isFreeSpinMode.value) return `FREE SPIN (${freeSpinsRemaining.value})`;
+  return "SPIN";
+});
+
+// Modify the spin function to handle free spins
+async function spin() {
+  if (isSpinning.value || (!isFreeSpinMode.value && betAmount.value <= 0))
+    return;
 
   isSpinning.value = true;
   showWinModal.value = false;
@@ -352,7 +338,17 @@ function spin() {
   winningPositions.value = [];
   revealedColumns.value = Array(5).fill(false);
 
-  // Generate final grid state immediately
+  // Store the current bet amount when free spins are triggered
+  if (!isFreeSpinMode.value) {
+    localStorage.setItem("lastBetAmount", betAmount.value.toString());
+  }
+
+  // Use stored bet amount during free spins
+  const currentBet = isFreeSpinMode.value
+    ? Number(localStorage.getItem("lastBetAmount"))
+    : betAmount.value;
+
+  // Generate final grid state
   finalGrid.value = Array(4)
     .fill(null)
     .map(() =>
@@ -377,14 +373,21 @@ function spin() {
         // Check for wins after last column
         if (col === 4) {
           const multiplier = checkWins();
-          winAmount.value = betAmount.value * multiplier;
+          winAmount.value = currentBet * multiplier;
 
-          if (multiplier > 0) {
+          if (multiplier > 0 || freeSpinsRemaining.value === 5) {
             showWinModal.value = true;
-            // Auto dismiss modal after duration
             setTimeout(() => {
               showWinModal.value = false;
             }, MODAL_DISPLAY_DURATION);
+          }
+
+          // Decrease free spins counter after spin completes
+          if (isFreeSpinMode.value) {
+            freeSpinsRemaining.value--;
+            if (freeSpinsRemaining.value === 0) {
+              localStorage.removeItem("lastBetAmount");
+            }
           }
 
           currentColumn.value = -1;
@@ -417,16 +420,18 @@ const sortedSymbolConfigs = computed(() =>
   [...symbolConfigs].sort((a, b) => b.multiplier - a.multiplier)
 );
 
-// Add helper function to calculate exact multipliers
+// Update helper function for paytable calculations
 function calculateMultiplier(baseMultiplier: number, matches: number): string {
+  if (matches < 7) return "0.0";
+
   const countMultiplier =
     {
-      5: 1,
-      6: 1.5,
-      7: 2,
-      8: 3,
-      9: 4,
-      10: 5,
+      7: 1,
+      8: 1.5,
+      9: 2,
+      10: 3,
+      11: 4,
+      12: 5,
     }[matches] || 5;
 
   return (baseMultiplier * countMultiplier).toFixed(1);
@@ -1212,5 +1217,50 @@ input {
   .multiplier-item {
     padding: 0.25rem;
   }
+}
+
+.free-spins-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #ff9900, #ff6600);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  animation: pulse 1s infinite;
+  z-index: 10;
+}
+
+.bonus-row {
+  background: linear-gradient(135deg, #ff9900, #ff6600) !important;
+}
+
+.bonus-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bonus-win {
+  font-size: 1.5rem;
+  color: #ff9900;
+  text-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+  margin: 1rem 0;
+  animation: bounceIn 0.5s ease-out;
+}
+
+.free-spins {
+  background: linear-gradient(135deg, #ff9900, #ff6600);
+  animation: pulse 1s infinite;
+}
+
+.free-spins .stat-label {
+  color: white;
+}
+
+.free-spins .stat-value {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 </style>
