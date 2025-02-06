@@ -118,118 +118,35 @@
                 <p>Get 4 or more columns with 🎲 to win 5 Free Spins!</p>
               </div>
             </div>
-            <div class="paytable-row">
-              <div class="symbol-container">⭐</div>
+            <div
+              v-for="config in symbolConfigs.filter((c) => !c.isBonus)"
+              :key="config.symbol"
+              class="paytable-row"
+            >
+              <div class="symbol-container">{{ config.symbol }}</div>
               <div class="multipliers">
                 <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  v-for="matches in [7, 8, 9, 10, 11, 12]"
                   :key="matches"
                   class="multiplier-item"
                 >
                   <span class="matches">{{ matches }}×</span>
                   <span class="value"
-                    >{{ calculateMultiplier(15, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌟</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(10, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">☄️</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(8, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌞</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(6, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌙</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(4, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌎</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(3, matches) }}×</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="paytable-row">
-              <div class="symbol-container">🌍</div>
-              <div class="multipliers">
-                <div
-                  v-for="matches in [5, 6, 7, 8, 9, 10]"
-                  :key="matches"
-                  class="multiplier-item"
-                >
-                  <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{ calculateMultiplier(3, matches) }}×</span
+                    >{{
+                      calculateMultiplier(config.multiplier, matches)
+                    }}×</span
                   >
                 </div>
               </div>
             </div>
           </div>
           <div class="paytable-info">
-            <p>Match 5 or more symbols to win!</p>
+            <p>Match 7 or more symbols to win!</p>
             <p>Multiple winning combinations are added together.</p>
             <div class="rarity-info">
-              <p>⭐ Rare Symbol - Highest Payout</p>
-              <p>🌍 Common Symbol - Regular Payout</p>
+              <p>💫 Super Rare - Highest Payout (50x)</p>
+              <p>⭐ Very Rare - High Payout (25x)</p>
+              <p>🌍 Common - Regular Payout (3x)</p>
             </div>
           </div>
         </div>
@@ -241,16 +158,19 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 
-// Add the new bonus symbol at the start of symbolConfigs
+// Update symbol configurations with more symbols and new weights
 const symbolConfigs = [
-  { symbol: "🎲", weight: 1, multiplier: 0, isBonus: true }, // Bonus Dice - Very Rare, triggers free spins
-  { symbol: "⭐", weight: 5, multiplier: 15 }, // Golden Star - Rare, highest payout
-  { symbol: "🌟", weight: 8, multiplier: 10 }, // Glowing Star - Uncommon, high payout
-  { symbol: "☄️", weight: 12, multiplier: 8 }, // Comet - Uncommon, medium-high payout
-  { symbol: "🌞", weight: 12, multiplier: 6 }, // Sun - Common, medium payout
-  { symbol: "🌙", weight: 13, multiplier: 4 }, // Moon - Common, medium-low payout
-  { symbol: "🌎", weight: 15, multiplier: 3 }, // Earth - Very common, low payout
-  { symbol: "🌍", weight: 17, multiplier: 3 }, // Earth Alt - Very common, low payout
+  { symbol: "🎲", weight: 1, multiplier: 0, isBonus: true }, // Bonus - Free Spins (unchanged)
+  { symbol: "💫", weight: 3, multiplier: 50 }, // New Super Star - Highest payout
+  { symbol: "⭐", weight: 5, multiplier: 25 }, // Golden Star
+  { symbol: "🌟", weight: 7, multiplier: 15 }, // Glowing Star
+  { symbol: "☄️", weight: 10, multiplier: 10 }, // Comet
+  { symbol: "🌞", weight: 12, multiplier: 8 }, // Sun
+  { symbol: "🌙", weight: 15, multiplier: 6 }, // Moon
+  { symbol: "⚡", weight: 18, multiplier: 5 }, // New Lightning Symbol
+  { symbol: "✨", weight: 20, multiplier: 4 }, // New Sparkles Symbol
+  { symbol: "🌎", weight: 22, multiplier: 3 }, // Earth
+  { symbol: "🌍", weight: 22, multiplier: 3 }, // Earth Alt
 ];
 
 // Create weighted symbols array for random selection
@@ -260,18 +180,21 @@ const weightedSymbols = symbolConfigs.reduce((acc, config) => {
 
 // Update multipliers object to use symbol-specific multipliers
 const getSymbolMultiplier = (symbol: string, count: number) => {
+  if (count < 7) return 0; // No wins for less than 7 matches
+
   const baseMultiplier =
     symbolConfigs.find((config) => config.symbol === symbol)?.multiplier || 1;
-  // Additional multiplier based on match count
+
   const countMultiplier =
     {
-      // 5 matches = base multiplier
-      6: 1.5, // 6 matches = 1.5x base multiplier
-      7: 2, // 7 matches = 2x base multiplier
-      8: 3, // 8 matches = 3x base multiplier
-      9: 4, // 9 matches = 4x base multiplier
-      10: 5, // 10+ matches = 5x base multiplier
-    }[Math.min(count, 10)] || 5;
+      6: 1,
+      7: 1, // 7 matches = base multiplier
+      8: 1.5, // 8 matches = 1.5x
+      9: 2, // 9 matches = 2x
+      10: 3, // 10 matches = 3x
+      11: 4, // 11 matches = 4x
+      12: 5, // 12+ matches = 5x
+    }[Math.min(count, 12)] || 5;
 
   return baseMultiplier * countMultiplier;
 };
@@ -315,7 +238,7 @@ const winCombinations = ref<WinCombination[]>([]);
 const freeSpinsRemaining = ref(0);
 const isFreeSpinMode = computed(() => freeSpinsRemaining.value > 0);
 
-// Modify checkWins function to handle multiple wins
+// Update checkWins function to only consider 7+ matches
 function checkWins() {
   const counts = new Map<string, { count: number; positions: string[] }>();
   winCombinations.value = [];
@@ -356,9 +279,12 @@ function checkWins() {
     }
   }
 
-  // Find all winning combinations (5 or more matches)
+  // Find winning combinations (7 or more matches)
   counts.forEach((data, symbol) => {
-    if (data.count >= 5) {
+    if (
+      data.count >= 7 &&
+      !symbolConfigs.find((c) => c.symbol === symbol)?.isBonus
+    ) {
       const multiplier = getSymbolMultiplier(symbol, data.count);
       winCombinations.value.push({
         symbol,
@@ -494,16 +420,18 @@ const sortedSymbolConfigs = computed(() =>
   [...symbolConfigs].sort((a, b) => b.multiplier - a.multiplier)
 );
 
-// Add helper function to calculate exact multipliers
+// Update helper function for paytable calculations
 function calculateMultiplier(baseMultiplier: number, matches: number): string {
+  if (matches < 7) return "0.0";
+
   const countMultiplier =
     {
-      5: 1,
-      6: 1.5,
-      7: 2,
-      8: 3,
-      9: 4,
-      10: 5,
+      7: 1,
+      8: 1.5,
+      9: 2,
+      10: 3,
+      11: 4,
+      12: 5,
     }[matches] || 5;
 
   return (baseMultiplier * countMultiplier).toFixed(1);
