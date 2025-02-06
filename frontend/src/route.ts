@@ -33,10 +33,16 @@ import SlotForeign from "./Pages/Games/SlotForeign.vue";
 import HalloweenSlots from "./Pages/Games/HalloweenSlots.vue";
 import SlotPen from "./Pages/Games/SlotPen.vue";
 import NewSlots from "./Pages/Games/NewSlots.vue";
+import Login from "./Pages/Auth/Login.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: "/auth",
+      component: Login,
+      meta: { requiresGuest: true }
+    },
     {
       path: "/",
       component: Index,
@@ -300,10 +306,10 @@ export const router = createRouter({
 
     {
       path: "/:pathMatch(.*)*",
-      component: NotFound,
-      meta: {
-        title: "BET 24/7",
-      },
+      redirect: to => {
+        const authStore = useAuthStore();
+        return authStore.isAuthenticated ? to.fullPath : '/auth';
+      }
     },
   ],
 });
@@ -311,6 +317,18 @@ export const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
+
+  // If route requires guest (login page) and user is authenticated
+  if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    next('/');
+    return;
+  }
+
+  // If user is not authenticated and not on auth page
+  if (!authStore.isAuthenticated && to.path !== '/auth') {
+    next('/auth');
+    return;
+  }
 
   console.log("Route navigation:", {
     to: to.path,
@@ -321,21 +339,6 @@ router.beforeEach((to, from, next) => {
   // Set page title
   if (to.meta.title) {
     document.title = to.meta.title as string;
-  }
-
-  // Check authentication for protected routes
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log(
-      "Auth required but not authenticated, staying on home page with login modal"
-    );
-    if (to.path !== "/") {
-      next("/"); // Redirect to home page first
-      // Wait for the next tick to ensure route change is complete
-      setTimeout(() => {
-        authStore.toggleLoginModal(); // Then open the login modal
-      }, 0);
-      return;
-    }
   }
 
   // Check if user is superuser/admin and trying to access regular dashboard

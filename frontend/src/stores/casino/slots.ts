@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { useAuthStore } from '../auth';
 import { PAYLINE_PATTERNS } from '../../constants/slots';
 

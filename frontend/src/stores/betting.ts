@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from '../utils/axios';
 import { useAuthStore } from "./auth";
 import { useMatchesStore } from "./matches";
 import { SGM_LIMITS } from '../types';

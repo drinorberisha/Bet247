@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import axios from '../../utils/axios';
+
 import { useAuthStore } from '../auth';
 import { useNotification } from '@kyvg/vue3-notification';
 

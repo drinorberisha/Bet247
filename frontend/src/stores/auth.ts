@@ -1,13 +1,14 @@
 import { defineStore } from "pinia";
 import { useNotificationStore } from "./notification";
-
+import axios from '../utils/axios';
+import { useRouter } from 'vue-router';
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface User {
   _id: string;
   username: string;
   email: string;
-  role: "user" | "admin" | "superuser";
+  role: 'user' | 'admin' | 'superuser';
   balance: number;
 }
 
@@ -69,70 +70,51 @@ export const useAuthStore = defineStore("auth", {
     // Authentication actions
     async login(credentials: LoginCredentials) {
       try {
-        const response = await fetch(`${API_URL}/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(credentials),
-        });
+        const response = await axios.post('/auth/login', credentials);
+        const { token, user } = response.data;
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Login failed");
+        // Ensure user has required properties
+        if (!user.role) {
+          throw new Error('Invalid user data received');
         }
 
-        const data = await response.json();
-
-        this.token = data.token;
-        this.user = data.user;
+        this.token = token;
+        this.user = user;
         this.isAuthenticated = true;
 
-        // Save to localStorage
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        // Store in localStorage with role
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
 
         // Close login modal after successful login
         this.showLoginModal = false;
         document.body.classList.remove("modal-open");
 
-        return data;
+        return response.data;
       } catch (error: any) {
-        throw new Error(error.message || "Failed to login");
+        this.logout(); // Clear state on error
+        throw new Error(error.response?.data?.message || "Failed to login");
       }
     },
 
     async register(credentials: RegisterCredentials) {
       try {
-        const response = await fetch(`${API_URL}/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(credentials),
-        });
+        const response = await axios.post('/auth/register', credentials);
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Registration failed");
-        }
-
-        const data = await response.json();
-
-        this.token = data.token;
-        this.user = data.user;
+        this.token = response.data.token;
+        this.user = response.data.user;
         this.isAuthenticated = true;
 
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", this.token);
+        localStorage.setItem("user", JSON.stringify(this.user));
 
         // Close signup modal after successful registration
         this.showSignupModal = false;
         document.body.classList.remove("modal-open");
 
-        return data;
+        return response.data;
       } catch (error: any) {
-        throw new Error(error.message || "Failed to register");
+        throw new Error(error.response?.data?.message || "Failed to register");
       }
     },
 
@@ -141,16 +123,12 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         if (this.token) {
-          await fetch(`${API_URL}/auth/logout`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${this.token}`,
-            },
-          });
+          await axios.post('/auth/logout');
         }
       } catch (error) {
         console.error("Logout error:", error);
       } finally {
+        // Clear auth state
         this.user = null;
         this.token = null;
         this.isAuthenticated = false;
@@ -165,32 +143,36 @@ export const useAuthStore = defineStore("auth", {
           duration: 4000,
           position: "top-right",
         });
+
       }
     },
 
     async checkAuth() {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
 
-        if (!token) {
+        if (!token || !storedUser) {
           this.logout();
           return false;
         }
 
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Invalid token");
-        }
-
-        const data = await response.json();
-        this.user = data.user;
+        // First set stored data
         this.token = token;
+        this.user = JSON.parse(storedUser);
         this.isAuthenticated = true;
+
+        // Then verify with server
+        const response = await axios.get('/auth/me');
+        const { user } = response.data;
+
+        // Update with fresh data from server
+        if (user && user.role) {
+          this.user = user;
+          localStorage.setItem('user', JSON.stringify(user));
+        } else {
+          throw new Error('Invalid user data received');
+        }
 
         return true;
       } catch (error) {
@@ -201,27 +183,13 @@ export const useAuthStore = defineStore("auth", {
 
     async updateProfile(userData: Partial<User>) {
       try {
-        const response = await fetch(`${API_URL}/auth/profile`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify(userData),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to update profile");
-        }
-
-        const data = await response.json();
-        this.user = { ...this.user, ...data.user };
+        const response = await axios.patch('/auth/profile', userData);
+        this.user = { ...this.user, ...response.data.user };
         localStorage.setItem("user", JSON.stringify(this.user));
 
-        return data;
+        return response.data;
       } catch (error: any) {
-        throw new Error(error.message || "Failed to update profile");
+        throw new Error(error.response?.data?.message || "Failed to update profile");
       }
     },
 
@@ -230,23 +198,10 @@ export const useAuthStore = defineStore("auth", {
       newPassword: string;
     }) {
       try {
-        const response = await fetch(`${API_URL}/auth/change-password`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify(passwords),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to change password");
-        }
-
-        return await response.json();
+        const response = await axios.post('/auth/change-password', passwords);
+        return response.data;
       } catch (error: any) {
-        throw new Error(error.message || "Failed to change password");
+        throw new Error(error.response?.data?.message || "Failed to change password");
       }
     },
 
@@ -260,6 +215,13 @@ export const useAuthStore = defineStore("auth", {
     getUserBalance(): number {
       return this.user?.balance ?? 0;
     },
+
+    updateUserData(userData: Partial<User>) {
+      if (this.user) {
+        this.user = { ...this.user, ...userData };
+        localStorage.setItem('user', JSON.stringify(this.user));
+      }
+    },
   },
 
   getters: {
@@ -267,5 +229,6 @@ export const useAuthStore = defineStore("auth", {
       state.user?.role === "admin" || state.user?.role === "superuser",
     isSuperuser: (state) => state.user?.role === "superuser",
     userBalance: (state) => state.user?.balance || 0,
+    userRole: (state) => state.user?.role || 'user', // Provide default role
   },
 });

@@ -312,8 +312,8 @@ const handleLogout = async () => {
     isMobileMenuOpen.value = false;
     showDropdown.value = false;
 
-    // Redirect to home page
-    router.push("/");
+    // Redirect to auth page
+    router.push("/auth");
   } catch (error) {
     console.error("Logout error:", error);
   }
