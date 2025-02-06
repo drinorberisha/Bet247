@@ -1,5 +1,11 @@
 <template>
   <div class="slot-game">
+    <!-- Add paytable button -->
+    <button class="paytable-button" @click="showPaytable = true">
+      <span class="icon">ⓘ</span>
+      Paytable
+    </button>
+
     <div class="game-title">
       <span class="title-decoration">⭐</span>
       <h1>Lucky Stars Slot</h1>
@@ -26,28 +32,26 @@
     <div class="slot-machine-frame">
       <div class="frame-decoration top"></div>
       <div class="slot-grid">
-        <div v-for="row in 4" :key="`row-${row}`" class="slot-row">
+        <div
+          v-for="(cell, index) in 20"
+          :key="index"
+          class="slot-cell"
+          :class="{
+            'winning-cell': winningPositions.includes(
+              `${Math.floor(index / 5)}-${index % 5}`
+            ),
+            'active-column': isSpinning && currentColumn === index % 5,
+          }"
+          :data-col="index % 5"
+        >
           <div
-            v-for="col in 5"
-            :key="`${row}-${col}`"
-            class="slot-cell"
+            class="symbol"
             :class="{
-              'winning-cell': winningPositions.includes(
-                `${row - 1}-${col - 1}`
-              ),
-              'active-column': isSpinning && currentColumn === col - 1,
+              spinning: isSpinning && currentColumn === index % 5,
+              revealed: revealedColumns[index % 5],
             }"
-            :data-col="col - 1"
           >
-            <div
-              class="symbol"
-              :class="{
-                spinning: isSpinning && currentColumn === col - 1,
-                revealed: revealedColumns[col - 1],
-              }"
-            >
-              {{ grid[row - 1][col - 1] }}
-            </div>
+            {{ grid[Math.floor(index / 5)][index % 5] }}
           </div>
         </div>
       </div>
@@ -70,8 +74,147 @@
         <div class="modal-content">
           <h2>WIN!</h2>
           <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
-          <div class="matches">{{ matchCount }} MATCHING SYMBOLS!</div>
-          <div class="multiplier">x{{ currentMultiplier }}</div>
+          <div
+            v-for="(win, index) in winCombinations"
+            :key="index"
+            class="win-combination"
+          >
+            <div class="symbol-group">
+              <span class="win-symbol">{{ win.symbol }}</span>
+              <span class="match-count">× {{ win.count }}</span>
+            </div>
+            <div class="win-multiplier">x{{ win.multiplier }}</div>
+          </div>
+          <div class="total-multiplier">Total: x{{ currentMultiplier }}</div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Add paytable modal -->
+    <Transition name="fade">
+      <div
+        v-if="showPaytable"
+        class="paytable-modal"
+        @click="showPaytable = false"
+      >
+        <div class="paytable-content" @click.stop>
+          <button class="close-button" @click="showPaytable = false">×</button>
+          <h2>Paytable</h2>
+          <div class="paytable-grid">
+            <div class="paytable-row">
+              <div class="symbol-container">⭐</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(15, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">🌟</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(10, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">☄️</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(8, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">🌞</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(6, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">🌙</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(4, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">🌎</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(3, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="paytable-row">
+              <div class="symbol-container">🌍</div>
+              <div class="multipliers">
+                <div
+                  v-for="matches in [5, 6, 7, 8, 9, 10]"
+                  :key="matches"
+                  class="multiplier-item"
+                >
+                  <span class="matches">{{ matches }}×</span>
+                  <span class="value"
+                    >{{ calculateMultiplier(3, matches) }}×</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="paytable-info">
+            <p>Match 5 or more symbols to win!</p>
+            <p>Multiple winning combinations are added together.</p>
+            <div class="rarity-info">
+              <p>⭐ Rare Symbol - Highest Payout</p>
+              <p>🌍 Common Symbol - Regular Payout</p>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -79,17 +222,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
-const symbols = ["🌎", "⭐", "🌙", "🌞", "☄️", "🌟", "🌍"];
-const multipliers = {
-  5: 2, // 5 matches = 2x
-  6: 3, // 6 matches = 3x
-  7: 5, // 7 matches = 5x
-  8: 8, // 8 matches = 8x
-  9: 10, // 9 matches = 10x
-  10: 15, // 10+ matches = 15x
+// Define symbol configurations with weights and payouts
+const symbolConfigs = [
+  { symbol: "⭐", weight: 5, multiplier: 15 }, // Golden Star - Rare, highest payout
+  { symbol: "🌟", weight: 8, multiplier: 10 }, // Glowing Star - Uncommon, high payout
+  { symbol: "☄️", weight: 12, multiplier: 8 }, // Comet - Uncommon, medium-high payout
+  { symbol: "🌞", weight: 15, multiplier: 6 }, // Sun - Common, medium payout
+  { symbol: "🌙", weight: 20, multiplier: 4 }, // Moon - Common, medium-low payout
+  { symbol: "🌎", weight: 25, multiplier: 3 }, // Earth - Very common, low payout
+  { symbol: "🌍", weight: 25, multiplier: 3 }, // Earth Alt - Very common, low payout
+];
+
+// Create weighted symbols array for random selection
+const weightedSymbols = symbolConfigs.reduce((acc, config) => {
+  return acc.concat(Array(config.weight).fill(config.symbol));
+}, [] as string[]);
+
+// Update multipliers object to use symbol-specific multipliers
+const getSymbolMultiplier = (symbol: string, count: number) => {
+  const baseMultiplier =
+    symbolConfigs.find((config) => config.symbol === symbol)?.multiplier || 1;
+  // Additional multiplier based on match count
+  const countMultiplier =
+    {
+      5: 1, // 5 matches = base multiplier
+      6: 1.5, // 6 matches = 1.5x base multiplier
+      7: 2, // 7 matches = 2x base multiplier
+      8: 3, // 8 matches = 3x base multiplier
+      9: 4, // 9 matches = 4x base multiplier
+      10: 5, // 10+ matches = 5x base multiplier
+    }[Math.min(count, 10)] || 5;
+
+  return baseMultiplier * countMultiplier;
 };
+
+const MODAL_DISPLAY_DURATION = 3000; // 3 seconds
 
 const grid = ref(
   Array(4)
@@ -107,9 +276,30 @@ const currentColumn = ref(-1);
 const revealedColumns = ref(Array(5).fill(false));
 const finalGrid = ref<string[][]>([]);
 
+// Replace existing getRandomSymbol function
+function getRandomSymbol() {
+  const randomIndex = Math.floor(Math.random() * weightedSymbols.length);
+  return weightedSymbols[randomIndex];
+}
+
+// Add new interface for win combinations
+interface WinCombination {
+  symbol: string;
+  count: number;
+  positions: string[];
+  multiplier: number;
+}
+
+// Add new ref for multiple wins
+const winCombinations = ref<WinCombination[]>([]);
+
+// Modify checkWins function to handle multiple wins
 function checkWins() {
   const counts = new Map<string, { count: number; positions: string[] }>();
+  winCombinations.value = [];
+  let totalMultiplier = 0;
 
+  // Count symbols
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 5; col++) {
       const symbol = grid.value[row][col];
@@ -122,28 +312,35 @@ function checkWins() {
     }
   }
 
-  let bestMatch = { symbol: "", count: 0, positions: [] as string[] };
-
+  // Find all winning combinations (5 or more matches)
   counts.forEach((data, symbol) => {
-    if (data.count >= 5 && data.count > bestMatch.count) {
-      bestMatch = { symbol, count: data.count, positions: data.positions };
+    if (data.count >= 5) {
+      const multiplier = getSymbolMultiplier(symbol, data.count);
+      winCombinations.value.push({
+        symbol,
+        count: data.count,
+        positions: data.positions,
+        multiplier,
+      });
+      totalMultiplier += multiplier;
     }
   });
 
-  if (bestMatch.count >= 5) {
-    winningPositions.value = bestMatch.positions;
-    matchCount.value = bestMatch.count;
-    currentMultiplier.value =
-      multipliers[Math.min(bestMatch.count, 10) as keyof typeof multipliers] ||
-      15;
-    return currentMultiplier.value;
-  }
+  // Update winning positions to include all winning combinations
+  winningPositions.value = winCombinations.value.flatMap(
+    (win) => win.positions
+  );
 
-  return 0;
-}
+  // Update match count to show total matches
+  matchCount.value = winCombinations.value.reduce(
+    (total, win) => total + win.count,
+    0
+  );
 
-function getRandomSymbol() {
-  return symbols[Math.floor(Math.random() * symbols.length)];
+  // Set current multiplier to total of all combinations
+  currentMultiplier.value = totalMultiplier;
+
+  return totalMultiplier;
 }
 
 function spin() {
@@ -184,6 +381,10 @@ function spin() {
 
           if (multiplier > 0) {
             showWinModal.value = true;
+            // Auto dismiss modal after duration
+            setTimeout(() => {
+              showWinModal.value = false;
+            }, MODAL_DISPLAY_DURATION);
           }
 
           currentColumn.value = -1;
@@ -193,13 +394,51 @@ function spin() {
     }, col * 1000); // Delay between columns
   }
 }
+
+// Add new ref for paytable visibility
+const showPaytable = ref(false);
+
+// Helper function for paytable display
+function getMatchMultiplier(count: number) {
+  return (
+    {
+      5: 1,
+      6: 1.5,
+      7: 2,
+      8: 3,
+      9: 4,
+      10: 5,
+    }[count] || 5
+  );
+}
+
+// Add computed property for sorted symbols
+const sortedSymbolConfigs = computed(() =>
+  [...symbolConfigs].sort((a, b) => b.multiplier - a.multiplier)
+);
+
+// Add helper function to calculate exact multipliers
+function calculateMultiplier(baseMultiplier: number, matches: number): string {
+  const countMultiplier =
+    {
+      5: 1,
+      6: 1.5,
+      7: 2,
+      8: 3,
+      9: 4,
+      10: 5,
+    }[matches] || 5;
+
+  return (baseMultiplier * countMultiplier).toFixed(1);
+}
 </script>
 
 <style scoped>
 .slot-game {
   max-width: 800px;
+  width: 95%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
   background: linear-gradient(45deg, #2b3dbb, #4657e8);
   border-radius: 16px;
@@ -219,7 +458,7 @@ function spin() {
 
 .game-title h1 {
   color: white;
-  font-size: 2.5rem;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
   margin: 0;
 }
@@ -231,8 +470,9 @@ function spin() {
 
 .stats-container {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
   justify-content: center;
 }
 
@@ -247,7 +487,22 @@ function spin() {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   padding: 1rem;
   border-radius: 8px;
-  min-width: 150px;
+  min-width: 120px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.stat-label {
+  color: white;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 .slot-machine-frame {
@@ -277,31 +532,34 @@ function spin() {
 }
 
 .slot-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   margin: 2rem auto;
   background: linear-gradient(to bottom, #3347d1, #2636b3);
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 12px;
-  width: fit-content;
+  width: 100%;
+  max-width: 600px;
   box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  aspect-ratio: 1.25;
 }
 
 .slot-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  justify-content: center;
 }
 
 .slot-cell {
-  width: 80px;
-  height: 80px;
+  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, #4c63ff, #3347d1);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   border: 2px solid #6b78ff;
   box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
   position: relative;
@@ -381,12 +639,12 @@ function spin() {
   background: linear-gradient(to bottom, #00c9ff, #00a2ff);
   color: white;
   border: none;
-  padding: 1rem 3rem;
-  font-size: 1.2rem;
+  padding: clamp(0.5rem, 2vw, 1rem) clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(1rem, 3vw, 1.2rem);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 200px;
+  min-width: 150px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);
   position: relative;
@@ -430,18 +688,80 @@ function spin() {
   padding: 2rem;
   border-radius: 16px;
   text-align: center;
-  animation: dropIn 0.5s ease-out;
+  animation: dropIn 0.5s ease-out, fadeOut 0.5s ease-out forwards;
+  animation-delay: 0s, 2.5s; /* Start fade out 0.5s before modal closes */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+}
+
+.win-modal .win-amount {
+  font-size: 2rem;
+  color: gold;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  margin: 1rem 0;
+}
+
+.win-modal .matches {
+  font-size: 1.2rem;
+  color: #fff;
+  margin: 0.5rem 0;
+}
+
+.win-modal .multiplier {
+  font-size: 1.5rem;
+  color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
 input {
   background: var(--header);
   border: 1px solid var(--border);
-  color: white;
+  color: white !important;
   padding: 0.5rem;
   border-radius: 4px;
   width: 100px;
   text-align: center;
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.win-modal .win-combination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.win-modal .symbol-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.win-modal .win-symbol {
+  font-size: 1.5rem;
+}
+
+.win-modal .match-count {
+  color: #fff;
+  font-size: 1.2rem;
+}
+
+.win-modal .win-multiplier {
+  color: #00ff88;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.win-modal .total-multiplier {
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  color: gold;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  font-weight: bold;
 }
 
 @keyframes spin {
@@ -493,6 +813,15 @@ input {
   100% {
     transform: translate(-50%, -50%);
     opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -590,6 +919,298 @@ input {
   }
   100% {
     transform: rotate(360deg) translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 480px) {
+  .slot-game {
+    padding: 0.5rem;
+  }
+
+  .game-title {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .title-decoration {
+    font-size: 1.5rem;
+  }
+
+  .stats-container {
+    gap: 0.5rem;
+  }
+
+  .stat-box {
+    padding: 0.75rem;
+    min-width: 100px;
+  }
+
+  .slot-machine-frame {
+    padding: 1rem;
+  }
+
+  .frame-decoration {
+    height: 12px;
+  }
+
+  .control-panel {
+    margin-top: 1rem;
+    padding: 0.5rem;
+  }
+
+  .slot-grid {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .slot-game {
+    padding: 1rem;
+  }
+
+  .slot-cell {
+    width: 15vw;
+    height: 15vw;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .slot-game {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .game-title {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .stats-container {
+    order: 2;
+    width: auto;
+  }
+
+  .slot-machine-frame {
+    order: 1;
+    flex: 1;
+  }
+
+  .control-panel {
+    order: 3;
+    margin-top: 0;
+  }
+}
+
+.paytable-button {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #4657e8, #2b3dbb);
+  border: none;
+  padding: 1rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.paytable-button .icon {
+  font-size: 1.5rem;
+}
+
+.paytable-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.paytable-content {
+  background: linear-gradient(135deg, #2b3dbb, #4657e8);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.paytable-content h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+}
+
+.paytable-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.paytable-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  padding: 1rem;
+  border-radius: 8px;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.paytable-row:hover {
+  transform: translateX(5px);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.08)
+  );
+}
+
+.symbol-container {
+  font-size: 2.5rem;
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.symbol-container:hover {
+  transform: scale(1.1);
+}
+
+.multipliers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.multiplier-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.matches {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.value {
+  font-size: 1.1rem;
+  color: #00ff88;
+  font-weight: bold;
+}
+
+.paytable-info {
+  margin-top: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.paytable-info p {
+  margin: 0.5rem 0;
+}
+
+.rarity-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.rarity-info p {
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .paytable-button {
+    position: fixed;
+    left: 10px;
+    top: auto;
+    bottom: 20px;
+    transform: none;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .paytable-button .icon {
+    font-size: 1.2rem;
+  }
+
+  .paytable-content {
+    padding: 1rem;
+  }
+
+  .paytable-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .symbol-container {
+    margin: 0 auto;
+    margin-bottom: 1rem;
+  }
+
+  .multipliers {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .multipliers {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .multiplier-item {
+    padding: 0.25rem;
   }
 }
 </style>
