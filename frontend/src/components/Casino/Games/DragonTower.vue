@@ -2,19 +2,21 @@
   <div class="dragon-tower-game">
     <div class="game-header">
       <div class="stats-container">
-        <div class="stat-box">
+        <div class="stat-item">
           <span class="stat-label">Next Profit</span>
           <span class="stat-value"
             >{{ dragonTowerStore.currentProfit.toFixed(2) }}€</span
           >
         </div>
-        <div class="stat-box">
+        <div class="divider"></div>
+        <div class="stat-item">
           <span class="stat-label">Multiplier</span>
           <span class="stat-value"
             >{{ dragonTowerStore.currentMultiplier }}x</span
           >
         </div>
-        <div class="stat-box">
+        <div class="divider"></div>
+        <div class="stat-item">
           <span class="stat-label">Dragons Per Row</span>
           <span class="stat-value">{{ dragonTowerStore.dragonsPerRow }}</span>
         </div>
@@ -246,32 +248,63 @@ watch(
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
-.stats-container {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+.game-header {
+  margin-bottom: 1rem;
 }
 
-.stat-box {
-  flex: 1;
-  padding: 1.25rem;
+.stats-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--subheader);
   border-radius: 12px;
-  text-align: center;
+  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  max-width: 600px;
+  margin: 0 auto;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+}
+
+.divider {
+  width: 1px;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .stat-label {
-  display: block;
-  font-size: 0.9rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .stat-value {
-  font-size: 1.4rem;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
   font-weight: bold;
   color: var(--white);
+}
+
+@media (max-width: 480px) {
+  .stats-container {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .stat-item {
+    padding: 0 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: white;
+  }
 }
 
 .tower-container {
@@ -607,6 +640,179 @@ watch(
     animation: glow 2s ease-in-out infinite;
     filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7))
       drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
+  }
+}
+
+/* Update the media queries */
+@media (max-width: 768px) {
+  .dragon-tower-game {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+
+  .stats-container {
+    display: flex;
+    flex-direction: row; /* Keep horizontal */
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: nowrap; /* Prevent wrapping */
+  }
+
+  .stat-box {
+    padding: 0.5rem;
+    min-width: 0; /* Allow shrinking */
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  .tower-container {
+    padding: 0;
+    margin-top: 1rem;
+  }
+
+  .tower-row {
+    gap: 0.25rem;
+  }
+
+  .tile {
+    min-width: 40px;
+    max-width: 50px;
+  }
+
+  .safe-emoji,
+  .dragon-emoji,
+  .revealed-dragon-emoji {
+    font-size: 1.2rem;
+  }
+
+  .bet-controls {
+    padding: 1rem;
+  }
+
+  .bet-input-container {
+    gap: 0.5rem;
+  }
+
+  .quick-amounts {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.25rem;
+  }
+
+  .quick-amount-btn {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .main-btn,
+  .cashout-btn,
+  .clear-btn {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    width: 80%;
+    max-width: 280px;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dragon-tower-game {
+    padding: 0.5rem;
+  }
+
+  .tower-container {
+    margin-top: 0.5rem;
+  }
+
+  .tile {
+    min-width: 35px;
+    max-width: 45px;
+  }
+
+  .safe-emoji,
+  .dragon-emoji,
+  .revealed-dragon-emoji {
+    font-size: 1rem;
+  }
+
+  .bet-amount-input {
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .difficulty-select {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .stat-box {
+    padding: 0.4rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .quick-amount-btn {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .modal-content h2 {
+    font-size: 1.2rem;
+  }
+
+  .win-amount {
+    font-size: 1.1rem;
+  }
+
+  .stats-container {
+    gap: 0.25rem; /* Even smaller gap for very small screens */
+  }
+}
+
+/* Add new portrait orientation specific styles */
+@media (max-height: 700px) and (orientation: landscape) {
+  .tower-container {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .tile {
+    min-width: 35px;
+    max-width: 45px;
+  }
+
+  .stats-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .game-controls {
+    margin-top: 1rem;
   }
 }
 </style>
