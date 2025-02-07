@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-container">
       <div class="logo-section">
-        <img src="../../assets/images/logo.png" alt="BET 24/7" />
+        <!-- <img src="../../assets/images/logo.png" alt="BET 24/7" /> -->
       </div>
       
       <div class="auth-tabs">
