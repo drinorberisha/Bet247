@@ -366,7 +366,7 @@ export const useBettingStore = defineStore("betting", {
         }
       } else if (this.activeMode === "multi") {
         // Validate multi bet
-        if (this.currentBets.length < 2) {
+        if (this.currentSelections.length < 2) {
           return { valid: false, message: "Multi bet requires at least 2 selections" };
         }
         if (this.multiStake <= 0) {
