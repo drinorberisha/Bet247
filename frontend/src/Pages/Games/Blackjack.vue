@@ -83,7 +83,75 @@ const showInfo = ref(false);
 .blackjack-page {
   padding: 2rem;
   min-height: calc(100vh - 60px);
-  background: var(--background);
+  background: linear-gradient(135deg, #1b1b1b 0%, #000000 100%);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+  background-size: 60px 60px, 20px 20px, 20px 20px, 20px 20px, 20px 20px;
+  position: relative;
+}
+
+.blackjack-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #006b3e;
+  border-radius: 24px;
+  border: 20px solid #3d1f00;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  pointer-events: none;
+}
+
+.game-wrapper {
+  padding: 2rem;
+  position: relative;
+}
+
+h1 {
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+  font-family: "Georgia", serif;
+  font-size: 3rem;
+  text-align: center;
+  letter-spacing: 2px;
+  margin: 2rem 0;
+}
+
+.info-modal {
+  backdrop-filter: blur(8px);
+}
+
+.info-content {
+  background: linear-gradient(135deg, #2c3e50, #1a1a1a);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
 }
 
 .game-nav {
@@ -115,23 +183,18 @@ const showInfo = ref(false);
 }
 
 .info-button {
-  background: var(--subheader);
-  border: 1px solid #4caf50;
-  border-radius: 8px;
-  color: #4caf50;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
+  background: linear-gradient(to bottom, #ffd700, #b8860b);
+  border: 2px solid #976d00;
+  color: #3d1f00;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .info-button:hover {
-  background: #4caf50;
-  color: var(--header);
+  background: linear-gradient(to bottom, #ffe44d, #ffd700);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 .game-container {

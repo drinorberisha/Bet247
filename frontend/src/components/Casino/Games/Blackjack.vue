@@ -132,11 +132,12 @@
             />
           </div>
           <div class="quick-bets">
-            <button @click="setBetAmount(1)">1</button>
-            <button @click="setBetAmount(5)">5</button>
-            <button @click="setBetAmount(10)">10</button>
-            <button @click="setBetAmount(25)">25</button>
-            <button @click="setBetAmount(100)">100</button>
+            <button @click="setBetAmount(1)" value="1">$1</button>
+            <button @click="setBetAmount(5)" value="5">$5</button>
+            <button @click="setBetAmount(10)" value="10">$10</button>
+            <button @click="setBetAmount(25)" value="25">$25</button>
+            <button @click="setBetAmount(50)" value="50">$50</button>
+            <button @click="setBetAmount(100)" value="100">$100</button>
           </div>
           <button
             class="deal-button"
@@ -284,6 +285,152 @@ const getSuitSymbol = (suit: string) => {
 </script>
 
 <style scoped>
+.blackjack-game {
+  background: #006b3e;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.stats-container {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-box {
+  background: linear-gradient(135deg, #1a1a1a, #2c3e50);
+  border: 1px solid #ffd700;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dealer-area,
+.player-area {
+  background: rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+.card.hidden {
+  background: linear-gradient(135deg, #1e488f, #1a237e);
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5L20.5 20L20 19.5L19.5 20L20 20.5zM20 0.5L20.5 0L20 -0.5L19.5 0L20 0.5zM20 40.5L20.5 40L20 39.5L19.5 40L20 40.5z' stroke='%23152456' fill='none' stroke-width='1'/%3E%3C/svg%3E");
+  border: 1px solid #0d1b3f;
+}
+
+.quick-bets {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.quick-bets button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1.2rem;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Chip designs for different values */
+.quick-bets button[value="1"] {
+  background: linear-gradient(135deg, #f0f0f0, #d4d4d4);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3);
+  color: #333;
+  border: 8px dashed #fff;
+}
+
+.quick-bets button[value="5"] {
+  background: linear-gradient(135deg, #ff4646, #dc1c1c);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(220, 28, 28, 0.3);
+  border: 8px dashed #ff6b6b;
+}
+
+.quick-bets button[value="10"] {
+  background: linear-gradient(135deg, #4169e1, #0000cd);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 139, 0.3);
+  border: 8px dashed #6495ed;
+}
+
+.quick-bets button[value="25"] {
+  background: linear-gradient(135deg, #228b22, #006400);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 100, 0, 0.3);
+  border: 8px dashed #32cd32;
+}
+
+.quick-bets button[value="50"] {
+  background: linear-gradient(135deg, #9932cc, #4b0082);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(75, 0, 130, 0.3);
+  border: 8px dashed #ba55d3;
+}
+
+.quick-bets button[value="100"] {
+  background: linear-gradient(135deg, #ffd700, #daa520);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(218, 165, 32, 0.3);
+  border: 8px dashed #ffd700;
+}
+
+.quick-bets button:hover {
+  transform: translateY(-5px) scale(1.1);
+  box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.quick-bets button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-buttons button {
+  background: linear-gradient(to bottom, #f4b13e, #ec9f24);
+  border: 2px solid #c17b10;
+  color: #3d1f00;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.action-buttons button:hover:not(:disabled) {
+  background: linear-gradient(to bottom, #f5bb55, #f4b13e);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.win-modal {
+  backdrop-filter: blur(8px);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #2c3e50, #1a1a1a);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
 .blackjack-game {
   max-width: 900px;
   margin: 0 auto;
