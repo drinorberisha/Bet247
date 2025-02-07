@@ -299,10 +299,8 @@ export const router = createRouter({
 
     {
       path: "/:pathMatch(.*)*",
-      redirect: to => {
-        const authStore = useAuthStore();
-        return authStore.isAuthenticated ? to.fullPath : '/auth';
-      }
+      name: "NotFound",
+      component: NotFound
     },
   ],
 });
