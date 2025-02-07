@@ -15,7 +15,7 @@
         </div>
       </nav>
       <div class="game-container">
-        <h1>Dragon Tower!</h1>
+        <h1></h1>
         <div class="game-wrapper">
           <DragonTowerGame />
         </div>
