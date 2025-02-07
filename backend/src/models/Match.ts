@@ -41,6 +41,22 @@ interface Market {
   }[];
 }
 
+interface Odds {
+  homeWin: number;
+  draw?: number;
+  awayWin: number;
+  totals?: Array<{
+    name: string;
+    price: number;
+    point: number;
+  }>;
+  spreads?: Array<{
+    name: string;
+    price: number;
+    point: number;
+  }>;
+}
+
 export interface IMatch extends Document {
   externalId: string;
   sportKey: string;
@@ -49,11 +65,7 @@ export interface IMatch extends Document {
   awayTeam: string;
   commenceTime: Date;
   status: 'upcoming' | 'live' | 'ended';
-  odds?: {
-    homeWin: number;
-    draw?: number;
-    awayWin: number;
-  };
+  odds?: Odds;
   sgmMarkets?: ISGMMarkets;
   scores?: {
     home: number;

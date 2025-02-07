@@ -12,8 +12,16 @@ interface OddsType {
   homeWin: number;
   draw?: number;
   awayWin: number;
-  spreads?: number;
-  totals?: number;
+  totals?: Array<{
+    name: string;
+    price: number;
+    point: number;
+  }>;
+  spreads?: Array<{
+    name: string;
+    price: number;
+    point: number;
+  }>;
 }
 // Get all supported sports
 export const getSports = async (req: Request, res: Response) => {
