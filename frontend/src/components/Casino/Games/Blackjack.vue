@@ -466,6 +466,7 @@ const getSuitSymbol = (suit: string) => {
 
 .stat-value.win {
   color: var(--success);
+  color: white;
 }
 
 .stat-value.loss {
