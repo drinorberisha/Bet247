@@ -11,10 +11,10 @@
           >
             -
           </button>
-          <input 
-            type="number" 
-            v-model.number="halloweenSlotsStore.betAmount" 
-            min="1" 
+          <input
+            type="number"
+            v-model.number="halloweenSlotsStore.betAmount"
+            min="1"
             max="50"
             :disabled="halloweenSlotsStore.isSpinning"
           />
@@ -36,9 +36,9 @@
         </div>
         <!-- Update controls with responsive class -->
         <div id="controls" class="mobile-controls">
-          <button 
-            type="button" 
-            id="spin" 
+          <button
+            type="button"
+            id="spin"
             @click="handleSpin"
             :disabled="!halloweenSlotsStore.canSpin"
           >
@@ -171,7 +171,7 @@
 </template>
 
 <script>
-import { useHalloweenSlotsStore } from '../../../stores/casino/halloweenSlots';
+import { useHalloweenSlotsStore } from "../../../stores/casino/halloweenSlots";
 
 // Static imports for all symbols
 import atAt from "../../../assets/symbols/at_at.svg";
@@ -373,7 +373,6 @@ class Slot {
     this.spinButton = document.getElementById("spin");
     this.spinButton.addEventListener("click", () => this.spin());
 
-
     if (config.inverted) {
       this.container.classList.add("inverted");
     }
@@ -536,11 +535,11 @@ export default {
   methods: {
     async handleSpin() {
       if (!this.halloweenSlotsStore.canSpin) return;
-      
+
       try {
         await this.halloweenSlotsStore.startGame();
       } catch (error) {
-        console.error('Error during spin:', error);
+        console.error("Error during spin:", error);
       }
     },
     increaseBet() {
