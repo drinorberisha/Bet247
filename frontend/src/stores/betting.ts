@@ -27,6 +27,15 @@ interface BettingState {
 // Define the store type with its actions
 interface BettingStore {
   state: BettingState;
+  currentSelections: Selection[];
+  currentBets: Bet[];
+  activeMode: "single" | "multi" | "sgm";
+  multiStake: number;
+  isSGM: boolean;
+  canPlaceSGMBet: boolean;
+  multiOdds: number;
+  potentialMultiWin: number;
+  isSameGameMulti: boolean;
   addSelection: (matchData: Omit<Selection, 'market'>) => void;
   setMode: (mode: "single" | "multi" | "sgm") => void;
   updateStake: (betId: string, stake: number) => void;
@@ -38,7 +47,12 @@ interface BettingStore {
   placeBet: () => Promise<PlaceBetResponse>;
   addSGMSelection: (matchData: Omit<Selection, 'market'>) => void;
   placeSGMBet: () => Promise<PlaceBetResponse>;
-  // ... add other action types here
+  selections: Selection[];
+  conflictingMatchIds: string[];
+  canPlaceBet: boolean;
+  hasIncompatibleMarkets: boolean;
+  isFromSGMPage: boolean;
+  removeSelection: (matchId: string, type: string) => void;
 }
 
 export const useBettingStore = defineStore("betting", {
@@ -135,12 +149,18 @@ export const useBettingStore = defineStore("betting", {
       if (!this.currentSelections.length) return false;
       const firstMatchId = this.currentSelections[0]?.matchId;
       return this.currentSelections.every(s => s.matchId === firstMatchId);
+    },
+
+    isSameGameMulti(): boolean {
+      return this.activeMode === 'sgm' && this.isFromSGMPage;
     }
   },
 
   actions: {
     addSelection(matchData: Omit<Selection, 'market'>) {
-      console.log('Adding selection - Initial matchData:', matchData);
+      console.log('=== Starting addSelection ===');
+      console.log('Current mode:', this.activeMode);
+      console.log('Initial matchData:', matchData);
 
       const selection: Selection = {
         ...matchData,
@@ -148,61 +168,125 @@ export const useBettingStore = defineStore("betting", {
         selection: matchData.type.split('_')[1] || matchData.type
       };
 
-      console.log('Processed selection object:', selection);
-
-      const existingIndex = this.currentSelections.findIndex(
-        (s) => s.matchId === selection.matchId && s.type === selection.type
+      // Check if selection already exists
+      const existingSelectionIndex = this.currentSelections.findIndex(
+        s => s.matchId === selection.matchId && s.type === selection.type
       );
 
-      if (existingIndex !== -1) {
-        this.currentSelections.splice(existingIndex, 1);
-      } else {
-        this.currentSelections.push(selection);
+      // If selection exists, remove it and its corresponding bet
+      if (existingSelectionIndex !== -1) {
+        console.log('Removing existing selection');
+        this.currentSelections.splice(existingSelectionIndex, 1);
+        const betId = `${selection.matchId}-${selection.type}`;
+        this.removeBet(betId);
+        return;
       }
 
-      // Debug current selections after update
-      console.log('Current selections after update:', this.currentSelections);
+      // Check if there's already a selection from this match
+      const existingMatchSelections = this.currentSelections.filter(
+        s => s.matchId === selection.matchId
+      );
 
-      // Add debug for bet placement
-      console.log('Selection being sent to backend:', {
-        selections: this.currentSelections.map(s => ({
-          ...s,
-          selection: s.selection,
-          type: s.type
-        }))
-      });
+      if (this.activeMode === 'multi' && existingMatchSelections.length > 0) {
+        console.log('Blocking addition in multi mode - Already has selection from this match');
+        return;
+      }
 
-      // Group selections from the same match into one bet
-      const groupedSelections = new Map<string, Selection[]>();
-      
-      this.currentSelections.forEach(s => {
-        const existing = groupedSelections.get(s.matchId) || [];
-        groupedSelections.set(s.matchId, [...existing, s]);
-      });
+      // Add new selection
+      this.currentSelections.push(selection);
+      console.log('Added new selection - Current selections:', this.currentSelections);
 
-      this.currentBets = Array.from(groupedSelections.entries()).map(([matchId, selections]): Bet => ({
-        id: matchId,
-        betType: 'single',
-        selections: selections,
-        amount: 0,
-        totalOdds: selections.reduce((total, s) => total * s.odds, 1),
-        potentialWin: 0,
-        stake: 0,
-        homeTeam: selections[0].homeTeam,
-        awayTeam: selections[0].awayTeam,
-      }));
+      // Update bets based on mode
+      if (this.activeMode === 'single') {
+        // In single mode, always create a new separate bet
+        this.currentBets.push({
+          id: `${selection.matchId}-${selection.type}`,
+          selections: [selection],
+          amount: 0,
+          totalOdds: selection.odds,
+          potentialWin: 0,
+          stake: 0,
+          homeTeam: selection.homeTeam,
+          awayTeam: selection.awayTeam,
+        });
+      } else {
+        // In multi mode, update or create the multi bet with all valid selections
+        const validSelections = this.currentSelections.filter(s => {
+          // Count selections for this match
+          const matchSelections = this.currentSelections.filter(
+            ms => ms.matchId === s.matchId
+          );
+          // Only include if it's the only selection for this match
+          return matchSelections.length === 1;
+        });
+
+        const existingMultiBet = this.currentBets.find(b => b.id === 'multi');
+        if (existingMultiBet) {
+          existingMultiBet.selections = validSelections;
+          existingMultiBet.totalOdds = validSelections.reduce((total, s) => total * s.odds, 1);
+        } else {
+          this.currentBets.push({
+            id: 'multi',
+            selections: validSelections,
+            amount: 0,
+            totalOdds: validSelections.reduce((total, s) => total * s.odds, 1),
+            potentialWin: 0,
+            stake: 0,
+            homeTeam: selection.homeTeam,
+            awayTeam: selection.awayTeam,
+          });
+        }
+      }
+
+      console.log('Final bets state:', this.currentBets);
+      console.log('Final selections state:', this.currentSelections);
+      console.log('=== Finished addSelection ===');
     },
 
     setMode(mode: "single" | "multi" | "sgm") {
+      console.log('=== Setting Mode ===');
+      console.log('Previous mode:', this.activeMode);
+      console.log('New mode:', mode);
+      console.log('Current selections before:', this.currentSelections);
+      console.log('Current bets before:', this.currentBets);
+
       this.activeMode = mode;
+      
       if (mode === "multi") {
-        this.currentBets = this.currentBets.map((bet) => ({
-          ...bet,
-          selections: [bet.selections[0]],
+        // Reset bets when switching to multi mode
+        this.currentBets = [];
+        if (this.currentSelections.length > 0) {
+          console.log('Creating new multi bet from existing selections');
+          this.currentBets.push({
+            id: 'multi',
+            selections: [...this.currentSelections],
+            amount: 0,
+            totalOdds: this.currentSelections.reduce((total, s) => total * s.odds, 1),
+            potentialWin: 0,
+            stake: 0,
+            homeTeam: this.currentSelections[0].homeTeam,
+            awayTeam: this.currentSelections[0].awayTeam,
+          });
+        }
+      } else if (mode === "single") {
+        // Convert to single bets
+        console.log('Converting to single bets');
+        this.currentBets = this.currentSelections.map(selection => ({
+          id: `${selection.matchId}-${selection.type}`,
+          selections: [selection],
+          amount: 0,
+          totalOdds: selection.odds,
+          potentialWin: 0,
           stake: 0,
+          homeTeam: selection.homeTeam,
+          awayTeam: selection.awayTeam,
         }));
       }
+
       this.multiStake = 0;
+      console.log('After mode change - selections:', this.currentSelections);
+      console.log('After mode change - bets:', this.currentBets);
+      console.log('=== Finished Setting Mode ===');
     },
 
     updateStake(betId: string, stake: number) {
@@ -218,13 +302,23 @@ export const useBettingStore = defineStore("betting", {
     },
 
     removeBet(betId: string) {
+      console.log('Removing bet:', betId);
       const index = this.currentBets.findIndex((b) => b.id === betId);
       if (index !== -1) {
+        const bet = this.currentBets[index];
+        
+        // Remove all selections associated with this bet
+        bet.selections.forEach(selection => {
+          const selectionIndex = this.currentSelections.findIndex(
+            s => s.matchId === selection.matchId && s.type === selection.type
+          );
+          if (selectionIndex !== -1) {
+            this.currentSelections.splice(selectionIndex, 1);
+          }
+        });
+        
+        // Remove the bet
         this.currentBets.splice(index, 1);
-        // Also remove from currentSelections
-        this.currentSelections = this.currentSelections.filter(
-          (s) => s.matchId !== betId
-        );
       }
     },
 
@@ -258,49 +352,39 @@ export const useBettingStore = defineStore("betting", {
     },
 
     validateBet(): { valid: boolean; message?: string } {
-      const authStore = useAuthStore();
-      const userBalance = authStore.getUserBalance();
-      const totalStake =
-        this.activeMode === "multi"
-          ? this.multiStake
-          : this.currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
-
-      // Check if user is authenticated
-      if (!authStore.isAuthenticated) {
-        return {
-          valid: false,
-          message: "Please login to place bets",
-        };
+      // Check if user is trying to place a bet
+      if (!this.currentBets.length) {
+        return { valid: false, message: "No bets selected" };
       }
 
-      // Check if user has enough balance
-      if (totalStake > userBalance) {
-        return {
-          valid: false,
-          message: "Insufficient balance",
-        };
-      }
-
-      // Check if all required fields are filled
-      if (this.activeMode === "multi") {
+      // Validate based on bet mode
+      if (this.activeMode === "single") {
+        // Check if any single bet has a stake
+        const hasStake = this.currentBets.some((bet) => (bet.stake || 0) > 0);
+        if (!hasStake) {
+          return { valid: false, message: "Please enter a stake amount" };
+        }
+      } else if (this.activeMode === "multi") {
+        // Validate multi bet
         if (this.currentBets.length < 2) {
-          return {
-            valid: false,
-            message: "Multi bet requires at least 2 selections",
-          };
+          return { valid: false, message: "Multi bet requires at least 2 selections" };
         }
-        if (!this.multiStake) {
-          return {
-            valid: false,
-            message: "Please enter stake amount",
-          };
+        if (this.multiStake <= 0) {
+          return { valid: false, message: "Please enter a stake amount" };
         }
-      } else {
-        if (!this.currentBets.some((bet) => (bet.stake || 0) > 0)) {
-          return {
-            valid: false,
-            message: "Please enter stake amount",
-          };
+        if (this.conflictingMatchIds.length > 0) {
+          return { valid: false, message: "Cannot place multi bet with multiple selections from the same match" };
+        }
+      } else if (this.isSGM) {
+        // Validate SGM bet
+        if (this.currentSelections.length < 2) {
+          return { valid: false, message: "SGM requires at least 2 selections" };
+        }
+        if (this.multiStake <= 0) {
+          return { valid: false, message: "Please enter a stake amount" };
+        }
+        if (this.hasIncompatibleMarkets) {
+          return { valid: false, message: "Some markets cannot be combined in an SGM" };
         }
       }
 
@@ -718,9 +802,30 @@ export const useBettingStore = defineStore("betting", {
       } finally {
         this.loading = false;
       }
+    },
+
+    removeSelection(matchId: string, type: string) {
+      console.log('=== Removing Selection ===');
+      console.log('Removing selection:', { matchId, type });
+      
+      // Find and remove the selection
+      const selectionIndex = this.currentSelections.findIndex(
+        s => s.matchId === matchId && s.type === type
+      );
+
+      if (selectionIndex !== -1) {
+        this.currentSelections.splice(selectionIndex, 1);
+        console.log('Selection removed, remaining selections:', this.currentSelections);
+
+        // Update multi bet if in multi mode
+        if (this.activeMode === 'multi') {
+          const existingMultiBet = this.currentBets.find(b => b.id === 'multi');
+          if (existingMultiBet) {
+            existingMultiBet.selections = [...this.currentSelections];
+            existingMultiBet.totalOdds = this.currentSelections.reduce((total, s) => total * s.odds, 1);
+          }
+        }
+      }
     }
   },
 }) as unknown as () => BettingStore;
-
-// Define the store type
-interface BettingStore extends ReturnType<typeof useBettingStore> {}
