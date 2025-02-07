@@ -1,7 +1,7 @@
 <template>
   <div class="slot-game">
     <!-- Add paytable button -->
-    <button class="paytable-button" @click="showPaytable = true">
+    <button class="paytable-button" @click="newSlotsStore.showPaytable = true">
       <span class="icon">ⓘ</span>
       Paytable
     </button>
@@ -17,19 +17,19 @@
         <span class="stat-label">Bet Amount</span>
         <input
           type="number"
-          v-model="betAmount"
-          :disabled="isSpinning || isFreeSpinMode"
+          v-model="newSlotsStore.betAmount"
+          :disabled="newSlotsStore.isSpinning || newSlotsStore.isFreeSpinMode"
           min="1"
           step="1"
         />
       </div>
       <div class="stat-box">
         <span class="stat-label">Win Amount</span>
-        <span class="stat-value">{{ winAmount.toFixed(2) }}€</span>
+        <span class="stat-value">{{ newSlotsStore.winAmount.toFixed(2) }}€</span>
       </div>
-      <div v-if="freeSpinsRemaining > 0" class="stat-box free-spins">
+      <div v-if="newSlotsStore.freeSpinsRemaining > 0" class="stat-box free-spins">
         <span class="stat-label">Free Spins</span>
-        <span class="stat-value">{{ freeSpinsRemaining }}</span>
+        <span class="stat-value">{{ newSlotsStore.freeSpinsRemaining }}</span>
       </div>
     </div>
 
@@ -41,21 +41,21 @@
           :key="index"
           class="slot-cell"
           :class="{
-            'winning-cell': winningPositions.includes(
+            'winning-cell': newSlotsStore.winningPositions.includes(
               `${Math.floor(index / 5)}-${index % 5}`
             ),
-            'active-column': isSpinning && currentColumn === index % 5,
+            'active-column': newSlotsStore.isSpinning && newSlotsStore.currentColumn === index % 5,
           }"
           :data-col="index % 5"
         >
           <div
             class="symbol"
             :class="{
-              spinning: isSpinning && currentColumn === index % 5,
-              revealed: revealedColumns[index % 5],
+              spinning: newSlotsStore.isSpinning && newSlotsStore.currentColumn === index % 5,
+              revealed: newSlotsStore.revealedColumns[index % 5],
             }"
           >
-            {{ grid[Math.floor(index / 5)][index % 5] }}
+            {{ newSlotsStore.grid[Math.floor(index / 5)][index % 5] }}
           </div>
         </div>
       </div>
@@ -65,8 +65,8 @@
     <div class="control-panel">
       <button
         class="spin-button"
-        @click="spin"
-        :disabled="isSpinning || (!isFreeSpinMode && betAmount <= 0)"
+        @click="newSlotsStore.spin()"
+        :disabled="!newSlotsStore.canSpin"
       >
         <span class="button-glow"></span>
         {{ spinButtonText }}
@@ -74,17 +74,17 @@
     </div>
 
     <Transition name="fade">
-      <div v-if="showWinModal" class="win-modal">
+      <div v-if="newSlotsStore.showWinModal" class="win-modal">
         <div class="modal-content">
-          <template v-if="freeSpinsRemaining === 5">
+          <template v-if="newSlotsStore.freeSpinsRemaining === 5">
             <h2>BONUS WIN!</h2>
             <div class="bonus-win">5 Free Spins Awarded! 🎲</div>
           </template>
           <template v-else>
             <h2>WIN!</h2>
-            <div class="win-amount">{{ winAmount.toFixed(2) }}€</div>
+            <div class="win-amount">{{ newSlotsStore.winAmount.toFixed(2) }}€</div>
             <div
-              v-for="(win, index) in winCombinations"
+              v-for="(win, index) in newSlotsStore.winCombinations"
               :key="index"
               class="win-combination"
             >
@@ -94,21 +94,21 @@
               </div>
               <div class="win-multiplier">x{{ win.multiplier }}</div>
             </div>
-            <div class="total-multiplier">Total: x{{ currentMultiplier }}</div>
+            <div class="total-multiplier">Total: x{{ newSlotsStore.currentMultiplier }}</div>
           </template>
         </div>
       </div>
     </Transition>
 
-    <!-- Add paytable modal -->
+    <!-- Paytable modal -->
     <Transition name="fade">
       <div
-        v-if="showPaytable"
+        v-if="newSlotsStore.showPaytable"
         class="paytable-modal"
-        @click="showPaytable = false"
+        @click="newSlotsStore.showPaytable = false"
       >
         <div class="paytable-content" @click.stop>
-          <button class="close-button" @click="showPaytable = false">×</button>
+          <button class="close-button" @click="newSlotsStore.showPaytable = false">×</button>
           <h2>Paytable</h2>
           <div class="paytable-grid">
             <div class="paytable-row bonus-row">
@@ -119,7 +119,7 @@
               </div>
             </div>
             <div
-              v-for="config in symbolConfigs.filter((c) => !c.isBonus)"
+              v-for="config in newSlotsStore.symbols.filter(s => !s.isBonus)"
               :key="config.symbol"
               class="paytable-row"
             >
@@ -131,22 +131,9 @@
                   class="multiplier-item"
                 >
                   <span class="matches">{{ matches }}×</span>
-                  <span class="value"
-                    >{{
-                      calculateMultiplier(config.multiplier, matches)
-                    }}×</span
-                  >
+                  <span class="value">{{ calculateMultiplier(config.multiplier, matches) }}×</span>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="paytable-info">
-            <p>Match 7 or more symbols to win!</p>
-            <p>Multiple winning combinations are added together.</p>
-            <div class="rarity-info">
-              <p>💫 Super Rare - Highest Payout (50x)</p>
-              <p>⭐ Very Rare - High Payout (25x)</p>
-              <p>🌍 Common - Regular Payout (3x)</p>
             </div>
           </div>
         </div>
@@ -156,283 +143,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed } from "vue";
+import { useNewSlotsStore } from "../../../stores/casino/newSlots";
 
-// Update symbol configurations with more symbols and new weights
-const symbolConfigs = [
-  { symbol: "🎲", weight: 1, multiplier: 0, isBonus: true }, // Bonus - Free Spins (unchanged)
-  { symbol: "💫", weight: 3, multiplier: 50 }, // New Super Star - Highest payout
-  { symbol: "⭐", weight: 5, multiplier: 25 }, // Golden Star
-  { symbol: "🌟", weight: 7, multiplier: 15 }, // Glowing Star
-  { symbol: "☄️", weight: 10, multiplier: 10 }, // Comet
-  { symbol: "🌞", weight: 12, multiplier: 8 }, // Sun
-  { symbol: "🌙", weight: 15, multiplier: 6 }, // Moon
-  { symbol: "⚡", weight: 18, multiplier: 5 }, // New Lightning Symbol
-  { symbol: "✨", weight: 20, multiplier: 4 }, // New Sparkles Symbol
-  { symbol: "🌎", weight: 22, multiplier: 3 }, // Earth
-  { symbol: "🌍", weight: 22, multiplier: 3 }, // Earth Alt
-];
-
-// Create weighted symbols array for random selection
-const weightedSymbols = symbolConfigs.reduce((acc, config) => {
-  return acc.concat(Array(config.weight).fill(config.symbol));
-}, [] as string[]);
-
-// Update multipliers object to use symbol-specific multipliers
-const getSymbolMultiplier = (symbol: string, count: number) => {
-  if (count < 7) return 0; // No wins for less than 7 matches
-
-  const baseMultiplier =
-    symbolConfigs.find((config) => config.symbol === symbol)?.multiplier || 1;
-
-  const countMultiplier =
-    {
-      6: 1,
-      7: 1, // 7 matches = base multiplier
-      8: 1.5, // 8 matches = 1.5x
-      9: 2, // 9 matches = 2x
-      10: 3, // 10 matches = 3x
-      11: 4, // 11 matches = 4x
-      12: 5, // 12+ matches = 5x
-    }[Math.min(count, 12)] || 5;
-
-  return baseMultiplier * countMultiplier;
-};
-
-const MODAL_DISPLAY_DURATION = 3000; // 3 seconds
-
-const grid = ref(
-  Array(4)
-    .fill(null)
-    .map(() => Array(5).fill("🎰"))
-);
-const isSpinning = ref(false);
-const betAmount = ref(1);
-const winAmount = ref(0);
-const showWinModal = ref(false);
-const winningPositions = ref<string[]>([]);
-const matchCount = ref(0);
-const currentMultiplier = ref(0);
-const currentColumn = ref(-1);
-const revealedColumns = ref(Array(5).fill(false));
-const finalGrid = ref<string[][]>([]);
-
-// Replace existing getRandomSymbol function
-function getRandomSymbol() {
-  const randomIndex = Math.floor(Math.random() * weightedSymbols.length);
-  return weightedSymbols[randomIndex];
-}
-
-// Add new interface for win combinations
-interface WinCombination {
-  symbol: string;
-  count: number;
-  positions: string[];
-  multiplier: number;
-}
-
-// Add new ref for multiple wins
-const winCombinations = ref<WinCombination[]>([]);
-
-// Add new ref for free spins
-const freeSpinsRemaining = ref(0);
-const isFreeSpinMode = computed(() => freeSpinsRemaining.value > 0);
-
-// Update checkWins function to only consider 7+ matches
-function checkWins() {
-  const counts = new Map<string, { count: number; positions: string[] }>();
-  winCombinations.value = [];
-  let totalMultiplier = 0;
-
-  // First check for bonus symbols (🎲)
-  const bonusPositions: string[] = [];
-  const bonusColumns = new Set<number>();
-
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 5; col++) {
-      if (grid.value[row][col] === "🎲") {
-        bonusPositions.push(`${row}-${col}`);
-        bonusColumns.add(col);
-      }
-    }
-  }
-
-  // If bonus symbol appears in 4 or more columns, trigger free spins
-  if (bonusColumns.size >= 4 && !isFreeSpinMode.value) {
-    freeSpinsRemaining.value = 5;
-    // Add visual feedback for bonus win
-    winningPositions.value.push(...bonusPositions);
-    // Show bonus win message
-    showBonusWinModal();
-  }
-
-  // Count symbols
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 5; col++) {
-      const symbol = grid.value[row][col];
-      if (!counts.has(symbol)) {
-        counts.set(symbol, { count: 0, positions: [] });
-      }
-      const data = counts.get(symbol)!;
-      data.count++;
-      data.positions.push(`${row}-${col}`);
-    }
-  }
-
-  // Find winning combinations (7 or more matches)
-  counts.forEach((data, symbol) => {
-    if (
-      data.count >= 7 &&
-      !symbolConfigs.find((c) => c.symbol === symbol)?.isBonus
-    ) {
-      const multiplier = getSymbolMultiplier(symbol, data.count);
-      winCombinations.value.push({
-        symbol,
-        count: data.count,
-        positions: data.positions,
-        multiplier,
-      });
-      totalMultiplier += multiplier;
-    }
-  });
-
-  // Update winning positions to include all winning combinations
-  winningPositions.value = winCombinations.value.flatMap(
-    (win) => win.positions
-  );
-
-  // Update match count to show total matches
-  matchCount.value = winCombinations.value.reduce(
-    (total, win) => total + win.count,
-    0
-  );
-
-  // Set current multiplier to total of all combinations
-  currentMultiplier.value = totalMultiplier;
-
-  return totalMultiplier;
-}
-
-// Add function to show bonus win modal
-function showBonusWinModal() {
-  showWinModal.value = true;
-  setTimeout(() => {
-    showWinModal.value = false;
-  }, 3000);
-}
+const newSlotsStore = useNewSlotsStore();
 
 const spinButtonText = computed(() => {
-  if (isSpinning.value) return "SPINNING...";
-  if (isFreeSpinMode.value) return `FREE SPIN (${freeSpinsRemaining.value})`;
+  if (newSlotsStore.isSpinning) return "SPINNING...";
+  if (newSlotsStore.isFreeSpinMode) return `FREE SPIN (${newSlotsStore.freeSpinsRemaining})`;
   return "SPIN";
 });
 
-// Modify the spin function to handle free spins
-async function spin() {
-  if (isSpinning.value || (!isFreeSpinMode.value && betAmount.value <= 0))
-    return;
-
-  isSpinning.value = true;
-  showWinModal.value = false;
-  winAmount.value = 0;
-  winningPositions.value = [];
-  revealedColumns.value = Array(5).fill(false);
-
-  // Store the current bet amount when free spins are triggered
-  if (!isFreeSpinMode.value) {
-    localStorage.setItem("lastBetAmount", betAmount.value.toString());
-  }
-
-  // Use stored bet amount during free spins
-  const currentBet = isFreeSpinMode.value
-    ? Number(localStorage.getItem("lastBetAmount"))
-    : betAmount.value;
-
-  // Generate final grid state
-  finalGrid.value = Array(4)
-    .fill(null)
-    .map(() =>
-      Array(5)
-        .fill(null)
-        .map(() => getRandomSymbol())
-    );
-
-  // Reveal columns one by one
-  for (let col = 0; col < 5; col++) {
-    setTimeout(() => {
-      currentColumn.value = col;
-
-      // Spin animation for current column
-      setTimeout(() => {
-        // Update only this column with pre-generated symbols
-        for (let row = 0; row < 4; row++) {
-          grid.value[row][col] = finalGrid.value[row][col];
-        }
-        revealedColumns.value[col] = true;
-
-        // Check for wins after last column
-        if (col === 4) {
-          const multiplier = checkWins();
-          winAmount.value = currentBet * multiplier;
-
-          if (multiplier > 0 || freeSpinsRemaining.value === 5) {
-            showWinModal.value = true;
-            setTimeout(() => {
-              showWinModal.value = false;
-            }, MODAL_DISPLAY_DURATION);
-          }
-
-          // Decrease free spins counter after spin completes
-          if (isFreeSpinMode.value) {
-            freeSpinsRemaining.value--;
-            if (freeSpinsRemaining.value === 0) {
-              localStorage.removeItem("lastBetAmount");
-            }
-          }
-
-          currentColumn.value = -1;
-          isSpinning.value = false;
-        }
-      }, 800); // Column spin duration
-    }, col * 1000); // Delay between columns
-  }
-}
-
-// Add new ref for paytable visibility
-const showPaytable = ref(false);
-
-// Helper function for paytable display
-function getMatchMultiplier(count: number) {
-  return (
-    {
-      5: 1,
-      6: 1.5,
-      7: 2,
-      8: 3,
-      9: 4,
-      10: 5,
-    }[count] || 5
-  );
-}
-
-// Add computed property for sorted symbols
-const sortedSymbolConfigs = computed(() =>
-  [...symbolConfigs].sort((a, b) => b.multiplier - a.multiplier)
-);
-
-// Update helper function for paytable calculations
+// Helper function for paytable calculations
 function calculateMultiplier(baseMultiplier: number, matches: number): string {
   if (matches < 7) return "0.0";
 
-  const countMultiplier =
-    {
-      7: 1,
-      8: 1.5,
-      9: 2,
-      10: 3,
-      11: 4,
-      12: 5,
-    }[matches] || 5;
+  const countMultiplier = {
+    7: 1,
+    8: 1.5,
+    9: 2,
+    10: 3,
+    11: 4,
+    12: 5,
+  }[matches] || 5;
 
   return (baseMultiplier * countMultiplier).toFixed(1);
 }

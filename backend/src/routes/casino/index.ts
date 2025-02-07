@@ -8,6 +8,7 @@ import slotsRoutes from './slotsRoutes';
 import halloweenSlotsRoutes from './halloweenSlotsRoutes';
 import slotPenRoutes from './slotPenRoutes';
 import wheelRoutes from './wheelRoutes';
+import newSlotsRoutes from './newSlotsRoutes';
 const router = express.Router();
 
 console.log('[CASINO] Setting up casino routes');
@@ -59,6 +60,10 @@ router.use('/wheel', (req, res, next) => {
   console.log('[CASINO] Wheel route hit');
   next();
 }, wheelRoutes);
+router.use('/new-slots', (req, res, next) => {
+  console.log('[CASINO] New Slots route hit');
+  next();
+}, newSlotsRoutes);
 
 
 console.log('[CASINO] Casino routes mounted');
