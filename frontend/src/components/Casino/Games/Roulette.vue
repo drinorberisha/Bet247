@@ -82,11 +82,17 @@
             <button
               v-for="amount in [1, 5, 10, 25, 50, 100]"
               :key="amount"
-              class="bet-amount-btn"
-              :class="{ active: rouletteStore.betAmount === amount }"
+              class="chip-btn"
+              :class="[
+                `chip-${amount}`,
+                { active: rouletteStore.betAmount === amount },
+              ]"
               @click="rouletteStore.betAmount = amount"
             >
-              {{ amount }}€
+              <div class="chip-inner">
+                <div class="chip-stripes"></div>
+                <span class="chip-amount">{{ amount }}€</span>
+              </div>
             </button>
           </div>
           <div class="action-buttons">
@@ -572,22 +578,123 @@ const handleSpin = async () => {
 .bet-amount-controls {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 1rem;
 }
 
-.bet-amount-btn {
-  padding: 0.5rem;
-  background: var(--subheader);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--white);
+.chip-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 0;
+  margin: 0 auto;
+  position: relative;
 }
 
-.bet-amount-btn.active {
-  background: var(--active-color);
-  border-color: var(--active-color);
+.chip-btn:hover {
+  transform: translateY(-5px);
+}
+
+.chip-btn.active {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.chip-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  position: relative;
+}
+
+.chip-stripes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.1) 3px,
+    rgba(255, 255, 255, 0.1) 6px
+  );
+}
+
+.chip-amount {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Chip colors based on amount */
+.chip-1 {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+}
+
+.chip-5 {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.chip-10 {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+}
+
+.chip-25 {
+  background: linear-gradient(135deg, #f1c40f, #f39c12);
+  box-shadow: 0 4px 8px rgba(241, 196, 15, 0.3);
+}
+
+.chip-50 {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  box-shadow: 0 4px 8px rgba(155, 89, 182, 0.3);
+}
+
+.chip-100 {
+  background: linear-gradient(135deg, #34495e, #2c3e50);
+  box-shadow: 0 4px 8px rgba(52, 73, 94, 0.3);
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+  .chip-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .chip-amount {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chip-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .chip-amount {
+    font-size: 0.9rem;
+  }
+
+  .bet-amount-controls {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
 }
 
 .action-buttons {
