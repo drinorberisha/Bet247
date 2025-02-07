@@ -42,6 +42,7 @@ import dragon from "../../assets/img/header/dragon.jpg";
 import blacki from "../../assets/img/header/blackjack.jpg";
 import slotser from "../../assets/img/header/slots.jpg";
 import slotseri from "../../assets/img/header/slotsi.avif";
+import robot from "../../assets/img/games/robot.webp";
 
 const router = useRouter();
 const props = defineProps<{
@@ -125,9 +126,9 @@ const games = [
   },
   {
     id: "halloween-slots",
-    name: "Halloween Slots",
+    name: "Robot Slots",
     provider: "Stake Originals",
-    thumbnail: "/images/games/halloween-slots.webp",
+    thumbnail: robot,
     type: "halloween-slots",
     category: "originals",
     path: "/casino/halloween-slots",

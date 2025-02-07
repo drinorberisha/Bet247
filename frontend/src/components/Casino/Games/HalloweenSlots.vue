@@ -672,6 +672,9 @@ export default {
 .robo-slots .modal-content {
   font-family: "Orbitron", sans-serif;
 }
+.paytable-content {
+  margin-top: 120px;
+}
 
 /* Update variables to be scoped */
 .robo-slots {
@@ -1802,6 +1805,7 @@ export default {
   .robo-slots .paytable-content {
     padding: 15px;
     margin: 0;
+    margin-top: 120px;
   }
 
   .robo-slots .pay-row {
