@@ -167,27 +167,42 @@ export const useSlotStore = defineStore('slots', {
 
     async animateSpin() {
       return new Promise(resolve => {
-        const spinDuration = 3000; // 3 seconds total spin time
-        const spinInterval = 50; // Update every 50ms
+        const TOTAL_DURATION = 2500; // Total spin duration in ms
+        const BASE_DELAY = 200; // Base delay between reels
+        const SPIN_FRAMES = 30; // Frames per second for smooth animation
+        const INTERVAL = 1000 / SPIN_FRAMES;
+        
         let elapsed = 0;
-        let position = 0;
-
+        let spinPosition = 0;
+        
         const spinTimer = setInterval(() => {
-          // Update visible symbols for each reel using the reel strips
-          this.spinningReels = this.reelStrips.map((strip, index) => {
-            const offset = Math.floor(position + (index * 2)); // Different speeds for each reel
-            return this.getVisibleSymbols(index, offset);
+          // Calculate the progress for each reel (0 to 1)
+          this.spinningReels = this.reelStrips.map((strip, reelIndex) => {
+            const reelDelay = reelIndex * BASE_DELAY;
+            const reelElapsed = Math.max(0, elapsed - reelDelay);
+            const reelDuration = TOTAL_DURATION - reelDelay;
+            const progress = Math.min(1, reelElapsed / reelDuration);
+            
+            // Easing function for smooth deceleration
+            const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+            
+            // Calculate spin speed based on progress
+            const speed = easeOut(1 - progress);
+            spinPosition += speed * 0.5;
+            
+            // Get symbols for current position
+            const offset = Math.floor(spinPosition + (reelIndex * strip.length / 5));
+            return this.getVisibleSymbols(reelIndex, offset % strip.length);
           });
 
-          position += 1;
-          elapsed += spinInterval;
+          elapsed += INTERVAL;
 
-          if (elapsed >= spinDuration) {
+          if (elapsed >= TOTAL_DURATION + (BASE_DELAY * 4)) {
             clearInterval(spinTimer);
             this.spinningReels = this.finalReels;
             resolve(true);
           }
-        }, spinInterval);
+        }, INTERVAL);
       });
     },
 

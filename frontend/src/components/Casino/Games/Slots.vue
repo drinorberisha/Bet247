@@ -25,7 +25,7 @@
         <!-- Updated Reels Container -->
         <div class="reels-container">
           <div
-            v-for="(reel, reelIndex) in slotStore.reels"
+            v-for="(reel, reelIndex) in slotStore.spinningReels"
             :key="reelIndex"
             class="reel"
           >
@@ -35,13 +35,14 @@
               :style="{
                 '--delay': `${reelIndex * 0.3}s`,
                 '--duration': `${1.5 + reelIndex * 0.3}s`,
+                'transform': `translateY(${slotStore.isSpinning ? '-100%' : '0'})`
               }"
             >
               <div
                 v-for="(symbol, index) in getReelSymbols(reel)"
-                :key="`${reelIndex}-${index}-${symbol.name}`"
+                :key="`${reelIndex}-${index}-${symbol.id}`"
                 class="symbol"
-                :class="{ winning: isWinningSymbol(reelIndex, index) }"
+                :class="{ winning: isWinningSymbol(reelIndex, index % 3) }"
               >
                 <div class="symbol-inner">
                   <span class="symbol-emoji">{{ symbol.emoji }}</span>
@@ -223,7 +224,7 @@
         <div class="mobile-slot-machine">
           <div class="mobile-reels">
             <div
-              v-for="(reel, reelIndex) in slotStore.reels"
+              v-for="(reel, reelIndex) in slotStore.spinningReels"
               :key="reelIndex"
               class="mobile-reel"
             >
@@ -233,8 +234,7 @@
                 :style="{
                   '--delay': `${reelIndex * 0.3}s`,
                   '--duration': `${1.5 + reelIndex * 0.3}s`,
-                  '--final-position': getFinalPosition(reelIndex),
-                  '--full-height': `${SYMBOL_HEIGHT * TOTAL_SYMBOLS}px`
+                  'transform': `translateY(${slotStore.isSpinning ? '-100%' : '0'})`
                 }"
               >
                 <div
@@ -244,9 +244,7 @@
                   :class="{ 'mobile-winning': isWinningSymbol(reelIndex, index % 3) }"
                 >
                   <div class="mobile-symbol-inner">
-                    <span class="mobile-symbol-emoji">
-                      {{ SYMBOLS[symbol?.name]?.emoji || '🎰' }}
-                    </span>
+                    <span class="mobile-symbol-emoji">{{ symbol.emoji }}</span>
                   </div>
                 </div>
               </div>
@@ -454,14 +452,14 @@ const TOTAL_SYMBOLS = 9; // Total symbols in strip (3x visible symbols)
 const getReelSymbols = (reel: any[]) => {
   if (!reel || reel.length === 0) return [];
   
-  // Create one complete set of symbols for the reel
+  // Create a longer strip for smooth animation
   const reelSymbols = reel.map(symbol => ({
     ...symbol,
     emoji: SYMBOLS[symbol?.name]?.emoji || '🎰'
   }));
   
-  // Triple the array for smooth animation
-  return [...reelSymbols, ...reelSymbols, ...reelSymbols];
+  // Repeat the symbols multiple times for continuous animation
+  return [...reelSymbols, ...reelSymbols, ...reelSymbols, ...reelSymbols];
 };
 
 // Modified handleSpin to calculate final positions
@@ -1971,5 +1969,114 @@ watch(
 
 .mobile-spin-again-button:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+/* Updated reel animation styles */
+.reel-strip,
+.mobile-reel-strip {
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.reel-strip.spinning,
+.mobile-reel-strip.spinning {
+  animation: spinAnimation var(--duration) var(--delay) cubic-bezier(0.1, 0.7, 0.2, 1) infinite;
+}
+
+@keyframes spinAnimation {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+/* Smooth symbol transitions */
+.symbol,
+.mobile-symbol {
+  height: 100px;
+  min-height: 100px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.symbol-inner,
+.mobile-symbol-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.symbol-emoji,
+.mobile-symbol-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+  transform: translateZ(0);
+}
+
+/* Add smooth stopping animation */
+.reel-strip:not(.spinning),
+.mobile-reel-strip:not(.spinning) {
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Updated payline animations */
+.payline,
+.mobile-payline {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawLine 3s ease-in-out infinite;
+}
+
+@keyframes drawLine {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  20% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -1000;
+    opacity: 0;
+  }
+}
+
+/* Optimize mobile animations */
+@media (max-width: 768px) {
+  .mobile-reel-strip.spinning {
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+  
+  .mobile-symbol.winning {
+    animation-duration: 1s;
+  }
+  
+  .mobile-payline {
+    animation-duration: 2s;
+  }
+}
+
+/* Hardware acceleration for smoother animations */
+.reel-strip,
+.mobile-reel-strip,
+.symbol,
+.mobile-symbol {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 </style>
