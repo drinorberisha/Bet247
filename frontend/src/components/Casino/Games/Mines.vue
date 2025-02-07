@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div class="mines-grid">
+    <div class="mines-grid" ref="minesGridRef">
       <button
         v-for="(tile, index) in minesStore.tiles"
         :key="index"
@@ -151,6 +151,8 @@ const showWinModal = ref(false);
 const minesCount = ref(minesStore.minesCount);
 const minesError = ref("");
 
+const minesGridRef = ref<HTMLElement | null>(null);
+
 // Watch for wins
 watch(currentProfit, (newProfit) => {
   if (newProfit > 0 && !isGameActive.value) {
@@ -185,6 +187,7 @@ const gameActionText = computed(() => {
 
 const handleGameAction = async () => {
   await minesStore.startGame();
+  minesGridRef.value?.scrollIntoView({ behavior: "smooth", block: "center" });
 };
 
 const handleTileClick = (index: number) => {
