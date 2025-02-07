@@ -1735,6 +1735,7 @@ export default {
 }
 
 .robo-slots .paytable-content {
+  margin-top: 120px;
   max-height: 90vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
