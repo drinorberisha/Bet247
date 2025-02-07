@@ -1,5 +1,19 @@
 <template>
   <div class="dragon-tower-game">
+    <div class="game-title">
+      <span class="dragon-letter">D</span>
+      <span class="dragon-letter">R</span>
+      <span class="dragon-letter">A</span>
+      <span class="dragon-letter">G</span>
+      <span class="dragon-letter">O</span>
+      <span class="dragon-letter">N</span>
+      <span class="dragon-letter space"></span>
+      <span class="dragon-letter">T</span>
+      <span class="dragon-letter">O</span>
+      <span class="dragon-letter">W</span>
+      <span class="dragon-letter">E</span>
+      <span class="dragon-letter">R</span>
+    </div>
     <div class="game-header">
       <div class="stats-container">
         <div class="stat-item">
@@ -42,6 +56,8 @@
           :class="{
             'active-row': isActiveRow(rowIndex),
             'completed-row': isCompletedRow(rowIndex),
+            'highlight-row':
+              isActiveRow(rowIndex) && dragonTowerStore.isGameActive,
           }"
         >
           <div
@@ -275,9 +291,73 @@ const handleCashout = async () => {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background: var(--header);
+  background: linear-gradient(145deg, #1a0f2e, #2d1810);
   border-radius: 16px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border: 2px solid #ffd700;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 20px rgba(255, 165, 0, 0.2),
+    inset 0 0 30px rgba(255, 69, 0, 0.1);
+}
+
+.game-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  perspective: 1000px;
+}
+
+.dragon-letter {
+  font-family: "Cinzel", serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.8), 0 0 20px rgba(255, 69, 0, 0.5),
+    2px 2px 2px rgba(0, 0, 0, 0.4);
+  transform-style: preserve-3d;
+  animation: dragonFloat 3s ease-in-out infinite;
+}
+
+.dragon-letter:nth-child(even) {
+  animation-delay: -1.5s;
+}
+
+.space {
+  width: 1rem;
+}
+
+@keyframes dragonFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(0);
+    color: #ffd700;
+  }
+  50% {
+    transform: translateY(-5px) rotateX(10deg);
+    color: #ff8c00;
+  }
+}
+
+@media (max-width: 768px) {
+  .dragon-letter {
+    font-size: 2rem;
+  }
+  .space {
+    width: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dragon-letter {
+    font-size: 1.5rem;
+  }
+  .space {
+    width: 0.5rem;
+  }
+  .game-title {
+    gap: 0.2rem;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .game-header {
@@ -288,13 +368,15 @@ const handleCashout = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--subheader);
+  background: linear-gradient(145deg, #2a1f3d, #3d2018);
   border-radius: 12px;
   padding: 0.75rem 1rem;
   gap: 0.5rem;
   max-width: 600px;
   margin: 0 auto;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 0 15px rgba(255, 165, 0, 0.2);
+  border: 1px solid #ffd700;
 }
 
 .stat-item {
@@ -443,13 +525,29 @@ const handleCashout = async () => {
   aspect-ratio: 1;
   min-width: 40px;
   max-width: 80px;
-  background: #767171; /* Changed to light gray */
+  background: #767171;
   border: 2px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+
+.tile::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  opacity: 0.3;
 }
 
 /* Unrevealed tile hover effect */
@@ -545,6 +643,15 @@ const handleCashout = async () => {
 /* Completed row styling */
 .completed-row .tile:not(.revealed) {
   opacity: 0.7;
+  filter: brightness(0.8);
+}
+
+.safe-emoji {
+  filter: drop-shadow(0 0 8px rgba(45, 113, 117, 0.6));
+}
+
+.dragon-emoji {
+  filter: drop-shadow(0 0 8px rgba(139, 51, 70, 0.6));
 }
 
 .game-controls {
@@ -552,10 +659,12 @@ const handleCashout = async () => {
 }
 
 .bet-controls {
-  background: var(--subheader);
+  background: linear-gradient(145deg, #2a1f3d, #3d2018);
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 1.5rem;
+  border: 1px solid #ffd700;
+  box-shadow: inset 0 0 15px rgba(255, 165, 0, 0.2);
 }
 
 .control-label {
@@ -574,12 +683,13 @@ const handleCashout = async () => {
 .bet-amount-input {
   width: 100%;
   padding: 0.75rem;
-  background: var(--header);
-  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #1a0f2e, #2d1810);
+  border: 1px solid #8b0000;
   border-radius: 8px;
   color: var(--white);
   font-size: 1.1rem;
   text-align: center;
+  color: #ffd700;
 }
 
 .bet-amount-input:disabled {
@@ -595,18 +705,21 @@ const handleCashout = async () => {
 
 .quick-amount-btn {
   padding: 0.75rem;
-  background: var(--header);
-  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #2a1f3d, #3d2018);
+  border: 1px solid #8b0000;
   border-radius: 8px;
-  color: var(--white);
+  color: #ffd700;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .quick-amount-btn:hover:not(:disabled) {
-  background: var(--active-color);
-  border-color: var(--active-color);
+  background: linear-gradient(145deg, #3d2018, #2a1f3d);
+  border-color: #ffd700;
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
 }
 
 .quick-amount-btn:disabled {
@@ -634,19 +747,29 @@ const handleCashout = async () => {
 }
 
 .main-btn {
-  background: var(--active-color);
-  color: var(--white);
+  background: linear-gradient(145deg, #8b0000, #5c0000);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+  box-shadow: 0 0 15px rgba(139, 0, 0, 0.4);
+}
+
+.main-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #a00000, #6c0000);
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
 }
 
 .cashout-btn {
-  background: #20e920;
-  color: var(--white);
+  background: linear-gradient(145deg, #1e8c1e, #156315);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
 }
 
 .clear-btn {
-  background: var(--subheader);
-  color: var(--white);
-  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #2a1f3d, #3d2018);
+  border: 1px solid #8b0000;
+  color: #ffd700;
 }
 
 .clear-btn:hover:not(:disabled) {
@@ -675,13 +798,14 @@ const handleCashout = async () => {
 }
 
 .modal-content {
-  background: var(--header);
+  background: linear-gradient(145deg, #1a0f2e, #2d1810);
   padding: 2rem;
   border-radius: 16px;
   text-align: center;
   width: 200px;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), 0 0 50px rgba(255, 165, 0, 0.3);
   animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border: 2px solid #ffd700;
 }
 
 @keyframes bounceIn {
@@ -701,17 +825,31 @@ const handleCashout = async () => {
   }
 }
 
+.win-modal h2 {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.8);
+}
+
+.win-amount,
+.multiplier {
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+}
+
 .difficulty-controls {
   margin-bottom: 1rem;
+  background: linear-gradient(145deg, #2a1f3d, #3d2018);
+  border: 1px solid #ffd700;
+  box-shadow: inset 0 0 15px rgba(255, 165, 0, 0.2);
 }
 
 .difficulty-select {
   width: 100%;
   padding: 0.75rem;
-  background: var(--subheader);
-  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #1a0f2e, #2d1810);
+  border: 1px solid #8b0000;
   border-radius: 8px;
-  color: var(--white);
+  color: #ffd700;
   font-size: 1rem;
   cursor: pointer;
 }
@@ -977,6 +1115,43 @@ const handleCashout = async () => {
 
   .game-controls {
     margin-top: 1rem;
+  }
+}
+
+.highlight-row {
+  position: relative;
+  animation: pulseRow 2s infinite;
+}
+
+.highlight-row::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  animation: borderGlow 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseRow {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes borderGlow {
+  0%,
+  100% {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    border-color: #ff8c00;
+    box-shadow: 0 0 20px rgba(255, 140, 0, 0.7);
   }
 }
 </style>
