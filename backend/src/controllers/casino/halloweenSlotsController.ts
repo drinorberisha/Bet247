@@ -6,7 +6,7 @@ const dbService = new DatabaseService();
 export const startGame = async (req: Request, res: Response) => {
   try {
     const { betAmount } = req.body;
-    // @ts-ignore - add type ignore since we know the middleware adds this
+    // @ts-ignore
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -16,32 +16,21 @@ export const startGame = async (req: Request, res: Response) => {
       });
     }
 
-    console.log('[HALLOWEEN-SLOTS] Starting game:', {
-      userId,
-      betAmount,
-      betAmountType: typeof betAmount
-    });
-
     // Validate user and bet amount
     const user = await dbService.users.findById(userId);
-    if (!user) {
-      return res.status(404).json({ 
+    if (!user || user.balance < betAmount) {
+      return res.status(400).json({
         success: false,
-        message: 'User not found' 
-      });
-    }
-    
-    if (user.balance < betAmount) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Insufficient balance' 
+        message: user ? 'Insufficient balance' : 'User not found'
       });
     }
 
-    // Create a new game record
+    // Deduct bet amount from user balance
+    const updatedUser = await dbService.users.updateBalance(userId, -betAmount);
+
+    // Create game record
     const gameId = `halloween_slots_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const game = await CasinoGame.create({
+    await CasinoGame.create({
       gameId,
       userId,
       gameType: 'halloween_slots',
@@ -50,19 +39,9 @@ export const startGame = async (req: Request, res: Response) => {
       createdAt: new Date()
     });
 
-    // Deduct bet amount from user balance
-    const updatedUser = await dbService.users.updateBalance(userId, -betAmount);
-
-    console.log('[HALLOWEEN-SLOTS] Game started:', {
-      gameId,
-      previousBalance: user.balance,
-      newBalance: updatedUser?.balance,
-      betAmount
-    });
-    
     res.json({ 
       success: true,
-      gameId: game.gameId,
+      gameId,
       newBalance: updatedUser?.balance
     });
 
@@ -75,7 +54,7 @@ export const startGame = async (req: Request, res: Response) => {
   }
 };
 
-export const processWin = async (req: Request, res: Response) => {
+export const spin = async (req: Request, res: Response) => {
   try {
     const { gameId, winAmount } = req.body;
     // @ts-ignore
@@ -88,51 +67,43 @@ export const processWin = async (req: Request, res: Response) => {
       });
     }
 
-    console.log('[HALLOWEEN-SLOTS] Processing win:', {
-      gameId,
-      userId,
-      winAmount
-    });
-
-    // Validate game exists and belongs to user
-    const game = await CasinoGame.findOne({ gameId, userId });
+    // Validate the game exists and is active
+    const game = await CasinoGame.findOne({ gameId, userId, status: 'active' });
     if (!game) {
-      return res.status(404).json({
-        success: false,
-        message: 'Game not found'
-      });
-    }
-
-    if (game.status !== 'active') {
       return res.status(400).json({
         success: false,
-        message: 'Game already completed'
+        message: 'Invalid or inactive game'
       });
     }
 
-    // Update game status
-    game.status = 'completed';
-    game.winAmount = winAmount;
-    game.completedAt = new Date();
-    await game.save();
+    // Always update game status
+    await CasinoGame.updateOne(
+      { gameId },
+      { 
+        $set: { 
+          status: 'completed',
+          winAmount,
+          updatedAt: new Date()
+        }
+      }
+    );
 
-    // Update user balance
-    const updatedUser = await dbService.users.updateBalance(userId, winAmount);
-
-    console.log('[HALLOWEEN-SLOTS] Win processed:', {
-      gameId,
-      userId,
-      winAmount,
-      newBalance: updatedUser?.balance
-    });
+    // Get user's current balance
+    let updatedUser = await dbService.users.findById(userId);
+    
+    // If there's a win, add it to the balance
+    if (winAmount > 0) {
+      updatedUser = await dbService.users.updateBalance(userId, winAmount);
+    }
 
     res.json({
       success: true,
-      newBalance: updatedUser?.balance
+      newBalance: updatedUser?.balance,
+      winAmount
     });
 
   } catch (error) {
-    console.error('[HALLOWEEN-SLOTS] Error processing win:', error);
+    console.error('[HALLOWEEN-SLOTS] Error processing spin:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

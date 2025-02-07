@@ -3,18 +3,24 @@
   <div class="robo-slots">
     <div class="robot-slots-page">
       <div id="slot">
-        <!-- Update bet controls with responsive class -->
+        <!-- Update bet controls with store methods -->
         <div class="bet-controls mobile-controls">
           <button
-            @click="decreaseBet"
-            :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
+            @click="halloweenSlotsStore.decreaseBet"
+            :disabled="halloweenSlotsStore.isSpinning"
           >
             -
           </button>
-          <input type="number" v-model.number="betAmount" min="1" max="50" />
+          <input 
+            type="number" 
+            v-model.number="halloweenSlotsStore.betAmount" 
+            min="1" 
+            max="50"
+            :disabled="halloweenSlotsStore.isSpinning"
+          />
           <button
-            @click="increaseBet"
-            :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
+            @click="halloweenSlotsStore.increaseBet"
+            :disabled="halloweenSlotsStore.isSpinning"
           >
             +
           </button>
@@ -30,8 +36,14 @@
         </div>
         <!-- Update controls with responsive class -->
         <div id="controls" class="mobile-controls">
-          <button type="button" id="spin">SPIN</button>
-
+          <button 
+            type="button" 
+            id="spin" 
+            @click="handleSpin"
+            :disabled="!halloweenSlotsStore.canSpin"
+          >
+            SPIN
+          </button>
           <button type="button" id="paytable-button">PAYTABLE</button>
         </div>
       </div>
@@ -159,6 +171,8 @@
 </template>
 
 <script>
+import { useHalloweenSlotsStore } from '../../../stores/casino/halloweenSlots';
+
 // Static imports for all symbols
 import atAt from "../../../assets/symbols/at_at.svg";
 import c3po from "../../../assets/symbols/c3po.svg";
@@ -359,7 +373,6 @@ class Slot {
     this.spinButton = document.getElementById("spin");
     this.spinButton.addEventListener("click", () => this.spin());
 
-    this.autoPlayCheckbox = document.getElementById("autoplay");
 
     if (config.inverted) {
       this.container.classList.add("inverted");
@@ -444,9 +457,9 @@ class Slot {
     }
 
     // Autoplay if checked
-    if (this.autoPlayCheckbox.checked) {
-      return window.setTimeout(() => this.spin(), 200);
-    }
+    // if (this.autoPlayCheckbox.checked) {
+    //   return window.setTimeout(() => this.spin(), 200);
+    // }
   }
 
   checkWins(symbols) {
@@ -499,10 +512,12 @@ class Slot {
   }
 }
 
-// ...rest of the file remains unchanged...
-
 export default {
-  name: "SlotMachine",
+  name: "HalloweenSlots",
+  setup() {
+    const halloweenSlotsStore = useHalloweenSlotsStore();
+    return { halloweenSlotsStore };
+  },
   data() {
     return {
       betAmount: 1,
@@ -519,7 +534,15 @@ export default {
     };
   },
   methods: {
-    // ...existing methods...
+    async handleSpin() {
+      if (!this.halloweenSlotsStore.canSpin) return;
+      
+      try {
+        await this.halloweenSlotsStore.startGame();
+      } catch (error) {
+        console.error('Error during spin:', error);
+      }
+    },
     increaseBet() {
       if (this.betAmount < 50) this.betAmount++;
     },
@@ -626,7 +649,7 @@ export default {
 
     /**
      * For a real Vue component, you might prefer
-     * using Vue’s reactivity or `refs` instead of direct `document.getElementById`.
+     * using Vue's reactivity or `refs` instead of direct `document.getElementById`.
      */
   },
 };

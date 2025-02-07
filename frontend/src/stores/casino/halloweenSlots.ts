@@ -101,22 +101,18 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
       try {
         const response = await axios.post(
           `${API_URL}/casino/halloween-slots/start`,
-          {
-            betAmount: this.betAmount
-          },
+          { betAmount: this.betAmount },
           {
             headers: {
-              'Authorization': `Bearer ${authStore.token}`,
-              'Content-Type': 'application/json'
+              'Authorization': `Bearer ${authStore.token}`
             }
           }
         );
 
         if (response.data.success) {
           this.currentGameId = response.data.gameId;
-          this.isSpinning = true;
-          this.canCashout = false;
           authStore.updateBalance(response.data.newBalance);
+          this.isSpinning = true;
           await this.spin();
         }
       } catch (error: any) {
@@ -128,22 +124,60 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
     },
 
     async spin() {
-      // Simulate spinning animation
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const authStore = useAuthStore();
       
-      // Generate random results
-      this.reels = this.reels.map(() => 
-        Array(3).fill(null).map(() => 
-          this.symbols[Math.floor(Math.random() * this.symbols.length)]
-        )
-      );
+      if (!this.currentGameId) {
+        console.error('[HALLOWEEN-SLOTS] No active game');
+        return;
+      }
 
-      // Calculate wins
-      this.calculateWins();
+      try {
+        // Simulate spinning animation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Generate random results
+        this.reels = this.reels.map(() => 
+          Array(3).fill(null).map(() => 
+            this.symbols[Math.floor(Math.random() * this.symbols.length)]
+          )
+        );
+
+        // Send spin results to server
+        const response = await axios.post(
+          `${API_URL}/casino/halloween-slots/spin`,
+          {
+            gameId: this.currentGameId,
+            reels: this.reels,
+            betAmount: this.betAmount
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`
+            }
+          }
+        );
+
+        if (response.data.success) {
+          // Update balance and game state with server response
+          authStore.updateBalance(response.data.newBalance);
+          this.lastWin = response.data.winAmount;
+          this.winningLines = response.data.winningLines || [];
+          this.multiplier = response.data.multiplier || 1;
+          
+          if (this.lastWin > 0) {
+            this.totalWin += this.lastWin;
+          }
+        }
+
+      } catch (error: any) {
+        console.error('[HALLOWEEN-SLOTS] Error during spin:', error);
+        this.error = error.response?.data?.message || 'Failed to process spin';
+      } finally {
+        this.isSpinning = false;
+      }
     },
 
     calculateWins() {
-      const authStore = useAuthStore();
       let totalWin = 0;
       const winningLines: number[] = [];
 
@@ -153,7 +187,10 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
         const firstSymbol = symbols[0];
         
         if (symbols.every(symbol => symbol.id === firstSymbol.id)) {
-          totalWin += firstSymbol.value * this.betAmount;
+          const baseValue = firstSymbol.value;
+          const matchCount = symbols.length;
+          const winAmount = baseValue * matchCount * this.betAmount;
+          totalWin += winAmount;
           winningLines.push(row);
         }
       }
@@ -162,17 +199,16 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
       this.winningLines = winningLines;
       this.isSpinning = false;
 
-      if (totalWin > 0) {
-        this.processWin(totalWin);
-      }
+      // Always process the result, whether win or loss
+      this.processResult(totalWin);
     },
 
-    async processWin(winAmount: number) {
+    async processResult(winAmount: number) {
       const authStore = useAuthStore();
       
       try {
         const response = await axios.post(
-          `${API_URL}/casino/halloween-slots/win`,
+          `${API_URL}/casino/halloween-slots/spin`,
           {
             gameId: this.currentGameId,
             winAmount
@@ -185,12 +221,16 @@ export const useHalloweenSlotsStore = defineStore('halloweenSlots', {
         );
 
         if (response.data.success) {
+          // Always update balance from server response
           authStore.updateBalance(response.data.newBalance);
-          this.totalWin += winAmount;
+          
+          if (winAmount > 0) {
+            this.totalWin += winAmount;
+          }
         }
       } catch (error: any) {
-        console.error('[HALLOWEEN-SLOTS] Error processing win:', error);
-        this.error = error.response?.data?.message || 'Failed to process win';
+        console.error('[HALLOWEEN-SLOTS] Error processing result:', error);
+        this.error = error.response?.data?.message || 'Failed to process result';
       }
     },
 
