@@ -1,157 +1,160 @@
 <template>
-  <div>
-    <div id="slot">
-      <!-- Update bet controls with responsive class -->
-      <div class="bet-controls mobile-controls">
-        <button
-          @click="decreaseBet"
-          :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
-        >
-          -
-        </button>
-        <input type="number" v-model.number="betAmount" min="1" max="50" />
-        <button
-          @click="increaseBet"
-          :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
-        >
-          +
-        </button>
+  <!-- Add class to root element for scoping -->
+  <div class="robo-slots">
+    <div class="robot-slots-page">
+      <div id="slot">
+        <!-- Update bet controls with responsive class -->
+        <div class="bet-controls mobile-controls">
+          <button
+            @click="decreaseBet"
+            :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
+          >
+            -
+          </button>
+          <input type="number" v-model.number="betAmount" min="1" max="50" />
+          <button
+            @click="increaseBet"
+            :disabled="slotInstance ? slotInstance.spinButton.disabled : false"
+          >
+            +
+          </button>
+        </div>
+
+        <div id="jackpot">Jackpot: <span id="jp">250 X</span></div>
+        <div id="reels">
+          <div class="reel"></div>
+          <div class="reel"></div>
+          <div class="reel"></div>
+          <div class="reel"></div>
+          <div class="reel"></div>
+        </div>
+        <!-- Update controls with responsive class -->
+        <div id="controls" class="mobile-controls">
+          <button type="button" id="spin">SPIN</button>
+
+          <button type="button" id="paytable-button">PAYTABLE</button>
+        </div>
       </div>
 
-      <div id="jackpot">Jackpot: <span id="jp">250 X</span></div>
-      <div id="reels">
-        <div class="reel"></div>
-        <div class="reel"></div>
-        <div class="reel"></div>
-        <div class="reel"></div>
-        <div class="reel"></div>
+      <div id="paytable" class="hidden">
+        <div id="paytable-close" @click="closePaytable">&times;</div>
+        <div class="paytable-content">
+          <h2>Paytable</h2>
+          <div class="symbol-pays">
+            <div class="pay-row">
+              <img
+                src="../../../assets/symbols/death_star.svg"
+                alt="Death Star"
+              />
+              <div class="pays">
+                <div>5x = 250 (50 × 5x )</div>
+                <div>4x = 150 (50 × 3x )</div>
+                <div>3x = 50 (50 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img
+                src="../../../assets/symbols/darth_vader.svg"
+                alt="Darth Vader"
+              />
+              <div class="pays">
+                <div>5x = 175 (35 × 5x )</div>
+                <div>4x = 105 (35 × 3x )</div>
+                <div>3x = 35 (35 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/yoda.svg" alt="Yoda" />
+              <div class="pays">
+                <div>5x = 125 (25 × 5x )</div>
+                <div>4x = 75 (25 × 3x )</div>
+                <div>3x = 25 (25 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/falcon.svg" alt="Falcon" />
+              <div class="pays">
+                <div>5x = 85 (17 × 5x )</div>
+                <div>4x = 51 (17 × 3x )</div>
+                <div>3x = 17 (17 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/at_at.svg" alt="AT-AT" />
+              <div class="pays">
+                <div>5x = 60 (12 × 5x )</div>
+                <div>4x = 36 (12 × 3x )</div>
+                <div>3x = 12 (12 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/tie_ln.svg" alt="TIE Fighter" />
+              <div class="pays">
+                <div>5x = 30 (6 × 5x )</div>
+                <div>4x = 18 (6 × 3x )</div>
+                <div>3x = 6 (6 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/c3po.svg" alt="C-3PO" />
+              <div class="pays">
+                <div>5x = 25 (5 × 5x )</div>
+                <div>4x = 15 (5 × 3x )</div>
+                <div>3x = 5 (5 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img src="../../../assets/symbols/r2d2.svg" alt="R2-D2" />
+              <div class="pays">
+                <div>5x = 20 (4 × 5x )</div>
+                <div>4x = 12 (4 × 3x )</div>
+                <div>3x = 4 (4 × 1x )</div>
+              </div>
+            </div>
+            <div class="pay-row">
+              <img
+                src="../../../assets/symbols/stormtrooper.svg"
+                alt="Stormtrooper"
+              />
+              <div class="pays">
+                <div>5x = 10 (2 × 5x )</div>
+                <div>4x = 6 (2 × 3x )</div>
+                <div>3x = 2 (2 × 1x )</div>
+              </div>
+            </div>
+          </div>
+          <div class="-info">
+            <h3></h3>
+            <p>3 matching symbols = 1x multiplier</p>
+            <p>4 matching symbols = 3x multiplier</p>
+            <p>5 matching symbols = 5x multiplier (Jackpot!)</p>
+            <p class="note">* All wins are multiplied by your bet amount</p>
+            <p class="rarity-note">Rarer symbols have higher payouts!</p>
+          </div>
+        </div>
       </div>
-      <!-- Update controls with responsive class -->
-      <div id="controls" class="mobile-controls">
-        <button type="button" id="spin">SPIN</button>
 
-        <button type="button" id="paytable-button">PAYTABLE</button>
-      </div>
+      <!-- Add stats display -->
+
+      <!-- Modified Win Modal -->
+      <Transition name="modal">
+        <div v-if="showWinModal" class="win-modal">
+          <div class="modal-content">
+            <h2>WIN!</h2>
+            <div class="matched-symbols">
+              <img
+                :src="symbolImages[matchedSymbol]"
+                :alt="matchedSymbol"
+                class="winning-symbol"
+              />
+              <div class="match-count">{{ matchCount }} matches!</div>
+            </div>
+            <div class="win-amount">{{ currentWin }}x</div>
+            <div class="multiplier">Multiplier!</div>
+          </div>
+        </div>
+      </Transition>
     </div>
-
-    <div id="paytable" class="hidden">
-      <div id="paytable-close" @click="closePaytable">&times;</div>
-      <div class="paytable-content">
-        <h2>Paytable</h2>
-        <div class="symbol-pays">
-          <div class="pay-row">
-            <img
-              src="../../../assets/symbols/death_star.svg"
-              alt="Death Star"
-            />
-            <div class="pays">
-              <div>5x = 250 (50 × 5x )</div>
-              <div>4x = 150 (50 × 3x )</div>
-              <div>3x = 50 (50 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img
-              src="../../../assets/symbols/darth_vader.svg"
-              alt="Darth Vader"
-            />
-            <div class="pays">
-              <div>5x = 175 (35 × 5x )</div>
-              <div>4x = 105 (35 × 3x )</div>
-              <div>3x = 35 (35 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/yoda.svg" alt="Yoda" />
-            <div class="pays">
-              <div>5x = 125 (25 × 5x )</div>
-              <div>4x = 75 (25 × 3x )</div>
-              <div>3x = 25 (25 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/falcon.svg" alt="Falcon" />
-            <div class="pays">
-              <div>5x = 85 (17 × 5x )</div>
-              <div>4x = 51 (17 × 3x )</div>
-              <div>3x = 17 (17 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/at_at.svg" alt="AT-AT" />
-            <div class="pays">
-              <div>5x = 60 (12 × 5x )</div>
-              <div>4x = 36 (12 × 3x )</div>
-              <div>3x = 12 (12 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/tie_ln.svg" alt="TIE Fighter" />
-            <div class="pays">
-              <div>5x = 30 (6 × 5x )</div>
-              <div>4x = 18 (6 × 3x )</div>
-              <div>3x = 6 (6 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/c3po.svg" alt="C-3PO" />
-            <div class="pays">
-              <div>5x = 25 (5 × 5x )</div>
-              <div>4x = 15 (5 × 3x )</div>
-              <div>3x = 5 (5 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img src="../../../assets/symbols/r2d2.svg" alt="R2-D2" />
-            <div class="pays">
-              <div>5x = 20 (4 × 5x )</div>
-              <div>4x = 12 (4 × 3x )</div>
-              <div>3x = 4 (4 × 1x )</div>
-            </div>
-          </div>
-          <div class="pay-row">
-            <img
-              src="../../../assets/symbols/stormtrooper.svg"
-              alt="Stormtrooper"
-            />
-            <div class="pays">
-              <div>5x = 10 (2 × 5x )</div>
-              <div>4x = 6 (2 × 3x )</div>
-              <div>3x = 2 (2 × 1x )</div>
-            </div>
-          </div>
-        </div>
-        <div class="-info">
-          <h3></h3>
-          <p>3 matching symbols = 1x multiplier</p>
-          <p>4 matching symbols = 3x multiplier</p>
-          <p>5 matching symbols = 5x multiplier (Jackpot!)</p>
-          <p class="note">* All wins are multiplied by your bet amount</p>
-          <p class="rarity-note">Rarer symbols have higher payouts!</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add stats display -->
-
-    <!-- Modified Win Modal -->
-    <Transition name="modal">
-      <div v-if="showWinModal" class="win-modal">
-        <div class="modal-content">
-          <h2>WIN!</h2>
-          <div class="matched-symbols">
-            <img
-              :src="symbolImages[matchedSymbol]"
-              :alt="matchedSymbol"
-              class="winning-symbol"
-            />
-            <div class="match-count">{{ matchCount }} matches!</div>
-          </div>
-          <div class="win-amount">{{ currentWin }}x</div>
-          <div class="multiplier">Multiplier!</div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -630,13 +633,25 @@ export default {
 </script>
 
 <style>
-/* --- Combined CSS from style.css, paytable.css, and main.css --- */
-
-/* Import Orbitron font */
+/* Remove global font import and add it scoped to the component */
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap");
 
-/* Futuristic Theme Variables */
-:root {
+/* Scope all styles to the robo-slots class */
+.robo-slots {
+  /* Add font-family to root element */
+  font-family: "Orbitron", sans-serif;
+}
+
+.robo-slots button,
+.robo-slots input,
+.robo-slots #jackpot,
+.robo-slots .paytable-content,
+.robo-slots .modal-content {
+  font-family: "Orbitron", sans-serif;
+}
+
+/* Update variables to be scoped */
+.robo-slots {
   --neon-primary: #00f7ff;
   --neon-secondary: #7b2efc;
   --dark-bg: #0a0b1a;
@@ -652,7 +667,7 @@ export default {
 }
 
 /* Main Container */
-#slot {
+.robo-slots #slot {
   background: var(--dark-bg);
   border: 2px solid var(--neon-primary);
   box-shadow: var(--glow-primary);
@@ -661,7 +676,7 @@ export default {
 }
 
 /* Circuit Board Pattern Overlay */
-#slot::before {
+.robo-slots #slot::before {
   content: "";
   position: absolute;
   top: 0;
@@ -680,7 +695,7 @@ export default {
 }
 
 /* Scanning Line Animation */
-#slot::after {
+.robo-slots #slot::after {
   content: "";
   position: absolute;
   top: -100%;
@@ -708,8 +723,8 @@ export default {
 }
 
 /* Updated Controls Styling */
-.bet-controls,
-#controls {
+.robo-slots .bet-controls,
+.robo-slots #controls {
   background: var(--metal-gradient);
   border: 1px solid var(--neon-primary);
   box-shadow: var(--glow-primary);
@@ -718,7 +733,7 @@ export default {
 }
 
 /* Button Styling */
-button {
+.robo-slots button {
   font-family: "Orbitron", sans-serif;
   background: var(--metal-dark);
   border: 1px solid var(--neon-primary);
@@ -727,7 +742,7 @@ button {
   transition: all 0.3s ease;
 }
 
-button:hover:not(:disabled) {
+.robo-slots button:hover:not(:disabled) {
   background: var(--neon-primary);
   color: var(--dark-bg);
   box-shadow: var(--glow-primary);
@@ -735,7 +750,7 @@ button:hover:not(:disabled) {
 }
 
 /* Spin Button Special Styling */
-#spin {
+.robo-slots #spin {
   background: linear-gradient(
     45deg,
     var(--neon-primary),
@@ -748,7 +763,7 @@ button:hover:not(:disabled) {
 }
 
 /* Input Styling */
-input[type="number"] {
+.robo-slots input[type="number"] {
   font-family: "Orbitron", sans-serif;
   background: var(--metal-dark);
   border: 1px solid var(--neon-primary);
@@ -757,7 +772,7 @@ input[type="number"] {
 }
 
 /* Matched Symbols Animation */
-.reel > .icons > img.matched {
+.robo-slots .reel > .icons > img.matched {
   animation: futuristicPulse 1.5s infinite;
   box-shadow: 0 0 20px var(--neon-secondary);
 }
@@ -775,7 +790,7 @@ input[type="number"] {
 }
 
 /* Modal Updates */
-.win-modal .modal-content {
+.robo-slots .win-modal .modal-content {
   background: var(--metal-gradient);
   border: 2px solid var(--neon-secondary);
   box-shadow: var(--glow-secondary);
@@ -784,60 +799,60 @@ input[type="number"] {
 
 /* Enhanced Mobile Responsiveness */
 @media screen and (max-width: 768px) {
-  #slot {
+  .robo-slots #slot {
     border-width: 1px;
     border-radius: 10px;
   }
 
-  .bet-controls,
-  #controls {
+  .robo-slots .bet-controls,
+  .robo-slots #controls {
     padding: 10px;
     gap: 8px;
   }
 
-  button {
+  .robo-slots button {
     padding: 12px 20px;
     font-size: 0.9em;
   }
 
-  #spin {
+  .robo-slots #spin {
     width: 100%;
     max-width: none;
     margin: 5px 0;
   }
 
-  .mobile-controls {
+  .robo-slots .mobile-controls {
     flex-direction: column;
     align-items: stretch;
   }
 }
 
 @media screen and (max-width: 480px) {
-  #slot {
+  .robo-slots #slot {
     padding: 10px;
   }
 
-  button {
+  .robo-slots button {
     padding: 10px 15px;
     font-size: 0.8em;
   }
 
-  input[type="number"] {
+  .robo-slots input[type="number"] {
     width: 60px;
     padding: 8px;
     font-size: 0.9em;
   }
 
-  .bet-controls {
+  .robo-slots .bet-controls {
     flex-direction: row;
     justify-content: center;
   }
 
-  #controls {
+  .robo-slots #controls {
     gap: 5px;
   }
 
-  label {
+  .robo-slots label {
     font-size: 0.8em;
   }
 }
@@ -845,7 +860,7 @@ input[type="number"] {
 /* Body and background */
 
 /* #slot container styling */
-#slot {
+.robo-slots #slot {
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
@@ -856,7 +871,7 @@ input[type="number"] {
 }
 
 /* Jackpot styling */
-#jackpot {
+.robo-slots #jackpot {
   color: #d5ad6d;
   font-size: 2em;
   text-align: center;
@@ -865,7 +880,7 @@ input[type="number"] {
 }
 
 /* Reels container */
-#reels {
+.robo-slots #reels {
   display: flex;
 
   background: #2c3e50;
@@ -880,7 +895,7 @@ input[type="number"] {
 }
 
 /* Individual reel styling */
-.reel {
+.robo-slots .reel {
   flex: 1;
   background: #1a1a1a;
   border-radius: 5px;
@@ -890,7 +905,7 @@ input[type="number"] {
 }
 
 /* Icons wrapper inside each reel */
-.reel > .icons {
+.robo-slots .reel > .icons {
   position: absolute;
   top: 0;
   left: 0;
@@ -900,7 +915,7 @@ input[type="number"] {
 }
 
 /* Symbol (img) styling inside reels */
-.reel > .icons > img {
+.robo-slots .reel > .icons > img {
   width: 100%;
   height: 100px;
   object-fit: contain;
@@ -909,16 +924,16 @@ input[type="number"] {
 }
 
 /* Inverted mode (if config.inverted = true) */
-#slot.inverted .reel {
+.robo-slots #slot.inverted .reel {
   transform: scaleY(-1);
 }
 
-#slot.inverted .reel > .icons > img {
+.robo-slots #slot.inverted .reel > .icons > img {
   transform: scaleY(-1);
 }
 
 /* Controls bar */
-#controls {
+.robo-slots #controls {
   margin-top: 20px;
   display: flex;
   justify-content: center;
@@ -928,7 +943,7 @@ input[type="number"] {
 }
 
 /* Spin button */
-#spin {
+.robo-slots #spin {
   padding: 15px 40px;
   font-size: 1.2em;
   background: #e74c3c;
@@ -939,22 +954,22 @@ input[type="number"] {
   transition: background 0.3s;
 }
 
-#spin:hover {
+.robo-slots #spin:hover {
   background: #c0392b;
 }
 
-#spin:disabled {
+.robo-slots #spin:disabled {
   background: #95a5a6;
   cursor: not-allowed;
 }
 
 /* Autoplay checkbox styling */
-#autoplay {
+.robo-slots #autoplay {
   margin-right: 5px;
 }
 
 /* Label styling */
-label {
+.robo-slots label {
   color: white;
   display: flex;
   align-items: center;
@@ -962,7 +977,7 @@ label {
 }
 
 /* PAYTABLE overlay */
-#paytable {
+.robo-slots #paytable {
   position: fixed;
   top: 0;
   left: 0;
@@ -976,11 +991,11 @@ label {
   color: white;
 }
 
-#paytable.hidden {
+.robo-slots #paytable.hidden {
   display: none;
 }
 
-.paytable-content {
+.robo-slots .paytable-content {
   background: #2c3e50;
   padding: 2rem;
   border-radius: 10px;
@@ -988,13 +1003,13 @@ label {
   width: 90%;
 }
 
-.symbol-pays {
+.robo-slots .symbol-pays {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.pay-row {
+.robo-slots .pay-row {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -1002,23 +1017,23 @@ label {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.pay-row img {
+.robo-slots .pay-row img {
   width: 50px;
   height: 50px;
 }
 
-.pays {
+.robo-slots .pays {
   font-size: 0.9rem;
 }
 
-.multiplier-info {
+.robo-slots .multiplier-info {
   margin-top: 2rem;
   padding-top: 1rem;
   border-top: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Paytable button */
-#paytable-button {
+.robo-slots #paytable-button {
   margin-bottom: 0.5rem;
   padding: 0.5rem 1rem;
   background: #34495e;
@@ -1029,7 +1044,7 @@ label {
 }
 
 /* Win Modal */
-.win-modal {
+.robo-slots .win-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -1042,7 +1057,7 @@ label {
   z-index: 2000;
 }
 
-.win-content {
+.robo-slots .win-content {
   background: #2c3e50;
   padding: 2rem;
   border-radius: 10px;
@@ -1051,20 +1066,20 @@ label {
   animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.win-amount {
+.robo-slots .win-amount {
   font-size: 2.5em;
   color: #ffd700;
   margin: 1rem 0;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-.win-multiplier {
+.robo-slots .win-multiplier {
   font-size: 1.8em;
   color: #2ecc71;
   margin: 0.5rem 0;
 }
 
-.collect-btn {
+.robo-slots .collect-btn {
   margin-top: 1rem;
   padding: 0.8rem 2rem;
   font-size: 1.2em;
@@ -1076,7 +1091,7 @@ label {
   transition: all 0.3s ease;
 }
 
-.collect-btn:hover {
+.robo-slots .collect-btn:hover {
   background: #c0392b;
   transform: scale(1.05);
 }
@@ -1098,7 +1113,7 @@ label {
   }
 }
 
-.bet-controls {
+.robo-slots .bet-controls {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1106,7 +1121,7 @@ label {
   margin-bottom: 10px;
   padding: 0 10px;
 }
-.bet-controls input {
+.robo-slots .bet-controls input {
   width: 60px;
   text-align: center;
   font-size: 1.2em;
@@ -1114,17 +1129,17 @@ label {
 }
 
 /* Add Keno-style modal animations */
-.modal-enter-active,
-.modal-leave-active {
+.robo-slots .modal-enter-active,
+.robo-slots .modal-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.modal-enter-from,
-.modal-leave-to {
+.robo-slots .modal-enter-from,
+.robo-slots .modal-leave-to {
   opacity: 0;
 }
 
-.modal-content {
+.robo-slots .modal-content {
   background: var(--header, #2c3e50);
   padding: 2rem;
   border-radius: 16px;
@@ -1134,27 +1149,27 @@ label {
   animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.modal-content h2 {
+.robo-slots .modal-content h2 {
   color: var(--success, #20e920);
   font-size: 2rem;
   margin: 0 0 0.5rem 0;
   text-shadow: 0 0 10px rgba(32, 233, 32, 0.5);
 }
 
-.win-amount {
+.robo-slots .win-amount {
   font-size: 1.8rem;
   font-weight: bold;
   color: var(--white, #ffffff);
   margin-bottom: 0.3rem;
 }
 
-.multiplier {
+.robo-slots .multiplier {
   font-size: 1.2rem;
   color: var(--text-secondary, #95a5a6);
 }
 
 /* Add new styles for matched symbols */
-.reel > .icons > img.matched {
+.robo-slots .reel > .icons > img.matched {
   animation: pulse 0.5s ease-in-out;
   box-shadow: 0 0 20px rgba(32, 233, 32, 0.6);
   border: 2px solid var(--success, #20e920);
@@ -1174,7 +1189,7 @@ label {
 }
 
 /* Add new styles */
-.stats-container {
+.robo-slots .stats-container {
   background: var(--header);
   padding: 1rem;
   border-radius: 8px;
@@ -1182,40 +1197,40 @@ label {
   color: white;
 }
 
-.match-info {
+.robo-slots .match-info {
   display: flex;
   justify-content: center;
   gap: 2rem;
   font-size: 1.2rem;
 }
 
-.winning-symbol {
+.robo-slots .winning-symbol {
   width: 60px;
   height: 60px;
   margin: 1rem 0;
 }
 
-.matched-symbols {
+.robo-slots .matched-symbols {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin: 1rem 0;
 }
 
-.match-count {
+.robo-slots .match-count {
   color: var(--success);
   font-size: 1.2rem;
   margin-top: 0.5rem;
 }
 
-.note {
+.robo-slots .note {
   font-size: 0.8em;
   color: #95a5a6;
   margin-top: 1rem;
   font-style: italic;
 }
 
-.rarity-note {
+.robo-slots .rarity-note {
   font-size: 0.8em;
   color: #e74c3c;
   margin-top: 0.5rem;
@@ -1223,33 +1238,33 @@ label {
 }
 
 /* Add new responsive styles */
-.mobile-controls {
+.robo-slots .mobile-controls {
   flex-wrap: wrap;
 }
 
 /* Mobile responsive adjustments */
 @media screen and (max-width: 768px) {
-  .mobile-controls {
+  .robo-slots .mobile-controls {
     gap: 10px;
   }
 
-  #spin {
+  .robo-slots #spin {
     width: 100%;
     max-width: 200px;
     padding: 12px 20px;
   }
 
-  .bet-controls input {
+  .robo-slots .bet-controls input {
     width: 50px;
     font-size: 1em;
   }
 
-  .bet-controls button {
+  .robo-slots .bet-controls button {
     padding: 8px 15px;
     font-size: 1.2em;
   }
 
-  #paytable-button {
+  .robo-slots #paytable-button {
     padding: 8px 15px;
     font-size: 0.9em;
   }
@@ -1257,41 +1272,41 @@ label {
 
 /* Small mobile devices */
 @media screen and (max-width: 480px) {
-  .mobile-controls {
+  .robo-slots .mobile-controls {
     gap: 8px;
   }
 
-  #spin {
+  .robo-slots #spin {
     font-size: 1em;
     padding: 10px 15px;
   }
 
-  .bet-controls {
+  .robo-slots .bet-controls {
     margin-bottom: 5px;
   }
 
-  .bet-controls input {
+  .robo-slots .bet-controls input {
     width: 40px;
     font-size: 0.9em;
   }
 
-  .bet-controls button {
+  .robo-slots .bet-controls button {
     padding: 6px 12px;
     font-size: 1em;
   }
 
-  #paytable-button {
+  .robo-slots #paytable-button {
     padding: 6px 12px;
     font-size: 0.8em;
   }
 
-  label {
+  .robo-slots label {
     font-size: 0.9em;
   }
 }
 
 /* Robot Theme Variables */
-:root {
+.robo-slots {
   --robot-primary: #4deeea;
   --robot-secondary: #2fc5ff;
   --robot-accent: #7b2efc;
@@ -1312,7 +1327,7 @@ label {
 }
 
 /* Enhanced Main Container */
-#slot {
+.robo-slots #slot {
   background: var(--metal-dark);
   border: 2px solid var(--robot-primary);
   box-shadow: 0 0 20px rgba(77, 238, 234, 0.2),
@@ -1322,7 +1337,7 @@ label {
 }
 
 /* Robotic Panel Effect */
-#slot::before {
+.robo-slots #slot::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1343,7 +1358,7 @@ label {
 }
 
 /* Metallic Reels Container */
-#reels {
+.robo-slots #reels {
   background: var(--metal-medium);
   border: 1px solid var(--robot-primary);
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5),
@@ -1353,7 +1368,7 @@ label {
 }
 
 /* Enhanced Reel Styling */
-.reel {
+.robo-slots .reel {
   background: var(--metal-dark);
   border: 1px solid var(--robot-secondary);
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
@@ -1361,7 +1376,7 @@ label {
 }
 
 /* Metallic Shine Effect on Reels */
-.reel::before {
+.robo-slots .reel::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1373,7 +1388,7 @@ label {
 }
 
 /* Robotic Border Effect */
-.reel::after {
+.robo-slots .reel::after {
   content: "";
   position: absolute;
   top: 5px;
@@ -1385,7 +1400,7 @@ label {
 }
 
 /* Enhanced Jackpot Display */
-#jackpot {
+.robo-slots #jackpot {
   font-family: "Orbitron", sans-serif;
   color: var(--robot-primary);
   text-shadow: 0 0 10px var(--robot-primary);
@@ -1398,7 +1413,7 @@ label {
 }
 
 /* Scanning Effect for Jackpot */
-#jackpot::before {
+.robo-slots #jackpot::before {
   content: "";
   position: absolute;
   top: -100%;
@@ -1424,8 +1439,8 @@ label {
 }
 
 /* Robotic Controls */
-.bet-controls,
-#controls {
+.robo-slots .bet-controls,
+.robo-slots #controls {
   background: var(--metal-medium);
   border: 1px solid var(--robot-primary);
   box-shadow: 0 0 15px rgba(77, 238, 234, 0.2);
@@ -1434,8 +1449,8 @@ label {
 }
 
 /* Circuit Pattern for Controls */
-.bet-controls::before,
-#controls::before {
+.robo-slots .bet-controls::before,
+.robo-slots #controls::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1461,7 +1476,7 @@ label {
 }
 
 /* Enhanced Button Styling */
-button {
+.robo-slots button {
   background: var(--metal-dark);
   border: 1px solid var(--robot-primary);
   color: var(--robot-primary);
@@ -1472,7 +1487,7 @@ button {
 }
 
 /* Special Spin Button */
-#spin {
+.robo-slots #spin {
   background: var(--bolt-gradient);
   border: none;
   color: var(--metal-dark);
@@ -1483,7 +1498,7 @@ button {
   overflow: hidden;
 }
 
-#spin::before {
+.robo-slots #spin::before {
   content: "";
   position: absolute;
   top: -50%;
@@ -1516,13 +1531,13 @@ button {
 /* Keep existing responsive styles */
 
 /* Enhanced Robotic Paytable */
-#paytable {
+.robo-slots #paytable {
   background: rgba(13, 17, 23, 0.95);
   backdrop-filter: blur(10px);
   border: 1px solid var(--robot-primary);
 }
 
-.paytable-content {
+.robo-slots .paytable-content {
   background: var(--metal-dark);
   border: 2px solid var(--robot-primary);
   box-shadow: 0 0 30px rgba(77, 238, 234, 0.2),
@@ -1533,7 +1548,7 @@ button {
 }
 
 /* Circuit Pattern for Paytable */
-.paytable-content::before {
+.robo-slots .paytable-content::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1556,7 +1571,7 @@ button {
   opacity: 0.1;
 }
 
-.paytable-content h2 {
+.robo-slots .paytable-content h2 {
   color: var(--robot-primary);
   text-shadow: 0 0 10px var(--robot-primary);
   text-transform: uppercase;
@@ -1566,7 +1581,7 @@ button {
   position: relative;
 }
 
-.paytable-content h2::after {
+.robo-slots .paytable-content h2::after {
   content: "";
   position: absolute;
   bottom: -10px;
@@ -1582,7 +1597,7 @@ button {
   );
 }
 
-.pay-row {
+.robo-slots .pay-row {
   background: var(--metal-medium);
   border: 1px solid rgba(77, 238, 234, 0.2);
   border-radius: 5px;
@@ -1592,14 +1607,14 @@ button {
   overflow: hidden;
 }
 
-.pay-row:hover {
+.robo-slots .pay-row:hover {
   border-color: var(--robot-primary);
   box-shadow: 0 0 15px rgba(77, 238, 234, 0.2);
   transform: translateX(5px);
 }
 
 /* Symbol Container */
-.pay-row img {
+.robo-slots .pay-row img {
   background: var(--metal-dark);
   padding: 5px;
   border: 1px solid var(--robot-secondary);
@@ -1607,14 +1622,14 @@ button {
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
-.pays {
+.robo-slots .pays {
   color: var(--robot-secondary);
   font-size: 0.9rem;
   text-shadow: 0 0 5px rgba(47, 197, 255, 0.3);
   letter-spacing: 1px;
 }
 
-.multiplier-info {
+.robo-slots .multiplier-info {
   background: var(--metal-medium);
   border: 1px solid var(--robot-primary);
   border-radius: 5px;
@@ -1624,22 +1639,22 @@ button {
   overflow: hidden;
 }
 
-.multiplier-info h3 {
-  color: var(--robot-primary);
+.robo-slots .multiplier-info h3 {
+  color: var (--robot-primary);
   text-shadow: 0 0 5px var(--robot-primary);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 1rem;
 }
 
-.multiplier-info p {
+.robo-slots .multiplier-info p {
   color: var(--robot-secondary);
   margin: 0.5rem 0;
   font-size: 0.9rem;
 }
 
 /* Scanning Effect */
-.multiplier-info::after {
+.robo-slots .multiplier-info::after {
   content: "";
   position: absolute;
   top: -100%;
@@ -1664,8 +1679,8 @@ button {
   }
 }
 
-.note,
-.rarity-note {
+.robo-slots .note,
+.robo-slots .rarity-note {
   color: var(--robot-accent);
   font-style: normal;
   font-size: 0.8rem;
@@ -1677,41 +1692,41 @@ button {
 
 /* Mobile Adjustments */
 @media screen and (max-width: 768px) {
-  .paytable-content {
+  .robo-slots .paytable-content {
     padding: 1rem;
     margin: 1rem;
   }
 
-  .pay-row {
+  .robo-slots .pay-row {
     padding: 0.5rem;
   }
 
-  .pays {
+  .robo-slots .pays {
     font-size: 0.8rem;
   }
 }
 
 @media screen and (max-width: 480px) {
-  .paytable-content h2 {
+  .robo-slots .paytable-content h2 {
     font-size: 1.2rem;
   }
 
-  .pay-row img {
+  .robo-slots .pay-row img {
     width: 40px;
     height: 40px;
   }
 
-  .pays {
+  .robo-slots .pays {
     font-size: 0.7rem;
   }
 
-  .multiplier-info p {
+  .robo-slots .multiplier-info p {
     font-size: 0.8rem;
   }
 }
 
 /* Mobile-Optimized Paytable Styles */
-#paytable {
+.robo-slots #paytable {
   position: fixed;
   display: flex;
   align-items: center;
@@ -1719,7 +1734,7 @@ button {
   padding: 10px;
 }
 
-.paytable-content {
+.robo-slots .paytable-content {
   max-height: 90vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
@@ -1728,7 +1743,7 @@ button {
 }
 
 /* Compact layout for pay rows */
-.pay-row {
+.robo-slots .pay-row {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 10px;
@@ -1736,21 +1751,21 @@ button {
 }
 
 /* Symbol image container */
-.pay-row img {
+.robo-slots .pay-row img {
   width: 40px;
   height: 40px;
   align-self: center;
 }
 
 /* Pays information layout */
-.pays {
+.robo-slots .pays {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 5px;
   font-size: 0.85rem;
 }
 
-.pays div {
+.robo-slots .pays div {
   background: var(--metal-dark);
   padding: 4px 8px;
   border-radius: 4px;
@@ -1760,69 +1775,69 @@ button {
 
 /* Adjustments for smaller screens */
 @media screen and (max-width: 480px) {
-  .paytable-content {
+  .robo-slots .paytable-content {
     padding: 15px;
     margin: 0;
   }
 
-  .pay-row {
+  .robo-slots .pay-row {
     gap: 8px;
     padding: 6px;
   }
 
-  .pay-row img {
+  .robo-slots .pay-row img {
     width: 32px;
     height: 32px;
   }
 
-  .pays {
+  .robo-slots .pays {
     font-size: 0.75rem;
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   }
 
-  .pays div {
+  .robo-slots .pays div {
     padding: 3px 6px;
   }
 
-  .multiplier-info {
+  .robo-slots .multiplier-info {
     padding: 12px;
     margin-top: 15px;
   }
 
-  .multiplier-info h3 {
+  .robo-slots .multiplier-info h3 {
     font-size: 0.9rem;
     margin-bottom: 8px;
   }
 
-  .multiplier-info p {
+  .robo-slots .multiplier-info p {
     font-size: 0.75rem;
     margin: 4px 0;
   }
 
-  .note,
-  .rarity-note {
+  .robo-slots .note,
+  .robo-slots .rarity-note {
     font-size: 0.7rem;
   }
 }
 
 /* Custom scrollbar styling */
-.paytable-content::-webkit-scrollbar {
+.robo-slots .paytable-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.paytable-content::-webkit-scrollbar-track {
+.robo-slots .paytable-content::-webkit-scrollbar-track {
   background: var(--metal-dark);
   border-radius: 3px;
 }
 
-.paytable-content::-webkit-scrollbar-thumb {
+.robo-slots .paytable-content::-webkit-scrollbar-thumb {
   background: var(--robot-primary);
   border-radius: 3px;
   opacity: 0.8;
 }
 
 /* Close button for paytable */
-#paytable-close {
+.robo-slots #paytable-close {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -1839,7 +1854,7 @@ button {
   z-index: 2;
 }
 
-#paytable-close:hover {
+.robo-slots #paytable-close:hover {
   background: var(--robot-primary);
   color: var(--metal-dark);
 }

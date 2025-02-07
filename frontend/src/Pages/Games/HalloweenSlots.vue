@@ -25,16 +25,6 @@ import HalloweenSlotsGame from "../../components/Casino/Games/HalloweenSlots.vue
 
 <style scoped>
 /* Robotic Theme Variables */
-:root {
-  --cyber-primary: #4deeea;
-  --cyber-secondary: #2fc5ff;
-  --cyber-accent: #7b2efc;
-  --cyber-dark: #0a0e17;
-  --cyber-medium: #161b22;
-  --cyber-light: #21262d;
-  --cyber-glow: 0 0 20px rgba(77, 238, 234, 0.3);
-  --grid-color: rgba(77, 238, 234, 0.07);
-}
 
 .game-page {
   padding: 2rem;
