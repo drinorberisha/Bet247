@@ -97,32 +97,30 @@
           <!-- Multi Mode -->
           <div v-else class="multi-bet">
             <div class="bet-list">
-              <div v-for="bet in bets" :key="bet.id" class="bet-card">
+              <div v-for="selection in bettingStore.currentSelections" 
+                   :key="`${selection.matchId}-${selection.type}`" 
+                   class="bet-card">
                 <div class="bet-header">
                   <div
                     class="bet-teams"
                     :class="{
-                      conflicting: isDuplicateMatch(bet),
+                      conflicting: isDuplicateMatch(selection)
                     }"
                   >
-                    <span class="team home">{{ bet.homeTeam }}</span>
+                    <span class="team home">{{ selection.homeTeam }}</span>
                     <span class="vs">vs</span>
-                    <span class="team away">{{ bet.awayTeam }}</span>
+                    <span class="team away">{{ selection.awayTeam }}</span>
                   </div>
                   <button
                     class="remove-bet"
-                    @click="bettingStore.removeBet(bet.id)"
+                    @click="bettingStore.removeSelection(selection.matchId, selection.type)"
                   >
                     &times;
                   </button>
                 </div>
                 <div class="selection-item">
-                  <span class="selection-type">{{
-                    bet.selections[0]?.type
-                  }}</span>
-                  <span class="selection-odds">{{
-                    formatOdds(bet.selections[0]?.odds)
-                  }}</span>
+                  <span class="selection-type">{{ selection.type }}</span>
+                  <span class="selection-odds">{{ formatOdds(selection.odds) }}</span>
                 </div>
               </div>
             </div>
@@ -204,7 +202,13 @@ const bettingStore = useBettingStore();
 const notificationStore = useNotificationStore();
 const authStore = useAuthStore();
 
-const bets = computed(() => bettingStore.currentBets || []);
+const bets = computed(() => {
+  if (bettingStore.activeMode === 'multi') {
+    const multiBet = bettingStore.currentBets.find(b => b.id === 'multi');
+    return multiBet ? [multiBet] : [];
+  }
+  return bettingStore.currentBets;
+});
 
 const getBetCount = (mode: string) => {
   if (!bets.value) return 0;
@@ -243,38 +247,38 @@ const hasConflictingSelections = computed(() => {
 
   // Only check for conflicts in multi mode
   if (bettingStore.activeMode === "multi") {
-    const matchCounts = new Map();
+    const matchIds = new Set();
+    let hasConflict = false;
 
     bets.value?.forEach((bet) => {
-      const matchKey = `${bet.homeTeam} vs ${bet.awayTeam}`;
-      const count = matchCounts.get(matchKey) || 0;
-      matchCounts.set(matchKey, count + 1);
+      bet.selections.forEach((selection: any) => {
+        if (matchIds.has(selection.matchId)) {
+          hasConflict = true;
+        }
+        matchIds.add(selection.matchId);
+      });
     });
 
-    return Array.from(matchCounts.values()).some((count) => count > 1);
+    return hasConflict;
   }
 
   return false;
 });
 
 // Update isDuplicateMatch method
-const isDuplicateMatch = (currentBet: any) => {
-  // Don't show duplicates in SGM mode
+const isDuplicateMatch = (selection: any) => {
   if (bettingStore.isSameGameMulti) {
     return false;
   }
 
   if (bettingStore.activeMode !== "multi") return false;
 
-  // Count matches with same teams
-  const duplicateCount =
-    bets.value?.filter(
-      (bet) =>
-        bet.homeTeam === currentBet.homeTeam &&
-        bet.awayTeam === currentBet.awayTeam
-    ).length || 0;
+  // Count how many selections are from the same match
+  const matchSelections = bettingStore.currentSelections.filter(
+    s => s.matchId === selection.matchId
+  );
 
-  return duplicateCount > 1;
+  return matchSelections.length > 1;
 };
 
 // Update canPlaceBet computed property
@@ -288,8 +292,12 @@ const canPlaceBet = computed(() => {
   if (bettingStore.activeMode === "single") {
     return bets.value.some((bet) => bet.stake > 0);
   } else {
+    // For multi mode, check:
+    // 1. Has more than one selection
+    // 2. Has stake
+    // 3. No conflicting selections from same match
     return (
-      bets.value.length > 1 &&
+      bets.value.length > 0 &&
       bettingStore.multiStake > 0 &&
       !hasConflictingSelections.value
     );
@@ -465,6 +473,12 @@ const calculateTotalOdds = (selections: any[]) => {
 const calculatePotentialWin = (bet: any) => {
   const totalOdds = calculateTotalOdds(bet.selections);
   return (bet.stake * totalOdds).toFixed(2);
+};
+
+const removeSelection = (selection: any) => {
+  const betId = `${selection.matchId}-${selection.type}`;
+  console.log(betId);
+  bettingStore.removeBet(betId);
 };
 </script>
 
