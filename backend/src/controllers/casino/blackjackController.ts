@@ -4,6 +4,9 @@ import CasinoGame from '../../models/CasinoGame';
 
 const dbService = new DatabaseService();
 
+// Update the type definition for game result
+type GameResult = 'win' | 'loss' | 'push';
+
 export const startGame = async (req: Request, res: Response) => {
   try {
     const { betAmount } = req.body;
@@ -225,7 +228,7 @@ export const processWin = async (req: Request, res: Response) => {
     const game = await CasinoGame.findOne({ gameId, userId });
     if (game) {
       game.status = 'completed';
-      game.result = winAmount > game.betAmount ? 'win' : winAmount === game.betAmount ? 'push' : 'loss';
+      const result: GameResult = winAmount > game.betAmount ? 'win' : winAmount === game.betAmount ? 'push' : 'loss';
       game.winAmount = winAmount;
       game.completedAt = new Date();
       await game.save();

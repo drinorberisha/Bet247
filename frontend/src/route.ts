@@ -241,14 +241,14 @@ export const router = createRouter({
         layout: "default",
       },
     },
-    {
-      path: "/casino/slotforeign",
-      component: SlotForeign,
-      meta: {
-        title: "Slot Foreign - BET 24/7",
-        layout: "default",
-      },
-    },
+    // {
+    //   path: "/casino/slotforeign",
+    //   component: SlotForeign,
+    //   meta: {
+    //     title: "Slot Foreign - BET 24/7",
+    //     layout: "default",
+    //   },
+    // },
     {
       path: "/casino/halloween-slots",
       component: HalloweenSlots,
@@ -257,14 +257,7 @@ export const router = createRouter({
         layout: "default",
       },
     },
-    {
-      path: "/casino/slotpen",
-      component: SlotPen,
-      meta: {
-        title: "Slot Pen - BET 24/7",
-        layout: "default",
-      },
-    },
+
 
 
 

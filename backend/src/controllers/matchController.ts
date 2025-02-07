@@ -8,7 +8,13 @@ import { SUPPORTED_SPORTS } from '../config/constants';
 const matchService = new MatchService();
 const oddsApiService = new OddsApiService();
 const unifiedMatchService = new UnifiedMatchService();
-
+interface OddsType {
+  homeWin: number;
+  draw?: number;
+  awayWin: number;
+  spreads?: number;
+  totals?: number;
+}
 // Get all supported sports
 export const getSports = async (req: Request, res: Response) => {
   try {

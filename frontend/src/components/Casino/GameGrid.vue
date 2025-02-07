@@ -115,15 +115,7 @@ const games = [
     category: "originals",
     path: "/casino/slots",
   },
-  {
-    id: "slotforeign",
-    name: "Slot Foreign",
-    provider: "Stake Originals",
-    thumbnail: "/images/games/slotforeign.webp",
-    type: "slotforeign",
-    category: "originals",
-    path: "/casino/slotforeign",
-  },
+
   {
     id: "halloween-slots",
     name: "Robot Slots",
@@ -142,15 +134,7 @@ const games = [
     categoryL: "originals",
     path: "/casino/NewSlot",
   },
-  {
-    id: "slotpen",
-    name: "Slot Pen",
-    provider: "Stake Originals",
-    thumbnail: "/images/games/slotpen.webp",
-    type: "slotpen",
-    category: "originals",
-    path: "/casino/slotpen",
-  },
+
   // ... other games
 ];
 
