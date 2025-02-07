@@ -44,7 +44,7 @@ export class GameLogicService {
       const symbols = pattern.map((row, col) => reels[col][row]);
       const firstSymbol = symbols[0];
       
-      if (!firstSymbol) return; // Skip if no symbol found
+      if (!firstSymbol) return;
       
       // Count matching symbols from left to right
       let matchCount = 1;
@@ -106,7 +106,7 @@ export class GameLogicService {
       const symbols = pattern.map((row, col) => reels[col][row]);
       const firstSymbol = symbols[0];
       
-      if (!firstSymbol) return; // Skip if no symbol found
+      if (!firstSymbol) return;
       
       const matchCount = symbols.filter(s => s && s.id === firstSymbol.id).length;
       maxMultiplier = Math.max(maxMultiplier, this.calculateMultiplier(matchCount));

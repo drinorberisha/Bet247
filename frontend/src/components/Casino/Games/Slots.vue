@@ -33,20 +33,18 @@
               class="reel-strip"
               :class="{ spinning: slotStore.isSpinning }"
               :style="{
-                '--delay': `${reelIndex * 0.5}s`,
-                '--duration': `${2 + reelIndex * 0.5}s`,
+                '--delay': `${reelIndex * 0.3}s`,
+                '--duration': `${1.5 + reelIndex * 0.3}s`,
               }"
             >
               <div
                 v-for="(symbol, index) in getReelSymbols(reel)"
-                :key="index"
+                :key="`${reelIndex}-${index}-${symbol.name}`"
                 class="symbol"
                 :class="{ winning: isWinningSymbol(reelIndex, index) }"
               >
                 <div class="symbol-inner">
-                  <span class="symbol-emoji">{{
-                    getSymbolEmoji(symbol?.name)
-                  }}</span>
+                  <span class="symbol-emoji">{{ symbol.emoji }}</span>
                 </div>
               </div>
             </div>
@@ -230,15 +228,26 @@
               class="mobile-reel"
             >
               <div
-                v-for="(symbol, index) in reel"
-                :key="index"
-                class="mobile-symbol"
-                :class="{ 'mobile-winning': isWinningSymbol(reelIndex, index) }"
+                class="mobile-reel-strip"
+                :class="{ spinning: slotStore.isSpinning }"
+                :style="{
+                  '--delay': `${reelIndex * 0.3}s`,
+                  '--duration': `${1.5 + reelIndex * 0.3}s`,
+                  '--final-position': getFinalPosition(reelIndex),
+                  '--full-height': `${SYMBOL_HEIGHT * TOTAL_SYMBOLS}px`
+                }"
               >
-                <div class="mobile-symbol-inner">
-                  <span class="mobile-symbol-emoji">
-                    {{ getSymbolEmoji(symbol?.name) }}
-                  </span>
+                <div
+                  v-for="(symbol, index) in getReelSymbols(reel)"
+                  :key="`${reelIndex}-${index}-${symbol.id}`"
+                  class="mobile-symbol"
+                  :class="{ 'mobile-winning': isWinningSymbol(reelIndex, index % 3) }"
+                >
+                  <div class="mobile-symbol-inner">
+                    <span class="mobile-symbol-emoji">
+                      {{ SYMBOLS[symbol?.name]?.emoji || '🎰' }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -323,6 +332,37 @@
             </button>
           </div>
         </div>
+
+        <!-- Mobile Result Popup -->
+        <Transition name="fade">
+          <div v-if="showResultPopup" class="mobile-result-popup" :class="popupClass">
+            <div class="mobile-result-content">
+              <div class="mobile-result-header">
+                <h2>{{ resultTitle }}</h2>
+                <span class="close-button" @click="closeResultPopup">&times;</span>
+              </div>
+              <div class="mobile-result-details">
+                <div class="mobile-result-amount">
+                  <span class="amount-label">Amount:</span>
+                  <span class="amount-value" :class="{ 'win': slotStore.lastWin > 0 }">
+                    {{ slotStore.lastWin > 0 ? '+' : '' }}{{ slotStore.lastWin.toFixed(2) }}€
+                  </span>
+                </div>
+                <div v-if="slotStore.multiplier > 1" class="mobile-result-multiplier">
+                  <span class="multiplier-label">Multiplier:</span>
+                  <span class="multiplier-value">x{{ slotStore.multiplier }}</span>
+                </div>
+                <div class="mobile-result-lines" v-if="slotStore.winningLines.length > 0">
+                  <span class="lines-label">Winning Lines:</span>
+                  <span class="lines-value">{{ slotStore.winningLines.length }}</span>
+                </div>
+              </div>
+              <button class="mobile-spin-again-button" @click="handleSpinAgain" :disabled="slotStore.isSpinning">
+                Spin Again
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
     </template>
   </div>
@@ -397,33 +437,42 @@ watch(
   }
 );
 
-// Create an array of emojis for random selection
-const allEmojis = Object.values(SYMBOLS).map(symbol => symbol.emoji);
+// Track the final positions for each reel
+const finalPositions = ref<number[]>([0, 0, 0, 0, 0]);
 
-const getSymbolEmoji = (symbolName: string | undefined) => {
-  if (!symbolName) {
-    // Return a random emoji from our array
-    return allEmojis[Math.floor(Math.random() * allEmojis.length)];
-  }
-  return SYMBOLS[symbolName as keyof typeof SYMBOLS]?.emoji || '🎰';
+// Calculate the final position for each reel based on server outcome
+const getFinalPosition = (reelIndex: number): string => {
+  const position = finalPositions.value[reelIndex];
+  // Add a full rotation (TOTAL_SYMBOLS * SYMBOL_HEIGHT) plus the target position
+  return `${-(TOTAL_SYMBOLS * SYMBOL_HEIGHT + position)}px`;
 };
 
-// Enhanced random emoji generation
-const getRandomEmoji = () => {
-  return allEmojis[Math.floor(Math.random() * allEmojis.length)];
-};
+const SYMBOL_HEIGHT = 100; // Height of each symbol in pixels
+const VISIBLE_SYMBOLS = 3; // Number of visible symbols
+const TOTAL_SYMBOLS = 9; // Total symbols in strip (3x visible symbols)
 
-// Add this helper function to duplicate symbols for seamless loop
 const getReelSymbols = (reel: any[]) => {
-  return [...reel, ...reel, ...reel];
+  if (!reel || reel.length === 0) return [];
+  
+  // Create one complete set of symbols for the reel
+  const reelSymbols = reel.map(symbol => ({
+    ...symbol,
+    emoji: SYMBOLS[symbol?.name]?.emoji || '🎰'
+  }));
+  
+  // Triple the array for smooth animation
+  return [...reelSymbols, ...reelSymbols, ...reelSymbols];
 };
 
+// Modified handleSpin to calculate final positions
 const handleSpin = async () => {
   if (slotStore.isSpinning) return;
   
-  // Hide any existing popups
   showWinPopup.value = false;
   showResultPopup.value = false;
+  
+  // Reset positions before spin
+  finalPositions.value = [0, 0, 0, 0, 0];
   
   await slotStore.spin();
 };
@@ -454,7 +503,6 @@ const isWinningSymbol = (reelIndex: number, rowIndex: number) => {
 };
 
 // Constants for positioning
-const SYMBOL_HEIGHT = 100;  // Height of each symbol container
 const SYMBOL_CENTER = SYMBOL_HEIGHT / 2;
 const REEL_WIDTH = 100;    // Width of each reel
 const REEL_CENTER = REEL_WIDTH / 2;
@@ -590,6 +638,23 @@ const toggleAutoPlay = () => {
     slotStore.setAutoPlay(50);
   }
 };
+
+// Watch for spin completion to set final positions
+watch(
+  () => slotStore.isSpinning,
+  async (isSpinning, prevIsSpinning) => {
+    if (!isSpinning && prevIsSpinning) {
+      // Calculate the position needed to show the server-generated symbols
+      finalPositions.value = slotStore.reels.map((reel, reelIndex) => {
+        // Calculate how many positions we need to move to align the symbols
+        const targetSymbols = reel.map(s => s.id);
+        const currentSymbols = getReelSymbols(reel).slice(0, 3).map(s => s.id);
+        const offset = SYMBOL_HEIGHT * (targetSymbols.length - 1);
+        return offset;
+      });
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -1558,33 +1623,121 @@ const toggleAutoPlay = () => {
 }
 
 .mobile-reels {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-  height: 100%;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
 }
 
 .mobile-reel {
-  display: grid;
-  grid-template-rows: repeat(3, 1fr);
-  gap: 2px;
+  flex: 1;
+  position: relative;
+  height: 300px; /* Height to show 3 symbols */
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 2px solid gold;
+}
+
+/* Add mask gradients to top and bottom */
+.mobile-reel::before,
+.mobile-reel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mobile-reel::before {
+  top: 0;
+  background: linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.mobile-reel::after {
+  bottom: 0;
+  background: linear-gradient(to top, 
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.mobile-reel-strip {
+  position: absolute;
+  width: 100%;
+  transform: translateY(0);
+  will-change: transform;
+}
+
+.mobile-reel-strip.spinning {
+  animation: mobileSpin var(--duration) cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+  animation-delay: var(--delay);
 }
 
 .mobile-symbol {
-  background: rgba(255, 255, 255, 0.1);
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
+  margin: 2px;
+}
+
+.mobile-symbol-inner {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mobile-symbol-emoji {
-  font-size: 1.5rem;
+  font-size: 2.5rem;
+  line-height: 1;
 }
 
 .mobile-winning {
-  animation: mobile-symbol-highlight 1s infinite;
   background: rgba(255, 215, 0, 0.2);
+  animation: winPulse 1s infinite;
+}
+
+@keyframes mobileSpin {
+  0% {
+    transform: translateY(0);
+  }
+  20% { /* Quick acceleration */
+    transform: translateY(calc(-0.2 * var(--full-height)));
+  }
+  80% { /* Maintain speed */
+    transform: translateY(calc(-0.8 * var(--full-height)));
+  }
+  100% { /* Slow down to final position */
+    transform: translateY(var(--final-position));
+  }
+}
+
+/* Add a transition for when spinning stops */
+.mobile-reel-strip:not(.spinning) {
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes winPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Make symbols larger on larger screens */
+@media (min-width: 768px) {
+  .mobile-symbol-emoji {
+    font-size: 3rem;
+  }
 }
 
 .mobile-paylines-overlay {
@@ -1594,11 +1747,13 @@ const toggleAutoPlay = () => {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  background: transparent;
 }
 
 .mobile-paylines {
   width: 100%;
   height: 100%;
+  background: transparent;
 }
 
 .mobile-payline {
@@ -1606,24 +1761,19 @@ const toggleAutoPlay = () => {
   stroke-width: 2px;
   stroke-linecap: round;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.7));
-  animation: mobile-payline-blink 1s infinite;
+  animation: paylineShow 3s linear infinite;
 }
 
-/* Mobile payline colors */
-.mobile-payline-0 { stroke: #ff0000; }
-.mobile-payline-1 { stroke: #00ff00; }
-.mobile-payline-2 { stroke: #0000ff; }
-.mobile-payline-3 { stroke: #ffff00; }
-.mobile-payline-4 { stroke: #ff00ff; }
-.mobile-payline-5 { stroke: #00ffff; }
-.mobile-payline-6 { stroke: #ff8800; }
-.mobile-payline-7 { stroke: #88ff00; }
-.mobile-payline-8 { stroke: #0088ff; }
-
-@keyframes mobile-symbol-highlight {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
+/* Update mobile payline colors to match desktop */
+.mobile-payline-0 { stroke: #ff4081; animation-delay: 0s; }
+.mobile-payline-1 { stroke: #40c4ff; animation-delay: 0.2s; }
+.mobile-payline-2 { stroke: #7c4dff; animation-delay: 0.4s; }
+.mobile-payline-3 { stroke: #ffeb3b; animation-delay: 0.6s; }
+.mobile-payline-4 { stroke: #76ff03; animation-delay: 0.8s; }
+.mobile-payline-5 { stroke: #ff9100; animation-delay: 1s; }
+.mobile-payline-6 { stroke: #00e5ff; animation-delay: 1.2s; }
+.mobile-payline-7 { stroke: #ff1744; animation-delay: 1.4s; }
+.mobile-payline-8 { stroke: #64ffda; animation-delay: 1.6s; }
 
 @keyframes mobile-payline-blink {
   0%, 100% { opacity: 1; }
@@ -1761,5 +1911,65 @@ const toggleAutoPlay = () => {
   .mobile-auto-btn {
     font-size: 0.875rem;
   }
+}
+
+.mobile-result-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2px;
+  width: 90%;
+  max-width: 320px;
+}
+
+.mobile-result-content {
+  background: linear-gradient(145deg, var(--header) 0%, var(--background) 100%);
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.mobile-result-header {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.mobile-result-header h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 0;
+  background: linear-gradient(to right, #fff, var(--active-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mobile-result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.mobile-spin-again-button {
+  background: var(--active-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 1rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-spin-again-button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 </style>

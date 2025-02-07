@@ -337,7 +337,7 @@ const getSuitSymbol = (suit: string) => {
 }
 
 .area-label {
-  color: var(--text-secondary);
+  color: var(--white);
   margin-bottom: 1rem;
 }
 

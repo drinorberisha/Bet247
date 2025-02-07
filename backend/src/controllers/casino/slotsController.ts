@@ -1,36 +1,25 @@
 import { Request, Response } from 'express';
 import { DatabaseService } from '../../services/DatabaseService';
 import CasinoGame from '../../models/CasinoGame';
-import { GameLogicService } from '../../services/GameLogicService';
+import { PAYLINE_PATTERNS } from '../../constants/slots';
 
 const dbService = new DatabaseService();
-const gameLogic = new GameLogicService();
 
 // Define slot symbols and their properties
 const SLOT_SYMBOLS = [
-  { id: 1, name: 'SEVEN', value: 50, image: '/images/slots/seven.png' },
-  { id: 2, name: 'BAR', value: 20, image: '/images/slots/bar.png' },
-  { id: 3, name: 'BELL', value: 15, image: '/images/slots/bell.png' },
-  { id: 4, name: 'CHERRY', value: 10, image: '/images/slots/cherry.png' },
-  { id: 5, name: 'LEMON', value: 5, image: '/images/slots/lemon.png' },
-  { id: 6, name: 'ORANGE', value: 5, image: '/images/slots/orange.png' },
-  { id: 7, name: 'PLUM', value: 5, image: '/images/slots/plum.png' },
-  { id: 8, name: 'GRAPE', value: 5, image: '/images/slots/grape.png' },
+  { id: 1, name: 'SEVEN', value: 50, emoji: '7️⃣' },
+  { id: 2, name: 'BAR', value: 20, emoji: '🎰' },
+  { id: 3, name: 'BELL', value: 15, emoji: '🔔' },
+  { id: 4, name: 'CHERRY', value: 10, emoji: '🍒' },
+  { id: 5, name: 'LEMON', value: 5, emoji: '🍋' },
+  { id: 6, name: 'ORANGE', value: 5, emoji: '🍊' },
+  { id: 7, name: 'PLUM', value: 5, emoji: '🫐' },
+  { id: 8, name: 'GRAPE', value: 5, emoji: '🍇' }
 ];
 
-// Define winning paylines
-const PAYLINES = [
-  [1, 1, 1, 1, 1], // Middle horizontal
-  [0, 0, 0, 0, 0], // Top horizontal
-  [2, 2, 2, 2, 2], // Bottom horizontal
-  [0, 1, 2, 1, 0], // V shape
-  [2, 1, 0, 1, 2], // Inverted V shape
-  // Add more paylines as needed
-];
-
-export const spin = async (req: Request, res: Response) => {
+export const check = async (req: Request, res: Response) => {
   try {
-    const { betAmount } = req.body;
+    const { betAmount, reels } = req.body;
     // @ts-ignore - user added by auth middleware
     const userId = req.user?.userId;
 
@@ -47,8 +36,16 @@ export const spin = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate spin outcome using game logic service
-    const spinOutcome = gameLogic.generateSpinOutcome(betAmount);
+    // Validate reels structure
+    if (!validateReels(reels)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid reel configuration'
+      });
+    }
+
+    // Calculate wins from the provided reels
+    const { winAmount, winningLines, multiplier } = calculateWin(reels, betAmount);
     
     // Create game record
     const gameId = `slots_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -57,13 +54,13 @@ export const spin = async (req: Request, res: Response) => {
       userId,
       gameType: 'slots',
       betAmount,
-      winAmount: spinOutcome.totalWin,
+      winAmount,
       status: 'completed',
-      result: spinOutcome.totalWin > 0 ? 'win' : 'loss',
+      result: winAmount > 0 ? 'win' : 'loss',
       gameData: {
-        reels: spinOutcome.reels,
-        winningLines: spinOutcome.winningLines,
-        multiplier: spinOutcome.multiplier
+        reels,
+        winningLines,
+        multiplier
       },
       createdAt: new Date(),
       completedAt: new Date()
@@ -71,84 +68,43 @@ export const spin = async (req: Request, res: Response) => {
 
     // Update user balance
     await dbService.users.updateBalance(userId, -betAmount);
-    if (spinOutcome.totalWin > 0) {
-      await dbService.users.updateBalance(userId, spinOutcome.totalWin);
+    if (winAmount > 0) {
+      await dbService.users.updateBalance(userId, winAmount);
     }
 
-    // Return spin results to client
+    // Return results to client
     res.json({
       success: true,
       gameId: game.gameId,
-      reels: spinOutcome.reels,
-      winningLines: spinOutcome.winningLines,
-      winAmount: spinOutcome.totalWin,
-      multiplier: spinOutcome.multiplier,
-      newBalance: user.balance - betAmount + spinOutcome.totalWin
-    });
-
-  } catch (error) {
-    console.error('[SLOTS-CONTROLLER] Error processing spin:', error);
-    res.status(500).json({ success: false, message: 'Error processing spin' });
-  }
-};
-
-export const submitResult = async (req: Request, res: Response) => {
-  try {
-    const { gameId, winAmount, winningLines, multiplier } = req.body;
-    // @ts-ignore - user added by auth middleware
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-    }
-
-    // Update game record
-    const game = await CasinoGame.findOne({ gameId });
-    if (!game) {
-      return res.status(404).json({
-        success: false,
-        message: 'Game not found'
-      });
-    }
-
-    if (game.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: 'Game already completed'
-      });
-    }
-
-    // Update game record with valid status
-    game.winAmount = winAmount;
-    game.status = 'completed';
-    game.result = winAmount > 0 ? 'win' : 'loss';
-    game.completedAt = new Date();
-    game.gameData = {
-      ...game.gameData,
       winningLines,
-      multiplier
-    };
-    await game.save();
-
-    // Add win amount to user balance
-    const updatedUser = await dbService.users.updateBalance(userId, winAmount);
-
-    res.json({
-      success: true,
-      newBalance: updatedUser?.balance
+      winAmount,
+      multiplier,
+      newBalance: user.balance - betAmount + winAmount
     });
 
   } catch (error) {
-    console.error('[SLOTS-CONTROLLER] Error submitting result:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error submitting result'
-    });
+    console.error('[SLOTS-CONTROLLER] Error checking spin:', error);
+    res.status(500).json({ success: false, message: 'Error checking spin' });
   }
 };
+
+function validateReels(reels: any[][]): boolean {
+  // Check if reels array is valid
+  if (!Array.isArray(reels) || reels.length !== 5) return false;
+  
+  // Check each reel
+  return reels.every(reel => {
+    if (!Array.isArray(reel) || reel.length !== 3) return false;
+    
+    // Check each symbol in the reel
+    return reel.every(symbol => {
+      return SLOT_SYMBOLS.some(validSymbol => 
+        validSymbol.id === symbol.id && 
+        validSymbol.name === symbol.name
+      );
+    });
+  });
+}
 
 function calculateWin(reels: any[][], betAmount: number) {
   let totalWin = 0;
@@ -156,7 +112,7 @@ function calculateWin(reels: any[][], betAmount: number) {
   let maxMultiplier = 1;
 
   // Check each payline
-  PAYLINES.forEach((payline, index) => {
+  PAYLINE_PATTERNS.forEach((payline, index) => {
     const symbols = payline.map((row, col) => reels[col][row]);
     const firstSymbol = symbols[0];
     

@@ -5,15 +5,30 @@ import { PAYLINE_PATTERNS } from '../../constants/slots';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Define slot symbols with emojis
+const SLOT_SYMBOLS = [
+  { id: 1, name: 'SEVEN', value: 50, emoji: '7️⃣' },
+  { id: 2, name: 'BAR', value: 20, emoji: '🎰' },
+  { id: 3, name: 'BELL', value: 15, emoji: '🔔' },
+  { id: 4, name: 'CHERRY', value: 10, emoji: '🍒' },
+  { id: 5, name: 'LEMON', value: 5, emoji: '🍋' },
+  { id: 6, name: 'ORANGE', value: 5, emoji: '🍊' },
+  { id: 7, name: 'PLUM', value: 5, emoji: '🫐' },
+  { id: 8, name: 'GRAPE', value: 5, emoji: '🍇' }
+];
+
 interface Symbol {
   id: number;
   name: string;
   value: number;
-  image: string;
+  emoji: string;
 }
 
 interface SlotState {
   reels: Symbol[][];
+  spinningReels: Symbol[][];
+  finalReels: Symbol[][];
+  reelStrips: Symbol[][][];  // Added to store the complete reel strips
   betAmount: number;
   isSpinning: boolean;
   autoPlay: boolean;
@@ -32,6 +47,9 @@ interface SlotState {
 export const useSlotStore = defineStore('slots', {
   state: (): SlotState => ({
     reels: Array(5).fill([]).map(() => Array(3).fill(null)),
+    spinningReels: Array(5).fill([]).map(() => Array(3).fill(null)),
+    finalReels: Array(5).fill([]).map(() => Array(3).fill(null)),
+    reelStrips: Array(5).fill([]).map(() => []),  // Will hold complete reel strips
     betAmount: 1,
     isSpinning: false,
     autoPlay: false,
@@ -48,23 +66,58 @@ export const useSlotStore = defineStore('slots', {
   }),
 
   actions: {
+    // Generate a complete reel strip that ensures smooth animation
+    generateReelStrip(): Symbol[] {
+      // Create a base set of symbols
+      const baseSymbols = [...SLOT_SYMBOLS];
+      // Shuffle the symbols
+      for (let i = baseSymbols.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [baseSymbols[i], baseSymbols[j]] = [baseSymbols[j], baseSymbols[i]];
+      }
+      // Repeat the symbols to create a long strip
+      return [...baseSymbols, ...baseSymbols, ...baseSymbols];
+    },
+
+    // Initialize all reel strips
+    initializeReelStrips() {
+      this.reelStrips = Array(5).fill(null).map(() => this.generateReelStrip());
+    },
+
+    // Get visible symbols for a reel at a specific position
+    getVisibleSymbols(reelIndex: number, position: number): Symbol[] {
+      const strip = this.reelStrips[reelIndex];
+      const visibleSymbols = [];
+      for (let i = 0; i < 3; i++) {
+        const index = (position + i) % strip.length;
+        visibleSymbols.push(strip[index]);
+      }
+      return visibleSymbols;
+    },
+
+    generateFinalReels(): Symbol[][] {
+      // Generate new final positions for each reel
+      return Array(5).fill(null).map((_, index) => {
+        const startPos = Math.floor(Math.random() * SLOT_SYMBOLS.length);
+        return this.getVisibleSymbols(index, startPos);
+      });
+    },
+
     async spin() {
       const authStore = useAuthStore();
       
-      if (!authStore.token) {
-        this.error = 'Please login to play';
-        return;
-      }
-
-      if (this.isSpinning) return;
-
-      const currentBalance = authStore.userBalance;
-      if (currentBalance < this.betAmount) {
+      if (!authStore.token || this.isSpinning) return;
+      if (authStore.userBalance < this.betAmount) {
         this.error = 'Insufficient balance';
         return;
       }
 
-      // Reset state before spin
+      // Initialize reel strips if not already done
+      if (this.reelStrips[0].length === 0) {
+        this.initializeReelStrips();
+      }
+
+      // Reset state
       this.isSpinning = true;
       this.loading = true;
       this.error = null;
@@ -72,11 +125,20 @@ export const useSlotStore = defineStore('slots', {
       this.winningLines = [];
       this.multiplier = 1;
 
+      // Generate final positions
+      this.finalReels = this.generateFinalReels();
+
       try {
-        // Get spin outcome from server
+        // Start spinning animation
+        await this.animateSpin();
+
+        // Send final positions to server for win checking
         const response = await axios.post(
-          `${API_URL}/casino/slots/spin`,
-          { betAmount: this.betAmount },
+          `${API_URL}/casino/slots/check`,
+          { 
+            betAmount: this.betAmount,
+            reels: this.finalReels
+          },
           {
             headers: {
               'Authorization': `Bearer ${authStore.token}`,
@@ -86,27 +148,12 @@ export const useSlotStore = defineStore('slots', {
         );
 
         if (response.data.success) {
-          // Store the outcome but don't display yet
-          const outcome = {
-            gameId: response.data.gameId,
-            reels: response.data.reels,
-            winningLines: response.data.winningLines,
-            winAmount: response.data.winAmount,
-            multiplier: response.data.multiplier
-          };
-
-          // Wait for animation
-          await this.animateSpin();
-
-          // Update state with outcome
-          this.currentGameId = outcome.gameId;
-          this.reels = outcome.reels;
-          this.lastWin = outcome.winAmount;
-          this.totalWin += outcome.winAmount;
-          this.winningLines = outcome.winningLines;
-          this.multiplier = outcome.multiplier;
-
-          // Update balance
+          this.currentGameId = response.data.gameId;
+          this.reels = this.finalReels;
+          this.lastWin = response.data.winAmount;
+          this.totalWin += response.data.winAmount;
+          this.winningLines = response.data.winningLines;
+          this.multiplier = response.data.multiplier;
           authStore.updateBalance(response.data.newBalance);
         }
       } catch (error: any) {
@@ -120,7 +167,27 @@ export const useSlotStore = defineStore('slots', {
 
     async animateSpin() {
       return new Promise(resolve => {
-        setTimeout(resolve, 4000); // Match the total animation time of reels
+        const spinDuration = 3000; // 3 seconds total spin time
+        const spinInterval = 50; // Update every 50ms
+        let elapsed = 0;
+        let position = 0;
+
+        const spinTimer = setInterval(() => {
+          // Update visible symbols for each reel using the reel strips
+          this.spinningReels = this.reelStrips.map((strip, index) => {
+            const offset = Math.floor(position + (index * 2)); // Different speeds for each reel
+            return this.getVisibleSymbols(index, offset);
+          });
+
+          position += 1;
+          elapsed += spinInterval;
+
+          if (elapsed >= spinDuration) {
+            clearInterval(spinTimer);
+            this.spinningReels = this.finalReels;
+            resolve(true);
+          }
+        }, spinInterval);
       });
     },
 

@@ -632,7 +632,7 @@ const handleCashout = async () => {
 
 .clear-btn {
   background: var(--subheader);
-  color: var(--text-secondary);
+  color: var(--white);
   border: 1px solid var(--border);
 }
 
