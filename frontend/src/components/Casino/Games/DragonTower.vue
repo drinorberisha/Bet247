@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    <div class="tower-wrapper">
+    <div class="tower-wrapper" ref="towerWrapperRef">
       <div class="dragon-decoration">
         <div
           class="fire-left"
@@ -198,6 +198,7 @@ const reversedRows = computed(() => [...dragonTowerStore.rows].reverse());
 
 const showWinModal = ref(false);
 const showFireAnimation = ref(false);
+const towerWrapperRef = ref<HTMLElement | null>(null);
 
 // Watch for wins
 watch(currentProfit, (newProfit) => {
@@ -216,6 +217,10 @@ const gameActionText = computed(() => {
 
 const handleGameAction = async () => {
   await dragonTowerStore.startGame();
+  towerWrapperRef.value?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
 };
 
 const handleTileClick = (rowIndex: number, tileIndex: number) => {
@@ -349,17 +354,19 @@ const handleCashout = async () => {
 
 .dragon-decoration {
   position: absolute;
-  top: -20px;
+  top: -40px; /* Moved higher up */
   left: 50%;
   transform: translateX(-50%);
-  width: 300px;
-  height: 150px;
+  width: 400px; /* Increased size */
+  height: 200px; /* Increased size */
   background: url("../../../../src/assets/img/header/dragotower.svg") no-repeat
     center center;
   background-size: contain;
   z-index: 1;
   pointer-events: none; /* Allows clicking through the decoration */
   animation: floatDragon 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.5)) /* Orange glow */
+    drop-shadow(0 0 20px rgba(255, 69, 0, 0.3)); /* Secondary glow */
 }
 
 .fire-left,
@@ -395,13 +402,19 @@ const handleCashout = async () => {
 
 @keyframes floatDragon {
   0% {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.5))
+      drop-shadow(0 0 20px rgba(255, 69, 0, 0.3));
   }
   50% {
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateX(-50%) translateY(-10px) scale(1.05);
+    filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.7))
+      drop-shadow(0 0 25px rgba(255, 69, 0, 0.5));
   }
   100% {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.5))
+      drop-shadow(0 0 20px rgba(255, 69, 0, 0.3));
   }
 }
 
@@ -830,9 +843,9 @@ const handleCashout = async () => {
   }
 
   .dragon-decoration {
-    width: 200px;
-    height: 100px;
-    top: -10px;
+    width: 300px;
+    height: 150px;
+    top: -30px;
   }
 
   .tower-wrapper {
@@ -919,9 +932,9 @@ const handleCashout = async () => {
   }
 
   .dragon-decoration {
-    width: 150px;
-    height: 75px;
-    top: -5px;
+    width: 250px;
+    height: 125px;
+    top: -25px;
   }
 
   .tower-wrapper {
