@@ -545,8 +545,10 @@ const removeSelection = (selection: any) => {
   background: var(--subheader);
   border-radius: 8px;
   overflow: hidden;
-  height: 100%;
+  top: var(--total-top-offset);
+  height: calc(100vh - var(--total-top-offset) - 3rem);
   display: flex;
+
   flex-direction: column;
 }
 

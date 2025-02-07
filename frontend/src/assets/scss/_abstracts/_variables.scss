@@ -26,4 +26,7 @@
     --preactive: #0F62E6;
     --place: #858B9D;
     --paycheck: #40507C;
-}
+    --browser-bar-height: env(safe-area-inset-top, 0px);
+    --header-height: 70px;
+    --total-top-offset: calc(var(--browser-bar-height) + var(--header-height));
+  }
