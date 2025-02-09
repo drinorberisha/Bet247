@@ -71,6 +71,7 @@ const casinoGames = [
   { id: 'blackjack', name: 'Blackjack', icon: 'fas fa-circle-notch', count: 1 },
   { id: 'slots', name: 'Slots', icon: 'fas fa-circle-notch', count: 1 },
   { id: 'halloween-slots', name: 'Halloween Slots', icon: 'fas fa-circle-notch', count: 1 },
+  // trigger redeploy
 
 ];
 </script>
